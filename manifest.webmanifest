@@ -1,0 +1,14 @@
+{
+  "name": "きもちの輪",
+  "short_name": "きもちの輪",
+  "description": "ぼんやりした気持ちに名前をつける感情ラベリング・ツール",
+  "lang": "ja",
+  "start_url": "./#wheel",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f3f4f7",
+  "theme_color": "#f3f4f7",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

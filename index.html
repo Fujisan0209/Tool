@@ -1,0 +1,1051 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>きもちの輪</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="ぼんやりした気持ちに、ぴったりの名前をつける感情ラベリング・ツール。プルチックの感情の輪をもとにした96語の感情語彙、ガイド、記録と振り返り。">
+<meta name="theme-color" content="#f3f4f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12141a" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+/* Layout: sticky header with three views; the wheel is the hero, a detail column sits beside it (stacks under it on phones); a basket bar docks to the bottom. */
+:root{
+  --bg:#f3f4f7; --surface:#ffffff; --surface-2:#eceef3; --line:#dcdfe7;
+  --fg:#1c1f2c; --muted:#5f667a; --accent:#3a49b8; --accent-fg:#ffffff;
+  --accent-soft:#e3e6fa; --danger:#c0303a; --pos:#d79a12; --neg:#3f67c9;
+  --shadow:0 1px 2px rgba(20,24,40,.06),0 8px 24px rgba(20,24,40,.06);
+  --font-display:"Shippori Mincho","Hiragino Mincho ProN","Yu Mincho",serif;
+  --font-body:"Zen Kaku Gothic New","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo",system-ui,sans-serif;
+  --r:14px; --r-sm:9px;
+  --gutter-l:max(16px, env(safe-area-inset-left, 0px));
+  --gutter-r:max(16px, env(safe-area-inset-right, 0px));
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12141a; --surface:#1a1d26; --surface-2:#232734; --line:#2e3342;
+  --fg:#e8eaf2; --muted:#9aa1b5; --accent:#909cff; --accent-fg:#11131b;
+  --accent-soft:#272d4d; --danger:#ff6b74; --pos:#f2c14e; --neg:#7c9cff;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25); color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#12141a; --surface:#1a1d26; --surface-2:#232734; --line:#2e3342;
+  --fg:#e8eaf2; --muted:#9aa1b5; --accent:#909cff; --accent-fg:#11131b;
+  --accent-soft:#272d4d; --danger:#ff6b74; --pos:#f2c14e; --neg:#7c9cff;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25); color-scheme:dark;}
+
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:15px;line-height:1.7;
+  padding-bottom:calc(96px + env(safe-area-inset-bottom, 0px));}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top, 0px);z-index:30;background:var(--bg)}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+.wrap{max-width:1180px;margin:0 auto;padding-left:var(--gutter-l);padding-right:var(--gutter-r)}
+
+/* header */
+.top{position:sticky;top:env(safe-area-inset-top, 0px);z-index:20;background:color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter:saturate(1.4) blur(10px);-webkit-backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:16px;padding-block:10px;flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:10px;margin-right:auto;min-width:0}
+.brand h1{font-family:var(--font-display);font-weight:700;font-size:22px;margin:0;letter-spacing:.06em;line-height:1.2}
+.brand span{font-size:12px;color:var(--muted);letter-spacing:.04em}
+.mark{width:22px;height:22px;flex:none;align-self:center}
+.tabs{display:flex;gap:2px;background:var(--surface-2);padding:3px;border-radius:999px}
+.tabs a{text-decoration:none;color:var(--muted);font-weight:500;font-size:14px;padding:5px 16px;border-radius:999px;transition:background .2s,color .2s}
+.tabs a[aria-current="page"]{background:var(--surface);color:var(--fg);box-shadow:var(--shadow)}
+
+main{padding-block:20px 8px}
+.view{display:block}
+.lede{max-width:62ch;color:var(--muted);margin:0 0 16px;font-size:14px}
+.lede b{color:var(--fg);font-weight:500}
+h2{font-family:var(--font-display);font-weight:700;font-size:20px;letter-spacing:.04em;margin:0;text-wrap:balance;line-height:1.4}
+h3{font-size:13px;font-weight:700;letter-spacing:.08em;color:var(--muted);margin:0}
+
+/* wheel view */
+.wheel-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.wheel-grid{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.wheel-card{padding:12px;position:relative}
+.wheel-tools{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:2px 4px 6px;flex-wrap:wrap}
+.crumbs{display:flex;gap:4px;align-items:center;font-size:13px;flex-wrap:wrap;min-width:0}
+.crumbs button{background:none;border:0;padding:2px 6px;border-radius:6px;color:var(--muted)}
+.crumbs button:hover{background:var(--surface-2);color:var(--fg)}
+.crumbs button[aria-current="true"]{color:var(--fg);font-weight:700}
+.crumbs i{color:var(--line);font-style:normal}
+.legend-tiers{display:flex;gap:10px;font-size:12px;color:var(--muted)}
+.legend-tiers span{display:inline-flex;align-items:center;gap:5px}
+.legend-tiers b{display:inline-block;width:18px;height:6px;border-radius:3px;background:var(--muted)}
+#wheel{display:block;width:100%;max-width:640px;height:auto;margin:0 auto;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+#wheel .seg path{stroke:var(--surface);stroke-width:1.2;transition:filter .15s}
+#wheel .seg{cursor:pointer;outline:none}
+#wheel .seg:hover path{filter:brightness(1.07) saturate(1.05)}
+#wheel .seg:focus-visible path{stroke:var(--accent);stroke-width:3}
+#wheel text{pointer-events:none;font-family:var(--font-body);font-weight:500;dominant-baseline:central;text-anchor:middle}
+#wheel .d1 text{font-weight:700}
+#wheel .seg.sel text{font-weight:700;text-decoration:underline;text-underline-offset:2px}
+#wheel #hl{fill:none;stroke:var(--fg);stroke-width:2.6;pointer-events:none;stroke-linejoin:round}
+#wheel .dot{fill:var(--fg);pointer-events:none}
+#wheel #center{cursor:pointer}
+#wheel #center circle{fill:var(--surface-2);stroke:var(--line)}
+#wheel #center:hover circle{fill:var(--accent-soft)}
+#wheel #cMain{font-family:var(--font-display);font-weight:700;fill:var(--fg)}
+#wheel #cSub{fill:var(--muted);font-size:10px}
+
+.side{display:grid;gap:16px;min-width:0}
+.search{position:relative}
+.search input{width:100%;padding:11px 14px 11px 40px;border-radius:var(--r);border:1px solid var(--line);background:var(--surface);font-size:15px}
+.search input:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.search svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:17px;height:17px;color:var(--muted)}
+.search kbd{position:absolute;right:12px;top:50%;transform:translateY(-50%);font:12px var(--font-body);color:var(--muted);border:1px solid var(--line);border-radius:5px;padding:0 6px}
+.results{margin-top:6px;display:grid;gap:2px;max-height:300px;overflow:auto}
+.results button{display:flex;gap:10px;align-items:center;text-align:left;background:var(--surface);border:1px solid transparent;border-radius:var(--r-sm);padding:7px 10px}
+.results button:hover,.results button:focus-visible{border-color:var(--line);background:var(--surface-2)}
+.results small{color:var(--muted);margin-left:auto;font-size:12px;white-space:nowrap}
+.results .empty{color:var(--muted);font-size:13px;padding:6px 10px}
+
+.detail{padding:20px;min-width:0}
+.detail .eyebrow{font-size:12px;color:var(--muted);letter-spacing:.06em;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.detail .name{font-family:var(--font-display);font-size:34px;font-weight:700;letter-spacing:.06em;margin:4px 0 2px;line-height:1.3}
+.detail .desc{margin:0 0 14px;font-size:16px}
+.detail section{border-top:1px solid var(--line);padding-top:12px;margin-top:12px;display:grid;gap:6px}
+.detail p{margin:0}
+.detail ul{margin:0;padding-left:1.1em}
+.swatch{display:inline-block;width:10px;height:10px;border-radius:50%;flex:none}
+.meter{display:inline-flex;gap:3px;align-items:center}
+.meter i{width:14px;height:5px;border-radius:2px;background:var(--line)}
+.meter i.on{background:var(--fg)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 12px;font-size:14px;line-height:1.6}
+button.chip:hover{background:var(--surface-2)}
+.chip[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.btn{text-decoration:none;color:inherit;display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;border:1px solid var(--line);background:var(--surface);padding:8px 18px;font-weight:500;font-size:14px;white-space:nowrap}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.danger{color:var(--danger)}
+.btn.small{padding:4px 12px;font-size:13px}
+.btn[disabled]{opacity:.45;cursor:default}
+.howto{display:grid;gap:12px}
+.howto ol{margin:0;padding-left:1.3em;display:grid;gap:6px}
+.note{font-size:13px;color:var(--muted)}
+.dyad{border-radius:var(--r-sm);background:var(--surface-2);padding:8px 12px;font-size:14px}
+.dyad b{font-family:var(--font-display);font-size:16px;margin-right:6px}
+
+/* guide */
+.guide-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.guide-grid{grid-template-columns:minmax(0,1fr)}}
+.step{padding:20px;display:grid;gap:14px;min-width:0}
+.step-head{display:flex;align-items:baseline;gap:10px}
+.step-head .num{font-family:var(--font-display);font-size:26px;color:var(--accent);line-height:1}
+.pad-wrap{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;gap:6px;max-width:420px;width:100%}
+.pad-y{writing-mode:vertical-rl;font-size:12px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;letter-spacing:.1em}
+.pad-x{grid-column:2;font-size:12px;color:var(--muted);display:flex;justify-content:space-between;letter-spacing:.1em}
+#pad{position:relative;aspect-ratio:1;max-width:100%;border-radius:var(--r);border:1px solid var(--line);touch-action:none;cursor:crosshair;overflow:hidden;
+  background:
+   radial-gradient(circle at 100% 0%, hsl(40 95% 60% / .30), transparent 55%),
+   radial-gradient(circle at 0% 0%, hsl(355 80% 58% / .26), transparent 55%),
+   radial-gradient(circle at 0% 100%, hsl(220 70% 55% / .26), transparent 55%),
+   radial-gradient(circle at 100% 100%, hsl(100 50% 50% / .24), transparent 55%), var(--surface)}
+#pad::before,#pad::after{content:"";position:absolute;background:var(--line)}
+#pad::before{left:50%;top:0;bottom:0;width:1px}
+#pad::after{top:50%;left:0;right:0;height:1px}
+#pad .q{position:absolute;font-size:12px;color:var(--muted);pointer-events:none;padding:8px 10px;line-height:1.4}
+#pad .q:nth-of-type(1){left:0;top:0}#pad .q:nth-of-type(2){right:0;top:0;text-align:right}
+#pad .q:nth-of-type(3){left:0;bottom:0}#pad .q:nth-of-type(4){right:0;bottom:0;text-align:right}
+#padDot{position:absolute;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;background:var(--fg);border:3px solid var(--surface);box-shadow:0 0 0 1px var(--fg),0 4px 12px rgba(0,0,0,.25);pointer-events:none;transition:left .08s,top .08s}
+.sugg{display:grid;gap:10px}
+@media (min-width:861px){.sugg-card{position:sticky;top:calc(72px + env(safe-area-inset-top, 0px))}}
+.sugg-item{border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:grid;gap:8px;background:var(--surface)}
+.sugg-item header{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sugg-item header b{font-family:var(--font-display);font-size:18px}
+.sugg-item header small{color:var(--muted);font-size:12px}
+.fit{margin-left:auto;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+/* log */
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:16px}
+@media (max-width:640px){.stats{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.stats .stat:last-child{grid-column:1/-1}}
+.stat{padding:14px 16px;min-width:0}
+.stat .k{font-size:12px;color:var(--muted);letter-spacing:.06em}
+.stat .v{font-family:var(--font-display);font-size:30px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.3}
+.stat .v small{font-family:var(--font-body);font-size:13px;color:var(--muted);font-weight:400;margin-left:4px}
+.log-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-bottom:16px}
+@media (max-width:860px){.log-grid{grid-template-columns:minmax(0,1fr)}}
+.panel{padding:16px 18px;display:grid;gap:12px;min-width:0}
+.bars{display:grid;gap:7px}
+.bar{display:grid;grid-template-columns:4.5em minmax(0,1fr) 3em;align-items:center;gap:10px;font-size:13px}
+.bar .track{height:10px;background:var(--surface-2);border-radius:5px;overflow:hidden}
+.bar .fill{height:100%;border-radius:5px;transition:width .5s cubic-bezier(.2,.7,.2,1)}
+.bar .pct{text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+.chart-box{overflow-x:auto}
+#trend{display:block;width:100%;min-width:420px;height:auto}
+#trend text{font-size:10px;fill:var(--muted);font-family:var(--font-body)}
+.entries{display:grid;gap:10px}
+.entry{padding:14px 16px;display:grid;gap:8px}
+.entry header{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.entry time{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.entry .mood{font-size:12px;padding:1px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted)}
+.entry .acts{margin-left:auto;display:flex;gap:6px}
+.entry p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.ichip{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:2px 12px 2px 4px;font-size:14px;background:var(--surface-2)}
+.ichip .lvl{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:10px;font-weight:700;font-variant-numeric:tabular-nums}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.banner{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 14px;border-radius:var(--r);background:var(--accent-soft);margin-bottom:16px;font-size:14px}
+.empty-state{padding:40px 24px;text-align:center;display:grid;gap:12px;justify-items:center}
+.empty-state p{margin:0;color:var(--muted);max-width:44ch}
+
+/* basket bar */
+.basket{position:fixed;left:0;right:0;bottom:0;z-index:25;padding-bottom:env(safe-area-inset-bottom, 0px);
+  background:color-mix(in srgb, var(--surface) 92%, transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line);
+  transform:translateY(0);transition:transform .3s cubic-bezier(.2,.8,.2,1)}
+.basket.off{transform:translateY(110%);visibility:hidden;transition:transform .3s cubic-bezier(.2,.8,.2,1),visibility 0s .3s}
+.basket .wrap{display:flex;align-items:center;gap:12px;padding-block:10px}
+.basket .lbl{font-size:12px;color:var(--muted);white-space:nowrap}
+.basket .list{display:flex;gap:6px;overflow-x:auto;flex:1;min-width:0;scrollbar-width:none;padding-block:2px}
+.basket .list::-webkit-scrollbar{display:none}
+.basket .chip{white-space:nowrap;flex:none}
+.basket .chip button{border:0;background:none;padding:0 0 0 2px;color:var(--muted);line-height:1;font-size:16px}
+
+/* sheet */
+.scrim{position:fixed;inset:0;z-index:40;background:rgba(10,12,20,.42);display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;transition:opacity .2s}
+.scrim.show{opacity:1}
+.sheet{width:min(560px,100%);max-height:calc(100% - 32px);overflow:auto;padding:22px;display:grid;gap:16px;transform:translateY(12px);transition:transform .25s cubic-bezier(.2,.8,.2,1)}
+.scrim.show .sheet{transform:none}
+@media (max-width:600px){.scrim{align-items:flex-end;padding:0}.sheet{width:100%;max-height:88%;border-radius:18px 18px 0 0;padding-bottom:calc(22px + env(safe-area-inset-bottom, 0px));padding-left:max(22px, env(safe-area-inset-left, 0px));padding-right:max(22px, env(safe-area-inset-right, 0px))}}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.items{display:grid;gap:14px}
+.item{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 10px;align-items:center}
+.item .nm{font-weight:700}
+.item .nm small{font-weight:400;color:var(--muted);margin-left:6px;font-size:12px}
+.item .val{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;text-align:right;min-width:5.5em}
+.item input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--accent)}
+.x{border:0;background:none;color:var(--muted);font-size:18px;line-height:1;padding:4px}
+textarea{width:100%;min-height:84px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--surface);padding:10px 12px;resize:vertical}
+textarea:focus{outline:2px solid var(--accent);outline-offset:-1px}
+label.f{display:grid;gap:6px;font-size:13px;color:var(--muted)}
+.sheet-actions{display:flex;justify-content:flex-end;gap:8px}
+
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom, 0px));transform:translate(-50%,20px);z-index:50;background:var(--fg);color:var(--bg);
+  padding:9px 18px;border-radius:999px;font-size:14px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;display:flex;gap:12px;align-items:center;max-width:calc(100% - 32px)}
+.toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.toast button{background:none;border:0;color:inherit;text-decoration:underline;padding:0}
+footer{padding-block:24px 8px;color:var(--muted);font-size:12px}
+footer p{margin:0 0 4px;max-width:80ch}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><g transform="translate(16 16)"><path d="M0-14A14 14 0 0 1 9.9-9.9L0 0Z" fill="#f2c230"/><path d="M9.9-9.9A14 14 0 0 1 14 0L0 0Z" fill="#8cc152"/><path d="M14 0A14 14 0 0 1 9.9 9.9L0 0Z" fill="#2f9e60"/><path d="M9.9 9.9A14 14 0 0 1 0 14L0 0Z" fill="#2aa5c8"/><path d="M0 14A14 14 0 0 1-9.9 9.9L0 0Z" fill="#4170d6"/><path d="M-9.9 9.9A14 14 0 0 1-14 0L0 0Z" fill="#9a5bb5"/><path d="M-14 0A14 14 0 0 1-9.9-9.9L0 0Z" fill="#e34852"/><path d="M-9.9-9.9A14 14 0 0 1 0-14L0 0Z" fill="#f08a30"/><circle r="5" fill="var(--bg)"/></g></svg>
+      <h1>きもちの輪</h1><span>感情ラベリング・ホイール</span>
+    </div>
+    <nav class="tabs" aria-label="表示の切り替え">
+      <a href="#wheel" data-view="wheel">ホイール</a>
+      <a href="#guide" data-view="guide">ガイド</a>
+      <a href="#log" data-view="log">記録</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- WHEEL -->
+  <section class="view" id="view-wheel" aria-labelledby="t-wheel">
+    <h2 id="t-wheel" class="sr">感情の輪</h2>
+    <p class="lede">中心の<b>8つの基本感情</b>から外へ進むほど、言葉は細かくなります。ぼんやりした気持ちに近い色を選び、いちばんしっくりくる言葉を探してください。</p>
+    <div class="wheel-grid">
+      <div class="card wheel-card">
+        <div class="wheel-tools">
+          <nav class="crumbs" id="crumbs" aria-label="現在の位置"></nav>
+          <div class="legend-tiers" aria-hidden="true"><span><b style="opacity:.45"></b>弱い</span><span><b style="opacity:.75"></b>中</span><span><b></b>強い</span></div>
+        </div>
+        <svg id="wheel" viewBox="-214 -214 428 428" role="group" aria-label="感情の輪。基本感情、強さ、細かい感情語の3重の輪">
+          <g id="segs"></g>
+          <path id="hl" d=""></path>
+          <g id="dots"></g>
+          <g id="center" role="button" tabindex="0" aria-label="ひとつ外側の表示に戻る">
+            <circle r="48"></circle>
+            <text id="cMain" y="-4">きもち</text>
+            <text id="cSub" y="16">8つの基本感情</text>
+          </g>
+        </svg>
+      </div>
+      <div class="side">
+        <div class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="q" type="search" placeholder="言葉で探す（例：寂しい、焦り）" autocomplete="off" aria-label="感情の言葉を検索">
+          <kbd aria-hidden="true">/</kbd>
+          <div class="results" id="results" hidden></div>
+        </div>
+        <article class="card detail" id="detail" aria-live="polite"></article>
+      </div>
+    </div>
+  </section>
+
+  <!-- GUIDE -->
+  <section class="view" id="view-guide" aria-labelledby="t-guide" hidden>
+    <p class="lede">言葉が浮かばないときは、<b>体の感覚</b>と<b>気分の位置</b>から候補をしぼります。どちらか片方だけでも大丈夫です。</p>
+    <div class="guide-grid">
+      <div style="display:grid;gap:20px;min-width:0">
+        <div class="card step">
+          <div class="step-head"><span class="num">1</span><h2 id="t-guide">体はどんな感じ？</h2></div>
+          <p class="note" style="margin:0">気持ちは先に体に出ることがよくあります。当てはまるものをいくつでも。</p>
+          <div class="chips" id="bodyChips"></div>
+        </div>
+        <div class="card step">
+          <div class="step-head"><span class="num">2</span><h2>いまの気分はどのあたり？</h2></div>
+          <p class="note" style="margin:0">横は心地よさ、縦はエネルギーの高さ。タップかドラッグで点を置きます（矢印キーでも動かせます）。</p>
+          <div class="pad-wrap">
+            <div class="pad-y" aria-hidden="true"><span>たかぶり</span><span>しずか</span></div>
+            <div id="pad" tabindex="0" role="slider" aria-label="気分の位置。横が心地よさ、縦がエネルギー" aria-valuetext="未設定">
+              <span class="q">緊張・いらだち</span><span class="q">わくわく・高揚</span><span class="q">沈み・だるさ</span><span class="q">穏やか・安心</span>
+              <div id="padDot" hidden></div>
+            </div>
+            <div class="pad-x" aria-hidden="true"><span>← 不快</span><span>快 →</span></div>
+          </div>
+          <div><button class="btn small" id="guideReset" type="button">選び直す</button></div>
+        </div>
+      </div>
+      <div class="card step sugg-card">
+        <div class="step-head"><span class="num">3</span><h2>近そうな気持ち</h2></div>
+        <p class="note" style="margin:0" id="suggNote"></p>
+        <div class="sugg" id="sugg"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LOG -->
+  <section class="view" id="view-log" aria-labelledby="t-log" hidden>
+    <h2 id="t-log" class="sr">記録</h2>
+    <div id="logRoot"></div>
+  </section>
+
+  <footer>
+    <p>感情の分類はロバート・プルチックの「感情の輪」をもとに、日本語の語彙で細分化しています。気持ちに名前をつけること（感情ラベリング）は、気持ちの強さをやわらげ、扱いやすくすると報告されています。</p>
+    <p>このツールは自己理解のためのもので、診断や治療の代わりにはなりません。つらい状態が続くときは、医療機関や相談窓口に相談してください。記録はこのブラウザの中だけに保存されます。</p>
+  </footer>
+</main>
+
+<div class="basket off" id="basket" aria-label="選んだ気持ち">
+  <div class="wrap">
+    <span class="lbl">いまの気持ち</span>
+    <div class="list" id="basketList"></div>
+    <button class="btn primary" id="openSave" type="button">記録する</button>
+  </div>
+</div>
+
+<div class="scrim" id="scrim" hidden>
+  <div class="card sheet" role="dialog" aria-modal="true" aria-labelledby="t-save">
+    <div class="sheet-head"><h2 id="t-save">気持ちを記録する</h2><button class="x" id="closeSave" type="button" aria-label="閉じる">×</button></div>
+    <div class="items" id="saveItems"></div>
+    <div id="saveInsight" style="display:grid;gap:8px"></div>
+    <label class="f" for="note">何があった？（任意）<textarea id="note" placeholder="きっかけ、考えていたこと、体の感じなど"></textarea></label>
+    <div class="sheet-actions"><button class="btn" id="cancelSave" type="button">あとで</button><button class="btn primary" id="doSave" type="button">記録する</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+'use strict';
+
+/* ───────────── data ───────────── */
+// order matters: opposite emotions sit 4 apart (Plutchik)
+const CORES = [
+ {id:'joy',name:'喜び',h:47,s:92,l:52,
+  msg:'大切なものが満たされているサイン。その状態を続けたい、分かち合いたいという気持ちにつながります。',
+  body:['胸が軽い','顔がゆるむ','体があたたかい'],
+  care:'何がうれしかったのかを具体的に味わう。誰かに話すと、喜びは長持ちします。',
+  levels:[
+   {id:'serenity',name:'平穏',v:.7,a:-.55,desc:'穏やかで落ち着いた、心地よい状態',words:[['安らぎ','心が静かに落ち着いている'],['ほっとする','緊張がほどけて安心した'],['満ち足りた','今のままで十分だと感じる']]},
+   {id:'joy-m',name:'喜び',v:.8,a:.35,desc:'望みが満たされた明るい気持ち',words:[['うれしい','望んでいたことが起きて心がはずむ'],['楽しい','していることに夢中で心地よい'],['誇らしい','自分の行いや成果を認められる']]},
+   {id:'ecstasy',name:'恍惚',v:.9,a:.85,desc:'我を忘れるほどの強い喜び',words:[['歓喜','抑えきれないほどの大きな喜び'],['高揚','気分が高まり、力がみなぎる'],['至福','この上なく満たされている']]}]},
+ {id:'trust',name:'信頼',h:88,s:52,l:47,
+  msg:'この人・この場所は安全だというサイン。つながりを深めたい、頼りたいという気持ちにつながります。',
+  body:['肩の力が抜ける','呼吸が深くなる','胸があたたかい'],
+  care:'支えてくれる人に感謝を伝える。安心できる人や場所を覚えておくと、つらいときの助けになります。',
+  levels:[
+   {id:'acceptance',name:'受容',v:.45,a:-.45,desc:'相手や状況をそのまま受け入れる穏やかな気持ち',words:[['受け入れる','ありのままを否定せずに認める'],['親しみ','近しく感じ、気を許せる'],['安心感','頼れるものがある落ち着き']]},
+   {id:'trust-m',name:'信頼',v:.6,a:-.1,desc:'相手を頼り、心を許せる気持ち',words:[['頼もしい','任せられると感じる'],['感謝','してもらったことをありがたく思う'],['共感','相手の気持ちが自分ごとのようにわかる']]},
+   {id:'admiration',name:'敬愛',v:.7,a:.3,desc:'深く敬い、慕う強い気持ち',words:[['尊敬','相手の人柄や力を高く仰ぐ'],['憧れ','あんなふうになりたいと強く惹かれる'],['献身','相手のために尽くしたいと思う']]}]},
+ {id:'fear',name:'恐れ',h:152,s:52,l:36,
+  msg:'危険が近づいているかもしれないというサイン。身を守る、備えるための気持ちです。',
+  body:['胸がざわざわする','息が浅く速い','手足が冷える'],
+  care:'何が起きるのを恐れているか書き出し、今できる小さな備えを1つ決める。息を長く吐くと体が落ち着きます。',
+  levels:[
+   {id:'apprehension',name:'不安',v:-.45,a:.35,desc:'はっきりしない脅威への落ち着かなさ',words:[['心配','先のことが気がかりで落ち着かない'],['緊張','身構えて体がこわばる'],['そわそわ','理由がはっきりしない落ち着かなさ']]},
+   {id:'fear-m',name:'恐れ',v:-.65,a:.6,desc:'危険を感じて身を守りたい気持ち',words:[['怖い','何かに脅かされている'],['焦り','間に合わない、失敗しそうで急き立てられる'],['心細い','頼るものがなく弱々しい']]},
+   {id:'terror',name:'恐怖',v:-.85,a:.9,desc:'体がすくむほどの強い恐れ',words:[['戦慄','身の毛がよだつほど怖い'],['パニック','考えがまとまらないほどの強い恐れ'],['怯え','縮こまって逃げ出したくなる']]}]},
+ {id:'surprise',name:'驚き',h:193,s:64,l:43,
+  msg:'予想外のことが起きたというサイン。注意を向け直し、状況をつかみ直すための気持ちです。',
+  body:['目が見開く','息が一瞬止まる','体がびくっとする'],
+  care:'いったん立ち止まって状況を整理する。わかっていることと、まだわからないことを分けてみる。',
+  levels:[
+   {id:'distraction',name:'放心',v:-.15,a:-.35,desc:'予想外のことに気持ちがついていかない状態',words:[['ぼんやり','頭が働かず、心ここにあらず'],['きょとん','何が起きたのか飲み込めない'],['戸惑い','どうすればいいかわからず迷う']]},
+   {id:'surprise-m',name:'驚き',v:.05,a:.7,desc:'思いがけないことへの反応',words:[['びっくり','突然のことに心がはねる'],['意外','思っていたのと違う'],['動揺','心が揺さぶられて落ち着かない']]},
+   {id:'amazement',name:'驚嘆',v:.2,a:.9,desc:'圧倒されるほどの驚き',words:[['感嘆','すばらしさに思わず息をのむ'],['衝撃','強く打たれるような驚き'],['唖然','あまりのことに言葉を失う']]}]},
+ {id:'sadness',name:'悲しみ',h:221,s:62,l:52,
+  msg:'大切なものを失った、または得られなかったというサイン。立ち止まって休み、支えを求めるための気持ちです。',
+  body:['胸が重い','喉がつまる','体がだるい'],
+  care:'無理に元気を出さず、休む・泣く・誰かに話す。失ったものが自分にとって大切だったと認めることも助けになります。',
+  levels:[
+   {id:'pensiveness',name:'哀愁',v:-.35,a:-.45,desc:'しんみりとした静かな悲しみ',words:[['寂しい','人やぬくもりが足りない感じ'],['物足りない','何かが欠けている感じ'],['切ない','胸がしめつけられるような思い']]},
+   {id:'sadness-m',name:'悲しみ',v:-.65,a:-.5,desc:'何かを失った、得られなかったつらさ',words:[['落胆','期待が外れて気持ちが沈む'],['孤独','誰ともつながっていない感じ'],['無力感','自分には何もできないと感じる']]},
+   {id:'grief',name:'悲嘆',v:-.9,a:-.6,desc:'打ちのめされるほどの深い悲しみ',words:[['絶望','望みがまったく見えない'],['喪失感','大事なものがぽっかり抜け落ちた'],['悲痛','心が裂けるような深い悲しみ']]}]},
+ {id:'disgust',name:'嫌悪',h:283,s:42,l:52,
+  msg:'これは自分にとって有害、受け入れがたいというサイン。距離を取り、境界線を引くための気持ちです。',
+  body:['顔をしかめる','胃がむかむかする','体が引ける'],
+  care:'何が受け入れがたいのかを言葉にして、距離を置く・断るなど自分を守る線を引く。',
+  levels:[
+   {id:'boredom',name:'退屈',v:-.3,a:-.75,desc:'興味がわかず、気が乗らない状態',words:[['うんざり','同じことの繰り返しに飽き飽きする'],['気だるい','何にも気が乗らない'],['無関心','心が動かず、どうでもいい']]},
+   {id:'disgust-m',name:'嫌悪',v:-.6,a:.15,desc:'受け入れられず遠ざけたい気持ち',words:[['不快','生理的に受けつけない'],['抵抗感','受け入れたくない気持ち'],['気まずい','その場にいるのが居心地悪い']]},
+   {id:'loathing',name:'憎悪',v:-.85,a:.45,desc:'激しく憎み、拒む気持ち',words:[['憎しみ','相手の存在そのものが許せない'],['拒絶','完全に締め出したい'],['忌まわしい','思い出すのも嫌なほど']]}]},
+ {id:'anger',name:'怒り',h:356,s:74,l:54,
+  msg:'大切なものが侵された、不公平だというサイン。自分の境界を守り、状況を変えるための気持ちです。',
+  body:['顔や頭が熱い','歯を食いしばる','拳に力が入る'],
+  care:'まず数秒待って、体の熱が引くのを待つ。何が大事にされなかったのかを考え、責めるのではなく「お願い」として伝える。',
+  levels:[
+   {id:'annoyance',name:'苛立ち',v:-.45,a:.45,desc:'小さな引っかかりによるいらだち',words:[['イライラ','思い通りにならず、じりじりする'],['不満','納得できない思いが残る'],['もどかしい','うまく進まず歯がゆい']]},
+   {id:'anger-m',name:'怒り',v:-.7,a:.7,desc:'大切なものを侵されたときの強い反発',words:[['腹立たしい','理不尽さに怒りがこみ上げる'],['憤り','不正や不公平への強い怒り'],['悔しい','負けたこと、できなかったことへの怒り']]},
+   {id:'rage',name:'激怒',v:-.9,a:.95,desc:'抑えがたいほどの激しい怒り',words:[['激昂','感情を抑えられないほどの怒り'],['憤慨','ひどく腹を立て、非難したい'],['敵意','相手を攻撃したい気持ち']]}]},
+ {id:'anticipation',name:'期待',h:27,s:88,l:54,
+  msg:'何かが起きそう、手に入りそうだというサイン。準備をして、そこへ向かっていくための気持ちです。',
+  body:['前のめりになる','胸が高鳴る','目が冴える'],
+  care:'楽しみな気持ちを具体的な計画に変える。思い通りにいかなかった場合のことも少しだけ考えておくと安心です。',
+  levels:[
+   {id:'interest',name:'関心',v:.35,a:.15,desc:'何かに注意が向き、知りたくなる',words:[['興味','もっと知りたいと惹かれる'],['好奇心','新しいことを試したくなる'],['注目','何かに意識が向いている']]},
+   {id:'anticipation-m',name:'期待',v:.6,a:.55,desc:'これから起きることを待ち望む気持ち',words:[['わくわく','これからのことが楽しみ'],['希望','きっと良くなると思える'],['意欲','やってみたいと力がわく']]},
+   {id:'vigilance',name:'警戒',v:-.1,a:.6,desc:'先を見越して張りつめた状態',words:[['用心','何か起きないかと注意深くなる'],['身構え','次に備えて気を張る'],['執念','どうしても成し遂げたいと強く思う']]}]}
+];
+const TIERS = ['弱い','中くらい','強い'];
+
+// Plutchik dyads: key = indices "i-j" (i<j)
+const DYADS = {
+ '0-1':['愛','喜びと信頼が重なった、あたたかく近づきたい気持ち'],
+ '1-2':['従順','相手を信じて身をゆだねる気持ち'],
+ '2-3':['畏怖','大きな存在に圧倒され、おそれ敬う気持ち'],
+ '3-4':['失望','思いがけず期待を裏切られた気持ち'],
+ '4-5':['後悔','してしまったことを悔やみ、自分を責める気持ち'],
+ '5-6':['軽蔑','相手を見下し、受け入れない気持ち'],
+ '6-7':['闘争心','立ち向かって勝ち取ろうとする気持ち'],
+ '0-7':['楽観','この先はうまくいくと明るく構える気持ち'],
+ '0-2':['罪悪感','楽しんでいいのかと後ろめたい気持ち'],
+ '1-3':['好奇心','安心できるからこそ、新しさに惹かれる気持ち'],
+ '2-4':['絶望','怖さと悲しみで先が見えない気持ち'],
+ '3-5':['不信','予想外のことに疑いと抵抗を感じる気持ち'],
+ '4-6':['羨望','持っていないつらさと、不公平への怒り'],
+ '5-7':['冷笑','どうせうまくいかないと斜に構える気持ち'],
+ '0-6':['誇り','やり遂げた喜びと、負けないという強さ'],
+ '1-7':['希望','信じて待てば良くなると思える気持ち'],
+ '0-3':['うれしい驚き','思いがけない良い出来事への喜び'],
+ '1-4':['感傷','大切な思い出に浸る、しみじみした気持ち'],
+ '2-5':['羞恥','人目が怖く、自分が嫌になる気持ち'],
+ '3-6':['憤慨','思いがけない理不尽への怒り'],
+ '4-7':['悲観','この先も悪くなると予想する気持ち'],
+ '0-5':['背徳感','いけないとわかっていて惹かれる気持ち'],
+ '1-6':['支配欲','相手を思い通りにしたい気持ち'],
+ '2-7':['予期不安','これから起きることへの不安']
+};
+
+const BODY = [
+ ['胸が重い',{sadness:1}],['喉がつまる',{sadness:.8,fear:.3}],['体がだるい・重い',{sadness:.5,disgust:.5}],
+ ['顔や頭が熱い',{anger:1}],['歯を食いしばる・肩に力',{anger:.7,fear:.3}],['胸がざわざわする',{fear:1}],
+ ['息が浅い・速い',{fear:.8,surprise:.3}],['心臓がドキドキ',{fear:.5,anticipation:.5,surprise:.4}],['胃がむかむかする',{disgust:1}],
+ ['体がびくっとした',{surprise:1}],['胸があたたかい',{trust:.8,joy:.5}],['体が軽い',{joy:1}],
+ ['力が抜けて楽',{trust:.5,joy:.5}],['前のめり・力がわく',{anticipation:1,joy:.3}]
+];
+
+/* ───────────── model ───────────── */
+const nodes = [], byId = Object.create(null);
+CORES.forEach((c, ci) => {
+  c.idx = ci;
+  const cn = {id:c.id, depth:1, name:c.name, core:c, x0:ci/8, x1:(ci+1)/8, children:[]};
+  nodes.push(cn); byId[cn.id] = cn;
+  c.levels.forEach((lv, li) => {
+    lv.tier = li;
+    const w = (cn.x1-cn.x0)/c.levels.length;
+    const ln = {id:lv.id, depth:2, name:lv.name, desc:lv.desc, core:c, level:lv, parent:cn, x0:cn.x0+li*w, x1:cn.x0+(li+1)*w, children:[]};
+    cn.children.push(ln); nodes.push(ln); byId[ln.id] = ln;
+    lv.words.forEach(([nm, d], wi) => {
+      const ww = w/lv.words.length;
+      const wn = {id:lv.id+'.'+wi, depth:3, name:nm, desc:d, core:c, level:lv, parent:ln, x0:ln.x0+wi*ww, x1:ln.x0+(wi+1)*ww, children:[]};
+      ln.children.push(wn); nodes.push(wn); byId[wn.id] = wn;
+    });
+  });
+});
+const WORD_COUNT = nodes.length - CORES.length; // levels + words are the "fine" labels
+
+/* colors */
+function hsl2rgb(h,s,l){s/=100;l/=100;const k=n=>(n+h/30)%12,a=s*Math.min(l,1-l),f=n=>l-a*Math.max(-1,Math.min(k(n)-3,9-k(n),1));return[f(0),f(8),f(4)];}
+function lum([r,g,b]){const t=v=>v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4);return .2126*t(r)+.7152*t(g)+.0722*t(b);}
+function tone(c, tier){ // tier: -1 core, 0 mild, 1 base, 2 strong
+  const dl = tier===-1?-3:[17,0,-11][tier], ds = tier===-1?4:[-12,0,4][tier];
+  const L = Math.max(18,Math.min(86,c.l+dl)), S = Math.max(20,Math.min(100,c.s+ds));
+  const rgb = hsl2rgb(c.h,S,L);
+  return {fill:`hsl(${c.h} ${S}% ${L}%)`, ink: lum(rgb) > .32 ? '#171923' : '#ffffff'};
+}
+nodes.forEach(n => {
+  if (n.depth===1) n.color = tone(n.core,-1);
+  else n.color = tone(n.core, n.level.tier);
+});
+const coreColor = c => tone(c,-1).fill;
+
+/* ───────────── storage ───────────── */
+const KEY = 'kimochi-wheel.v1';
+let store = {entries:[], basket:[]};
+try { const raw = localStorage.getItem(KEY); if (raw) { const s = JSON.parse(raw); if (s && Array.isArray(s.entries)) store = {entries:s.entries.filter(validEntry), basket:(s.basket||[]).filter(b=>b&&byId[b.id])}; } } catch(e) {}
+function persist(){ try { localStorage.setItem(KEY, JSON.stringify(store)); } catch(e) {} }
+function validEntry(e){ return e && typeof e.t==='number' && Array.isArray(e.items) && e.items.every(i=>i && byId[i.id]); }
+
+/* ───────────── helpers ───────────── */
+const $ = (s, r=document) => r.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+const tierOf = v => v<34?0:v<67?1:2;
+const pathOf = n => n.depth===1 ? '基本感情' : n.depth===2 ? `${n.core.name}・${TIERS[n.level.tier]}` : `${n.core.name} › ${n.level.name}`;
+const valence = n => n.depth===1 ? n.core.levels[1].v : n.level.v;
+function dyadFor(a, b){
+  const i = Math.min(a.idx,b.idx), j = Math.max(a.idx,b.idx);
+  if (j - i === 4) return [`揺れ動き`, `${a.name}と${b.name}は正反対の感情です。両方あるのは自然なことで、それだけ大事な出来事だというサインです。`];
+  return DYADS[`${i}-${j}`] || null;
+}
+let toastTimer;
+function toast(msg, action){
+  const t = $('#toast'); t.innerHTML = esc(msg);
+  if (action) { const b = document.createElement('button'); b.type='button'; b.textContent = action[0]; b.onclick = () => { action[1](); t.classList.remove('show'); }; t.appendChild(b); }
+  t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+/* ───────────── wheel ───────────── */
+const SVGNS = 'http://www.w3.org/2000/svg';
+const RINGS = {1:[52,100], 2:[102,150], 3:[152,200]};
+const BASE_FS = {1:16, 2:14, 3:13};
+const TAU = Math.PI*2;
+const segs = $('#segs'), dotsG = $('#dots'), hl = $('#hl');
+let focus = null, active = null;
+let view = targetView(null), raf = 0;
+
+nodes.forEach(n => {
+  const g = document.createElementNS(SVGNS,'g');
+  g.setAttribute('class', 'seg d'+n.depth);
+  g.setAttribute('role','button');
+  g.setAttribute('aria-label', `${n.name}（${pathOf(n)}）`);
+  const p = document.createElementNS(SVGNS,'path');
+  p.setAttribute('fill', n.color.fill);
+  if (n.depth===3) p.setAttribute('fill-opacity', '.34');
+  const t = document.createElementNS(SVGNS,'text');
+  t.textContent = n.name;
+  t.setAttribute('fill', n.depth===3 ? 'var(--fg)' : n.color.ink);
+  g.append(p, t); segs.appendChild(g);
+  n.g = g; n.p = p; n.t = t; n.len = [...n.name].length;
+  g.addEventListener('click', () => onSeg(n));
+  g.addEventListener('keydown', e => { if (e.key==='Enter'||e.key===' ') { e.preventDefault(); onSeg(n); } });
+  if (n.depth===3) { const d = document.createElementNS(SVGNS,'circle'); d.setAttribute('r','3.2'); d.setAttribute('class','dot'); d.style.display='none'; dotsG.appendChild(d); n.dot = d; }
+});
+
+function targetView(f){
+  if (!f) return {f0:0, f1:1, off:.5/8};
+  return {f0:f.x0, f1:f.x1, off:.5/f.children.length};
+}
+function arcPath(a0, a1, r0, r1){
+  if (a1 - a0 < 1e-4) return '';
+  if (a1 - a0 > TAU - 1e-3) return `M${r1},0A${r1},${r1},0,1,1,${-r1},0A${r1},${r1},0,1,1,${r1},0ZM${r0},0A${r0},${r0},0,1,0,${-r0},0A${r0},${r0},0,1,0,${r0},0Z`;
+  const c0=Math.cos(a0), s0=Math.sin(a0), c1=Math.cos(a1), s1=Math.sin(a1), lg = a1-a0 > Math.PI ? 1 : 0;
+  const f = v => v.toFixed(2);
+  return `M${f(r1*c0)},${f(r1*s0)}A${r1},${r1},0,${lg},1,${f(r1*c1)},${f(r1*s1)}L${f(r0*c1)},${f(r0*s1)}A${r0},${r0},0,${lg},0,${f(r0*c0)},${f(r0*s0)}Z`;
+}
+function angles(n){
+  const span = view.f1 - view.f0;
+  const t0 = clamp((n.x0 - view.f0)/span, 0, 1), t1 = clamp((n.x1 - view.f0)/span, 0, 1);
+  return [(t0 - view.off)*TAU - Math.PI/2, (t1 - view.off)*TAU - Math.PI/2];
+}
+function render(){
+  for (const n of nodes) {
+    const [a0, a1] = angles(n), [r0, r1] = RINGS[n.depth];
+    const span = a1 - a0;
+    n.p.setAttribute('d', arcPath(a0, a1, r0, r1));
+    n.visible = span > 1e-3;
+    // label placement
+    const t = n.t;
+    if (!n.visible) { t.style.display='none'; if (n.dot) n.dot.style.display='none'; continue; }
+    const full = span > TAU - 1e-3;
+    const rm = (r0 + r1)/2, ringW = r1 - r0, arcLen = span*rm;
+    let am = full ? -Math.PI/2 : (a0 + a1)/2;
+    let fs = 0, rot, x = rm*Math.cos(am), y = rm*Math.sin(am);
+    const base = BASE_FS[n.depth] + (focus ? 1 : 0);
+    if (full || arcLen > ringW*1.15) {          // tangential
+      fs = Math.min(base, (arcLen - 10)/n.len);
+      rot = am*180/Math.PI + 90;
+      const norm = ((am % TAU) + TAU) % TAU;
+      if (norm > 0.02 && norm < Math.PI - 0.02) rot -= 180;
+    }
+    if (fs < 8) {                                // radial
+      fs = Math.min(base, (ringW - 10)/n.len, arcLen*.82);
+      rot = am*180/Math.PI;
+      if (Math.cos(am) < 0) rot += 180;
+    }
+    if (fs < 7) { t.style.display='none'; }
+    else { t.style.display=''; t.setAttribute('font-size', fs.toFixed(1)); t.setAttribute('transform', `translate(${x.toFixed(2)},${y.toFixed(2)}) rotate(${rot.toFixed(2)})`); }
+    if (n.dot) {
+      const on = isPicked(n.id);
+      n.dot.style.display = on ? '' : 'none';
+      if (on) { const ad = (a0+a1)/2; n.dot.setAttribute('cx', (206*Math.cos(ad)).toFixed(2)); n.dot.setAttribute('cy', (206*Math.sin(ad)).toFixed(2)); }
+    }
+  }
+  if (active && active.visible) { const [a0,a1] = angles(active), [r0,r1] = RINGS[active.depth]; hl.setAttribute('d', arcPath(a0,a1,r0,r1)); }
+  else hl.setAttribute('d','');
+}
+function syncTabIndex(){
+  for (const n of nodes) {
+    n.g.setAttribute('tabindex', n.visible ? '0' : '-1');
+    n.g.setAttribute('aria-hidden', n.visible ? 'false' : 'true');
+    n.g.classList.toggle('sel', isPicked(n.id));
+  }
+}
+const ease = k => k<.5 ? 4*k*k*k : 1 - Math.pow(-2*k+2,3)/2;
+function setFocus(f){
+  focus = f;
+  const from = {...view}, to = targetView(f), t0 = performance.now(), dur = reduceMotion.matches ? 0 : 620;
+  cancelAnimationFrame(raf);
+  const step = now => {
+    const k = dur ? Math.min(1,(now - t0)/dur) : 1, e = ease(k);
+    view = {f0: from.f0+(to.f0-from.f0)*e, f1: from.f1+(to.f1-from.f1)*e, off: from.off+(to.off-from.off)*e};
+    render();
+    if (k < 1) raf = requestAnimationFrame(step); else syncTabIndex();
+  };
+  raf = requestAnimationFrame(step);
+  renderCenter(); renderCrumbs();
+}
+function renderCenter(){
+  const m = $('#cMain'), s = $('#cSub');
+  if (!focus) { m.textContent = 'きもち'; m.setAttribute('font-size','17'); s.textContent = '8つの基本感情'; return; }
+  m.textContent = focus.name; m.setAttribute('font-size', focus.name.length > 3 ? '14' : '17');
+  s.textContent = '← もどる';
+}
+function renderCrumbs(){
+  const chain = []; for (let n = focus; n; n = n.parent) chain.unshift(n);
+  const parts = [`<button type="button" data-focus="" ${!focus?'aria-current="true"':''}>すべて</button>`];
+  chain.forEach((n,i) => parts.push(`<i>›</i><button type="button" data-focus="${n.id}" ${i===chain.length-1?'aria-current="true"':''}>${esc(n.name)}</button>`));
+  $('#crumbs').innerHTML = parts.join('');
+}
+$('#crumbs').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; const n = byId[b.dataset.focus] || null; setFocus(n); if (n) showDetail(n); });
+function zoomOut(){ if (focus) { const p = focus.parent || null; setFocus(p); showDetail(p || null); } }
+$('#center').addEventListener('click', zoomOut);
+$('#center').addEventListener('keydown', e => { if (e.key==='Enter'||e.key===' ') { e.preventDefault(); zoomOut(); } });
+
+function onSeg(n){
+  if (n.depth === 1) setFocus(focus === n ? null : n);
+  else if (n.depth === 2) setFocus(focus === n ? n.parent : n);
+  else if (!focus) setFocus(n.parent.parent);
+  showDetail(n);
+  if (n.depth === 3 && matchMedia('(max-width: 860px)').matches) $('#detail').scrollIntoView({behavior: reduceMotion.matches?'auto':'smooth', block:'nearest'});
+}
+
+/* detail panel */
+function meter(tier){ return `<span class="meter" aria-label="強さ：${TIERS[tier]}">${[0,1,2].map(i=>`<i class="${i<=tier?'on':''}"></i>`).join('')}</span>`; }
+function showDetail(n){
+  active = n; render();
+  const d = $('#detail');
+  if (!n) { d.innerHTML = howtoHTML(); return; }
+  const c = n.core, opp = CORES[(c.idx+4)%8];
+  const picked = isPicked(n.id);
+  const sw = `<span class="swatch" style="background:${n.color.fill}"></span>`;
+  let h = `<div class="eyebrow">${sw}${esc(pathOf(n))}${n.depth>1?' '+meter(n.level.tier):''}</div>
+    <div class="name">${esc(n.name)}</div>
+    <p class="desc">${esc(n.depth===1 ? c.levels[1].desc : n.desc)}</p>
+    <div class="toolbar"><button class="btn ${picked?'':'primary'}" type="button" data-pick="${n.id}">${picked?'選択を外す':'この気持ちを選ぶ'}</button>
+    ${n.depth<3 ? `<button class="btn" type="button" data-zoom="${n.id}">${focus===n?'外側へ戻る':'細かく見る'}</button>`:''}</div>`;
+  if (n.depth === 3) {
+    const sib = n.parent.children.filter(x => x !== n);
+    const lv = c.levels.filter(l => l !== n.level);
+    h += `<section><h3>近い言葉</h3><div class="chips">${sib.map(x=>chipBtn(x)).join('')}${lv.flatMap(l=>byId[l.id].children).map(x=>chipBtn(x)).join('')}</div></section>`;
+  } else if (n.depth === 2) {
+    h += `<section><h3>この強さの言葉</h3><div class="chips">${n.children.map(x=>chipBtn(x)).join('')}</div></section>`;
+  } else {
+    h += `<section><h3>強さのちがい</h3><div class="chips">${n.children.map(x=>`<button class="chip" type="button" data-show="${x.id}"><span class="swatch" style="background:${x.color.fill}"></span>${esc(x.name)}</button>`).join('')}</div></section>`;
+  }
+  h += `<section><h3>この気持ちのメッセージ</h3><p>${esc(c.msg)}</p></section>
+    <section><h3>体に出やすいサイン</h3><div class="chips">${c.body.map(b=>`<span class="chip">${esc(b)}</span>`).join('')}</div></section>
+    <section><h3>こうしてみる</h3><p>${esc(c.care)}</p></section>`;
+  if (n.depth === 1) {
+    const nb = [CORES[(c.idx+7)%8], CORES[(c.idx+1)%8]];
+    h += `<section><h3>となりの感情と混ざると</h3>${nb.map(o=>{const dy = dyadFor(c,o); return `<div class="dyad"><b>${esc(dy[0])}</b>${esc(c.name)}＋${esc(o.name)}。${esc(dy[1])}</div>`;}).join('')}</section>`;
+  }
+  h += `<section><h3>反対側の感情</h3><p><button class="chip" type="button" data-show="${opp.id}"><span class="swatch" style="background:${coreColor(opp)}"></span>${esc(opp.name)}</button></p></section>`;
+  d.innerHTML = h;
+}
+function chipBtn(x){ return `<button class="chip" type="button" data-show="${x.id}" aria-pressed="${isPicked(x.id)}">${esc(x.name)}</button>`; }
+function howtoHTML(){
+  return `<div class="howto">
+    <div class="eyebrow">使い方</div>
+    <div class="name" style="font-size:26px">気持ちに名前をつける</div>
+    <ol>
+      <li>いまの気持ちに近い<b>基本感情</b>（内側の輪）をタップします。</li>
+      <li>強さの輪と、外側の<b>細かい言葉</b>から、しっくりくるものを選びます。</li>
+      <li>いくつ選んでもかまいません。選んだら下の「記録する」で強さとメモを残せます。</li>
+    </ol>
+    <p class="note">言葉が浮かばないときは「ガイド」で、体の感覚から候補をしぼれます。キーボードでは Tab で移動、Enter で選択、/ で検索です。</p>
+    <div class="toolbar"><a class="btn" href="#guide">ガイドで探す</a></div>
+  </div>`;
+}
+$('#detail').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.pick) { togglePick(b.dataset.pick); showDetail(byId[b.dataset.pick]); }
+  else if (b.dataset.zoom) { const n = byId[b.dataset.zoom]; setFocus(focus===n ? (n.parent||null) : n); showDetail(n); }
+  else if (b.dataset.show) { const n = byId[b.dataset.show]; revealNode(n); }
+});
+function revealNode(n){
+  setFocus(n.depth===1 ? n : n.depth===2 ? n : n.parent);
+  showDetail(n);
+}
+
+/* search */
+const toHira = s => s.replace(/[ァ-ヶ]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60));
+const q = $('#q'), results = $('#results');
+q.addEventListener('input', () => {
+  const s = toHira(q.value.trim().toLowerCase());
+  if (!s) { results.hidden = true; return; }
+  const hits = nodes.map(n => {
+    const nm = toHira(n.name), ds = toHira(n.desc || '');
+    const score = nm === s ? 3 : nm.startsWith(s) ? 2 : nm.includes(s) ? 1.5 : ds.includes(s) ? 1 : 0;
+    return [score, n];
+  }).filter(x => x[0] > 0).sort((a,b) => b[0]-a[0] || b[1].depth-a[1].depth).slice(0, 12);
+  results.hidden = false;
+  results.innerHTML = hits.length ? hits.map(([,n]) => `<button type="button" data-show="${n.id}"><span class="swatch" style="background:${n.color.fill}"></span>${esc(n.name)}<small>${esc(pathOf(n))}</small></button>`).join('')
+    : `<div class="empty">見つかりませんでした。似た言葉や、体の感覚（ガイド）から探してみてください。</div>`;
+});
+results.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; revealNode(byId[b.dataset.show]); results.hidden = true; q.value=''; });
+q.addEventListener('keydown', e => { if (e.key==='Enter') { const b = results.querySelector('button'); if (b) b.click(); } if (e.key==='Escape') { q.value=''; results.hidden = true; } });
+document.addEventListener('keydown', e => {
+  const typing = /INPUT|TEXTAREA/.test(document.activeElement.tagName);
+  if (e.key === '/' && !typing && currentView==='wheel') { e.preventDefault(); q.focus(); }
+  else if (e.key === 'Escape' && !typing) { if (!$('#scrim').hidden) closeSheet(); else if (currentView==='wheel') zoomOut(); }
+});
+
+/* ───────────── basket ───────────── */
+function isPicked(id){ return store.basket.some(b => b.id === id); }
+function togglePick(id){
+  const i = store.basket.findIndex(b => b.id === id);
+  if (i >= 0) store.basket.splice(i, 1);
+  else { const n = byId[id]; store.basket.push({id, intensity: n.depth===1 ? 50 : [25,55,85][n.level.tier]}); }
+  persist(); renderBasket(); syncTabIndex(); render();
+  if (currentView === 'guide') renderSugg();
+}
+function renderBasket(){
+  const bar = $('#basket'), list = $('#basketList');
+  bar.classList.toggle('off', store.basket.length === 0);
+  bar.setAttribute('aria-hidden', store.basket.length ? 'false' : 'true');
+  list.innerHTML = store.basket.map(b => { const n = byId[b.id]; return `<span class="chip"><span class="swatch" style="background:${n.color.fill}"></span>${esc(n.name)}<button type="button" data-unpick="${n.id}" aria-label="${esc(n.name)}を外す">×</button></span>`; }).join('');
+  $('#openSave').textContent = `記録する（${store.basket.length}）`;
+}
+$('#basketList').addEventListener('click', e => { const b = e.target.closest('[data-unpick]'); if (b) { togglePick(b.dataset.unpick); if (active) showDetail(active); } });
+
+/* save sheet */
+let lastFocus = null;
+function openSheet(){
+  if (!store.basket.length) return;
+  lastFocus = document.activeElement;
+  renderSheet();
+  const s = $('#scrim'); s.hidden = false; requestAnimationFrame(() => s.classList.add('show'));
+  setTimeout(() => { const r = $('#saveItems input'); if (r) r.focus(); }, 60);
+}
+function closeSheet(){ const s = $('#scrim'); s.classList.remove('show'); setTimeout(() => { s.hidden = true; if (lastFocus) lastFocus.focus(); }, reduceMotion.matches ? 0 : 200); }
+function intensityLabel(v){ return `${TIERS[tierOf(v)]}・${v}`; }
+function renderSheet(){
+  $('#saveItems').innerHTML = store.basket.map(b => { const n = byId[b.id];
+    return `<div class="item"><span class="swatch" style="background:${n.color.fill};width:12px;height:12px"></span>
+      <div class="nm">${esc(n.name)}<small>${esc(pathOf(n))}</small></div>
+      <div style="display:flex;align-items:center;gap:4px"><span class="val" id="val-${b.id}">${intensityLabel(b.intensity)}</span><button class="x" type="button" data-unpick="${b.id}" aria-label="${esc(n.name)}を外す">×</button></div>
+      <input type="range" min="1" max="100" value="${b.intensity}" id="rng-${b.id}" data-id="${b.id}" aria-label="${esc(n.name)}の強さ"></div>`; }).join('');
+  renderInsight();
+}
+function renderInsight(){
+  const cores = [...new Set(store.basket.map(b => byId[b.id].core))];
+  let h = '';
+  const pairs = [];
+  for (let i = 0; i < cores.length; i++) for (let j = i+1; j < cores.length; j++) { const d = dyadFor(cores[i], cores[j]); if (d) pairs.push([cores[i],cores[j],d]); }
+  if (pairs.length) h += `<h3>組み合わせると</h3>` + pairs.slice(0,4).map(([a,b,d]) => `<div class="dyad"><b>${esc(d[0])}</b>${esc(a.name)}＋${esc(b.name)}。${esc(d[1])}</div>`).join('');
+  if (cores.length) h += `<h3>気持ちが伝えていること</h3>` + cores.slice(0,3).map(c => `<p class="note" style="margin:0"><span class="swatch" style="background:${coreColor(c)}"></span> <b style="color:var(--fg)">${esc(c.name)}</b>：${esc(c.msg)}</p>`).join('');
+  $('#saveInsight').innerHTML = h;
+}
+$('#saveItems').addEventListener('input', e => {
+  const r = e.target; if (r.type !== 'range') return;
+  const b = store.basket.find(x => x.id === r.dataset.id); if (!b) return;
+  b.intensity = +r.value; $('#val-'+CSS.escape(b.id)).textContent = intensityLabel(b.intensity); persist();
+});
+$('#saveItems').addEventListener('click', e => { const b = e.target.closest('[data-unpick]'); if (!b) return; togglePick(b.dataset.unpick); if (!store.basket.length) closeSheet(); else renderSheet(); if (active) showDetail(active); });
+$('#openSave').addEventListener('click', openSheet);
+$('#closeSave').addEventListener('click', closeSheet);
+$('#cancelSave').addEventListener('click', closeSheet);
+$('#scrim').addEventListener('click', e => { if (e.target.id === 'scrim') closeSheet(); });
+$('#scrim').addEventListener('keydown', e => {
+  if (e.key !== 'Tab') return;
+  const f = [...$('#scrim').querySelectorAll('button,input,textarea')].filter(x => !x.disabled);
+  if (!f.length) return;
+  if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length-1].focus(); }
+  else if (!e.shiftKey && document.activeElement === f[f.length-1]) { e.preventDefault(); f[0].focus(); }
+});
+$('#doSave').addEventListener('click', () => {
+  if (!store.basket.length) return;
+  const note = $('#note').value.trim().slice(0, 2000);
+  store.entries.push({id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), t: Date.now(), items: store.basket.map(b => ({id:b.id, intensity:b.intensity})), note});
+  store.basket = []; $('#note').value = '';
+  persist(); closeSheet(); renderBasket(); syncTabIndex(); render(); if (active) showDetail(active);
+  if (currentView === 'log') renderLog(); if (currentView === 'guide') renderSugg();
+  toast('記録しました', ['記録を見る', () => { location.hash = 'log'; }]);
+});
+
+/* ───────────── guide ───────────── */
+const guide = {body: new Set(), va: null};
+$('#bodyChips').innerHTML = BODY.map(([b], i) => `<button class="chip" type="button" data-b="${i}" aria-pressed="false">${esc(b)}</button>`).join('');
+$('#bodyChips').addEventListener('click', e => {
+  const b = e.target.closest('[data-b]'); if (!b) return;
+  const i = +b.dataset.b; guide.body.has(i) ? guide.body.delete(i) : guide.body.add(i);
+  b.setAttribute('aria-pressed', guide.body.has(i)); renderSugg();
+});
+const pad = $('#pad'), padDot = $('#padDot');
+function setVA(v, a){
+  guide.va = [clamp(v,-1,1), clamp(a,-1,1)];
+  padDot.hidden = false;
+  padDot.style.left = ((guide.va[0]+1)/2*100) + '%';
+  padDot.style.top = ((1-guide.va[1])/2*100) + '%';
+  const vt = guide.va[0] > .2 ? '快' : guide.va[0] < -.2 ? '不快' : 'どちらでもない';
+  const at = guide.va[1] > .2 ? 'エネルギー高め' : guide.va[1] < -.2 ? 'エネルギー低め' : 'エネルギーふつう';
+  pad.setAttribute('aria-valuetext', `${vt}、${at}`);
+  renderSugg();
+}
+function padFromEvent(e){ const r = pad.getBoundingClientRect(); setVA((e.clientX - r.left)/r.width*2 - 1, 1 - (e.clientY - r.top)/r.height*2); }
+pad.addEventListener('pointerdown', e => { pad.setPointerCapture(e.pointerId); padFromEvent(e); });
+pad.addEventListener('pointermove', e => { if (pad.hasPointerCapture(e.pointerId)) padFromEvent(e); });
+pad.addEventListener('keydown', e => {
+  const d = {ArrowLeft:[-.1,0], ArrowRight:[.1,0], ArrowUp:[0,.1], ArrowDown:[0,-.1]}[e.key]; if (!d) return;
+  e.preventDefault(); const [v,a] = guide.va || [0,0]; setVA(v+d[0], a+d[1]);
+});
+$('#guideReset').addEventListener('click', () => { guide.body.clear(); guide.va = null; padDot.hidden = true; pad.setAttribute('aria-valuetext','未設定'); $('#bodyChips').querySelectorAll('[data-b]').forEach(b=>b.setAttribute('aria-pressed','false')); renderSugg(); });
+
+function renderSugg(){
+  const box = $('#sugg'), note = $('#suggNote');
+  const boost = {}; let nb = 0;
+  guide.body.forEach(i => { nb++; for (const [k,w] of Object.entries(BODY[i][1])) boost[k] = (boost[k]||0) + w; });
+  if (!nb && !guide.va) {
+    note.textContent = '1か2を選ぶと、ここに候補が出ます。たとえば「胸が重い」と左下を選ぶと、悲しみに近い言葉が並びます。';
+    box.innerHTML = ''; return;
+  }
+  const levels = nodes.filter(n => n.depth === 2).map(n => {
+    let s = 0;
+    if (guide.va) { const dv = n.level.v - guide.va[0], da = n.level.a - guide.va[1]; s += Math.exp(-(dv*dv + da*da)/0.32); }
+    if (nb) s += (boost[n.core.id]||0)/nb * (guide.va ? .9 : 1.4) * (guide.va ? 1 : [0.9,1,0.85][n.level.tier]);
+    return [s, n];
+  }).sort((a,b) => b[0]-a[0]).filter((x, i, arr) => i < 3 || x[0] > arr[0][0]*.12).slice(0, 5);
+  const max = levels[0][0] || 1;
+  note.textContent = 'しっくりくる言葉をタップすると、下の「いまの気持ち」に入ります。いくつ選んでもかまいません。';
+  box.innerHTML = levels.map(([s, n]) => `<div class="sugg-item">
+    <header><span class="swatch" style="background:${n.color.fill};width:12px;height:12px"></span><b>${esc(n.name)}</b><small>${esc(n.core.name)}・${TIERS[n.level.tier]}</small><span class="fit">近さ ${Math.round(s/max*100)}%</span></header>
+    <div class="note">${esc(n.desc)}</div>
+    <div class="chips">${[n, ...n.children].map(x => `<button class="chip" type="button" data-gp="${x.id}" aria-pressed="${isPicked(x.id)}" title="${esc(x.desc||'')}">${esc(x.name)}</button>`).join('')}</div>
+  </div>`).join('') + `<p class="note" style="margin:0">ぴったりの言葉がなければ <a href="#wheel">ホイール</a> で周辺を探してみてください。</p>`;
+}
+$('#sugg').addEventListener('click', e => { const b = e.target.closest('[data-gp]'); if (b) togglePick(b.dataset.gp); });
+
+/* ───────────── log ───────────── */
+const DOW = ['日','月','火','水','木','金','土'];
+const dayKey = t => { const d = new Date(t); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; };
+function fmtTime(t){ const d = new Date(t); return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}（${DOW[d.getDay()]}）${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
+function entryMood(e){ let w = 0, s = 0; e.items.forEach(i => { const n = byId[i.id]; w += i.intensity; s += valence(n)*i.intensity; }); return w ? s/w : 0; }
+let pendingDelete = null;
+
+function renderLog(){
+  const root = $('#logRoot'), E = store.entries.slice().sort((a,b) => b.t - a.t);
+  const hasSample = E.some(e => e.sample);
+  if (!E.length) {
+    root.innerHTML = `<div class="card empty-state">
+      <h2>まだ記録がありません</h2>
+      <p>ホイールやガイドで気持ちを選び、「記録する」を押すと、ここに気持ちの移り変わりや、よく使う言葉が表示されます。</p>
+      <div class="toolbar" style="justify-content:center"><a class="btn primary" href="#wheel">ホイールで選ぶ</a><button class="btn" type="button" id="loadSample">サンプルで表示を試す</button><label class="btn" for="importFile">ファイルから読み込む</label></div>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+    </div>`;
+    return;
+  }
+  // stats
+  const now = Date.now(), d30 = now - 30*864e5, d7 = now - 7*864e5;
+  const recent = E.filter(e => e.t >= d30);
+  const uniq = new Set(); let fine = 0, total = 0;
+  recent.forEach(e => e.items.forEach(i => { uniq.add(i.id); total++; if (byId[i.id].depth === 3) fine++; }));
+  const wk = E.filter(e => e.t >= d7);
+  const avg = wk.length ? wk.reduce((s,e) => s + entryMood(e), 0)/wk.length : null;
+  const moodWord = v => v === null ? '—' : v > .35 ? '明るめ' : v > .05 ? 'やや明るめ' : v > -.05 ? 'フラット' : v > -.35 ? 'やや重め' : '重め';
+  // distribution
+  const dist = Object.fromEntries(CORES.map(c => [c.id, 0])); let dsum = 0;
+  recent.forEach(e => e.items.forEach(i => { const n = byId[i.id]; dist[n.core.id] += i.intensity; dsum += i.intensity; }));
+  // words
+  const wc = {}; E.forEach(e => e.items.forEach(i => { wc[i.id] = (wc[i.id]||0) + 1; }));
+  const topWords = Object.entries(wc).sort((a,b) => b[1]-a[1]).slice(0, 12);
+
+  root.innerHTML = `
+  ${hasSample ? `<div class="banner"><span>サンプルデータを表示しています。あなたの記録ではありません。</span><button class="btn small" type="button" id="clearSample">サンプルを消す</button></div>` : ''}
+  <div class="stats">
+    <div class="card stat"><div class="k">記録の数</div><div class="v">${E.length}<small>件</small></div></div>
+    <div class="card stat"><div class="k">感情の解像度（30日）</div><div class="v">${uniq.size}<small>語 / ${WORD_COUNT + CORES.length}語</small></div></div>
+    <div class="card stat"><div class="k">この7日の気分</div><div class="v">${moodWord(avg)}<small>${avg===null?'記録なし':(avg>0?'+':'')+avg.toFixed(2)}</small></div></div>
+  </div>
+  <div class="log-grid">
+    <div class="card panel"><h3>14日間の気分の波</h3><div class="chart-box">${trendSVG(E)}</div><p class="note" style="margin:0">棒は1日の平均（上が快、下が不快）。点はその日に記録した気持ちの色です。</p></div>
+    <div class="card panel"><h3>よく出てくる基本感情（30日・強さで重みづけ）</h3>
+      <div class="bars">${CORES.map(c => { const p = dsum ? dist[c.id]/dsum*100 : 0; return `<div class="bar"><span>${esc(c.name)}</span><div class="track"><div class="fill" style="width:${p.toFixed(1)}%;background:${coreColor(c)}"></div></div><span class="pct">${Math.round(p)}%</span></div>`; }).join('')}</div>
+      <p class="note" style="margin:0">細かい言葉の割合：${total ? Math.round(fine/total*100) : 0}%。外側の言葉を使うほど、気持ちの見分けがこまやかになります。</p>
+    </div>
+  </div>
+  <div class="card panel" style="margin-bottom:16px"><h3>よく使う言葉</h3><div class="chips">${topWords.map(([id,c]) => { const n = byId[id]; return `<a class="chip" href="#wheel" data-goto="${id}" style="text-decoration:none;color:inherit"><span class="swatch" style="background:${n.color.fill}"></span>${esc(n.name)}<span class="note">${c}</span></a>`; }).join('')}</div></div>
+  <div class="toolbar" style="margin-bottom:12px;justify-content:space-between">
+    <h2>これまでの記録</h2>
+    <div class="toolbar">
+      <button class="btn small" type="button" id="exJson">JSONで保存</button>
+      <button class="btn small" type="button" id="exCsv">CSVで保存</button>
+      <button class="btn small" type="button" id="cpJson">JSONをコピー</button>
+      <label class="btn small" for="importFile">読み込む</label>
+      <button class="btn small danger" type="button" id="wipe">${pendingDelete==='all'?'本当にすべて削除':'すべて削除'}</button>
+    </div>
+    <input type="file" id="importFile" accept="application/json,.json" hidden>
+  </div>
+  <div class="entries">${E.slice(0, 200).map(entryHTML).join('')}</div>
+  ${E.length > 200 ? `<p class="note">古い ${E.length-200} 件は書き出しファイルに含まれます。</p>` : ''}`;
+}
+function entryHTML(e){
+  const m = entryMood(e);
+  return `<article class="card entry">
+    <header><time datetime="${new Date(e.t).toISOString()}">${fmtTime(e.t)}</time><span class="mood">${m>.05?'快':m<-.05?'不快':'中間'} ${(m>0?'+':'')+m.toFixed(2)}</span>${e.sample?'<span class="mood">サンプル</span>':''}
+      <span class="acts"><button class="btn small ${pendingDelete===e.id?'danger':''}" type="button" data-del="${e.id}">${pendingDelete===e.id?'削除する':'削除'}</button></span></header>
+    <div class="chips">${e.items.map(i => { const n = byId[i.id]; return `<span class="ichip" title="${esc(pathOf(n))}"><span class="lvl" style="background:${n.color.fill};color:${n.color.ink}">${i.intensity}</span>${esc(n.name)}</span>`; }).join('')}</div>
+    ${e.note ? `<p>${esc(e.note)}</p>` : ''}
+  </article>`;
+}
+function trendSVG(E){
+  const W = 560, H = 190, padL = 26, padR = 8, mid = 100, amp = 56, days = 14;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const cols = []; for (let i = days-1; i >= 0; i--) cols.push(new Date(today.getTime() - i*864e5));
+  const map = {}; E.forEach(e => { const k = dayKey(e.t); (map[k] = map[k] || []).push(e); });
+  const cw = (W - padL - padR)/days;
+  let s = `<svg id="trend" viewBox="0 0 ${W} ${H}" role="img" aria-label="直近14日間の気分の平均">`;
+  s += `<line x1="${padL}" x2="${W-padR}" y1="${mid}" y2="${mid}" stroke="var(--line)"/>`;
+  s += `<line x1="${padL}" x2="${W-padR}" y1="${mid-amp}" y2="${mid-amp}" stroke="var(--line)" stroke-dasharray="2 4"/><line x1="${padL}" x2="${W-padR}" y1="${mid+amp}" y2="${mid+amp}" stroke="var(--line)" stroke-dasharray="2 4"/>`;
+  s += `<text x="${padL-6}" y="${mid-amp+3}" text-anchor="end">快</text><text x="${padL-6}" y="${mid+3}" text-anchor="end">0</text><text x="${padL-6}" y="${mid+amp+3}" text-anchor="end">不快</text>`;
+  cols.forEach((d, i) => {
+    const x = padL + i*cw + cw/2, es = map[dayKey(d.getTime())] || [];
+    if (es.length) {
+      const v = es.reduce((a,e) => a + entryMood(e), 0)/es.length, h = Math.abs(v)*amp;
+      s += `<rect x="${(x-cw*.28).toFixed(1)}" y="${(v>=0?mid-h:mid).toFixed(1)}" width="${(cw*.56).toFixed(1)}" height="${Math.max(1.5,h).toFixed(1)}" rx="3" fill="${v>=0?'var(--pos)':'var(--neg)'}" opacity=".85"><title>${d.getMonth()+1}/${d.getDate()} 平均 ${v.toFixed(2)}（${es.length}件）</title></rect>`;
+      const items = es.flatMap(e => e.items).slice(0, 4);
+      items.forEach((it, j) => { const n = byId[it.id]; s += `<circle cx="${(x + (j - (items.length-1)/2)*7).toFixed(1)}" cy="14" r="3" fill="${n.color.fill}"/>`; });
+    }
+    const lbl = i === days-1 ? '今日' : (d.getDate() === 1 || i === 0 || i % 2 === 1) ? `${d.getMonth()+1}/${d.getDate()}` : '';
+    if (lbl) s += `<text x="${x.toFixed(1)}" y="${H-10}" text-anchor="middle">${lbl}</text>`;
+  });
+  return s + '</svg>';
+}
+$('#logRoot').addEventListener('click', e => {
+  const t = e.target.closest('button,a'); if (!t) return;
+  if (t.id === 'loadSample') { store.entries.push(...makeSample()); persist(); renderLog(); }
+  else if (t.id === 'clearSample') { store.entries = store.entries.filter(x => !x.sample); persist(); renderLog(); toast('サンプルを消しました'); }
+  else if (t.dataset.del) {
+    if (pendingDelete === t.dataset.del) { store.entries = store.entries.filter(x => x.id !== t.dataset.del); pendingDelete = null; persist(); renderLog(); toast('削除しました'); }
+    else { pendingDelete = t.dataset.del; renderLog(); }
+  }
+  else if (t.id === 'wipe') {
+    if (pendingDelete === 'all') { store.entries = []; pendingDelete = null; persist(); renderLog(); toast('すべての記録を削除しました'); }
+    else { pendingDelete = 'all'; renderLog(); }
+  }
+  else if (t.id === 'exJson') download(`kimochi-${stamp()}.json`, JSON.stringify({app:'kimochi-wheel',version:1,entries:store.entries}, null, 2), 'application/json');
+  else if (t.id === 'exCsv') download(`kimochi-${stamp()}.csv`, toCSV(), 'text/csv');
+  else if (t.id === 'cpJson') copyText(JSON.stringify({app:'kimochi-wheel',version:1,entries:store.entries}));
+  else if (t.dataset.goto) { e.preventDefault(); location.hash = 'wheel'; revealNode(byId[t.dataset.goto]); }
+});
+$('#logRoot').addEventListener('change', e => {
+  if (e.target.id !== 'importFile' || !e.target.files[0]) return;
+  const fr = new FileReader();
+  fr.onload = () => {
+    try {
+      const data = JSON.parse(fr.result), arr = Array.isArray(data) ? data : data.entries;
+      if (!Array.isArray(arr)) throw new Error();
+      const have = new Set(store.entries.map(x => x.id)); let added = 0;
+      arr.filter(validEntry).forEach(x => { if (!have.has(x.id)) { store.entries.push({id:String(x.id||x.t), t:x.t, items:x.items.map(i=>({id:i.id,intensity:clamp(+i.intensity||50,1,100)})), note:String(x.note||'').slice(0,2000)}); added++; } });
+      persist(); renderLog(); toast(`${added}件を読み込みました`);
+    } catch(err) { toast('読み込めませんでした。このツールで書き出したJSONファイルを選んでください'); }
+  };
+  fr.readAsText(e.target.files[0]);
+});
+document.addEventListener('click', e => { if (pendingDelete && !e.target.closest('[data-del],#wipe')) { pendingDelete = null; if (currentView==='log') renderLog(); } }, true);
+const stamp = () => { const d = new Date(); return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`; };
+function toCSV(){
+  const q = v => `"${String(v).replace(/"/g,'""')}"`;
+  const rows = [['日時','気持ち','基本感情','強さの段階','強さ(1-100)','メモ'].map(q).join(',')];
+  store.entries.slice().sort((a,b)=>a.t-b.t).forEach(e => e.items.forEach(i => { const n = byId[i.id];
+    rows.push([fmtTime(e.t), n.name, n.core.name, TIERS[tierOf(i.intensity)], i.intensity, e.note||''].map(q).join(',')); }));
+  return '﻿' + rows.join('\r\n');
+}
+function download(name, text, type){
+  try { const url = URL.createObjectURL(new Blob([text], {type})); const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000);
+    toast('ファイルを作成しました。保存されない場合は「JSONをコピー」を使ってください'); } catch(e) { toast('この環境ではファイル保存ができません。「JSONをコピー」を使ってください'); }
+}
+function copyText(text){
+  const fallback = () => { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); let ok = false; try { ok = document.execCommand('copy'); } catch(e) {} ta.remove(); toast(ok ? 'コピーしました' : 'コピーできませんでした'); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => toast('コピーしました'), fallback); else fallback();
+}
+function makeSample(){
+  let seed = 7; const rnd = () => (seed = (seed*16807) % 2147483647) / 2147483647;
+  const pick = a => a[Math.floor(rnd()*a.length)];
+  const scenes = [
+    [['apprehension.0','fear-m.1'],'月曜の朝。締め切りのことを考えて落ち着かない'],
+    [['serenity.1','trust-m.1'],'同僚が手伝ってくれて、なんとか間に合った'],
+    [['annoyance.0','annoyance.2'],'電車が遅れて予定が全部ずれた'],
+    [['pensiveness.0'],'週末、ひとりの時間が長かった'],
+    [['anticipation-m.0','interest.1'],'新しい企画の話が来た'],
+    [['joy-m.2','joy-m.0'],'発表がうまくいった'],
+    [['sadness-m.0','anger-m.2'],'選考に落ちた。準備はしていたのに'],
+    [['acceptance.1','serenity.0'],'友人と長電話した'],
+    [['boredom.1'],'やることはあるのに手が動かない'],
+    [['surprise-m.1','joy-m.0'],'思っていたより評価が高かった']
+  ];
+  const out = []; const now = Date.now();
+  for (let d = 13; d >= 0; d--) {
+    const n = rnd() < .25 ? 0 : rnd() < .7 ? 1 : 2;
+    for (let k = 0; k < n; k++) {
+      const [ids, note] = pick(scenes);
+      const t = now - d*864e5 - Math.floor(rnd()*10)*36e5;
+      out.push({id:'s'+d+'-'+k, t, sample:true, note, items: ids.map(id => ({id, intensity: Math.round(25 + rnd()*65)}))});
+    }
+  }
+  return out;
+}
+
+/* ───────────── routing ───────────── */
+let currentView = 'wheel';
+function route(){
+  const v = (location.hash || '#wheel').slice(1);
+  currentView = ['wheel','guide','log'].includes(v) ? v : 'wheel';
+  ['wheel','guide','log'].forEach(k => { $('#view-'+k).hidden = k !== currentView; });
+  document.querySelectorAll('.tabs a').forEach(a => { if (a.dataset.view === currentView) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); });
+  if (currentView === 'log') renderLog();
+  if (currentView === 'guide') renderSugg();
+  window.scrollTo(0, 0);
+}
+addEventListener('hashchange', route);
+
+/* ───────────── boot ───────────── */
+render(); syncTabIndex(); renderCenter(); renderCrumbs(); showDetail(null); renderBasket(); route();
+
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost') && !/claude|claudeusercontent/.test(location.hostname)) {
+  addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+}
+})();
+</script>
+</body>
+</html>
