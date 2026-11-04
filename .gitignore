@@ -1,1 +1,3 @@
 node_modules/
+eeg-vowel/data/raw/
+__pycache__/

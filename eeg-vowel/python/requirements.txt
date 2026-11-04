@@ -1,0 +1,6 @@
+numpy
+scipy
+scikit-learn
+joblib
+pyriemann      # 「ほかに試した方法」のリーマン幾何の手法だけで使用
+# torch        # eegnet_baseline.py を動かすときだけ

@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+</head>
+<body>
+<!-- artifact:start -->
+<title>想像した母音、脳波でわかる？</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Murecho:wght@500;700;800&family=BIZ+UDPGothic:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: 計測室の「記録紙」。上に1試行の波形と判定（道具）、下にその判定がどれだけ当たるかの検証。 */
+  :root {
+    --paper: #f2f5f4;        /* ページ: うすい記録紙 */
+    --sheet: #ffffff;        /* パネル */
+    --grid: #dfe7e4;         /* 記録紙の方眼 */
+    --ink: #142028;          /* 文字・波形 */
+    --muted: #57666d;
+    --faint: #8a979c;
+    --line: #d3dcd9;
+    --pen: #1f3fb8;          /* 記録ペンの青: 操作・予測 */
+    --pen-soft: #dfe5fb;
+    --pen-ink: #ffffff;
+    --mark: #c2410c;         /* 正解ラベル・観測値 */
+    --mark-soft: #fbe6dc;
+    --win: rgba(31, 63, 184, .07);
+    --good: #157a47; --good-bg: #e2f4ea;
+    --bad: #b42318;  --bad-bg: #fbe9e7;
+    --div-neg: #2a78d6; --div-mid: #e8ecea; --div-pos: #e0602b;
+    --f-display: "Murecho", "Hiragino Sans", "Yu Gothic", sans-serif;
+    --f-body: "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif;
+    --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+    --r: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0e1416; --sheet: #151d20; --grid: #1f2a2e; --ink: #e3eae8; --muted: #9aa9ae; --faint: #6f7f85; --line: #2a373b;
+      --pen: #8ea5ff; --pen-soft: #1e2a52; --pen-ink: #0b1026; --mark: #ff9a66; --mark-soft: #3a2116;
+      --win: rgba(142, 165, 255, .09);
+      --good: #6ad19c; --good-bg: #15301f; --bad: #ff8b7f; --bad-bg: #3a1c19;
+      --div-neg: #3987e5; --div-mid: #26302f; --div-pos: #e46a35;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0e1416; --sheet: #151d20; --grid: #1f2a2e; --ink: #e3eae8; --muted: #9aa9ae; --faint: #6f7f85; --line: #2a373b;
+    --pen: #8ea5ff; --pen-soft: #1e2a52; --pen-ink: #0b1026; --mark: #ff9a66; --mark-soft: #3a2116;
+    --win: rgba(142, 165, 255, .09);
+    --good: #6ad19c; --good-bg: #15301f; --bad: #ff8b7f; --bad-bg: #3a1c19;
+    --div-neg: #3987e5; --div-mid: #26302f; --div-pos: #e46a35;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--f-body); font-size: 15.5px; line-height: 1.75; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding-block: 28px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 40px; }
+  :focus-visible { outline: 3px solid var(--pen); outline-offset: 2px; }
+  .mono { font-family: var(--f-mono); }
+  .num { font-variant-numeric: tabular-nums; }
+
+  /* ---------- header ---------- */
+  header { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px 32px; align-items: end; }
+  @media (max-width: 760px) { header { grid-template-columns: minmax(0, 1fr); } }
+  .eyebrow { font-family: var(--f-mono); font-size: 12px; letter-spacing: .08em; color: var(--muted); margin: 0 0 6px; }
+  h1 { font-family: var(--f-display); font-weight: 800; font-size: clamp(28px, 4.4vw, 46px); line-height: 1.2; margin: 0; letter-spacing: -.01em; text-wrap: balance; }
+  h1 .v { color: var(--pen); }
+  .lede { margin: 12px 0 0; color: var(--muted); max-width: 44em; }
+  .headmap { width: 132px; height: 132px; }
+  @media (max-width: 760px) { .headmap { display: none; } }
+
+  h2 { font-family: var(--f-display); font-weight: 700; font-size: clamp(21px, 2.6vw, 27px); line-height: 1.35; margin: 0; text-wrap: balance; }
+  h3 { font-family: var(--f-display); font-weight: 700; font-size: 16px; margin: 0; }
+  .section-head { display: flex; flex-direction: column; gap: 4px; margin-bottom: 16px; }
+  .section-head p { margin: 0; color: var(--muted); max-width: 52em; }
+
+  /* ---------- tool ---------- */
+  .tool { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
+  @media (max-width: 920px) { .tool { grid-template-columns: minmax(0, 1fr); } }
+  .panel { background: var(--sheet); border: 1px solid var(--line); border-radius: var(--r); }
+  .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+  .controls label { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+  select, .btn, .chip { font: inherit; font-size: 14px; color: var(--ink); background: var(--sheet); border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; cursor: pointer; }
+  select:hover, .btn:hover, .chip:hover { border-color: var(--pen); }
+  .btn-primary { background: var(--pen); border-color: var(--pen); color: var(--pen-ink); font-weight: 700; }
+  .btn-primary:hover { filter: brightness(1.08); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { border-radius: 999px; padding: 3px 11px; font-size: 13px; }
+  .chip[aria-pressed="true"] { background: var(--pen-soft); border-color: var(--pen); color: var(--ink); font-weight: 700; }
+  .nav { display: flex; gap: 6px; align-items: center; margin-left: auto; }
+  .trial-id { font-family: var(--f-mono); font-size: 12.5px; color: var(--muted); min-width: 7.5em; text-align: center; }
+
+  .scope-wrap { padding: 10px 6px 4px 0; overflow-x: auto; }
+  .scope { display: block; width: 100%; min-width: 520px; height: auto; }
+  .scope .bg { fill: var(--sheet); }
+  .scope .minor { stroke: var(--grid); stroke-width: 1; }
+  .scope .major { stroke: var(--line); stroke-width: 1; }
+  .scope .trace { fill: none; stroke: var(--ink); stroke-width: 1.15; stroke-linejoin: round; }
+  .scope .chlabel { font-family: var(--f-mono); font-size: 12px; fill: var(--muted); }
+  .scope .tick { font-family: var(--f-mono); font-size: 11px; fill: var(--faint); }
+  .scope .win { fill: var(--win); }
+  .scope .winlabel { font-family: var(--f-body); font-size: 11.5px; fill: var(--pen); }
+  .scope .scalebar { stroke: var(--ink); stroke-width: 2; }
+  .scope-foot { display: flex; flex-wrap: wrap; gap: 6px 18px; justify-content: space-between; padding: 6px 14px 12px; font-size: 12.5px; color: var(--muted); }
+
+  .feat { padding: 4px 14px 14px; }
+  .feat h3 { font-size: 13.5px; margin-bottom: 6px; }
+  .feat-svg { display: block; width: 100%; height: auto; }
+  .feat-svg text { font-family: var(--f-mono); font-size: 10.5px; fill: var(--muted); }
+  .feat-legend { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .feat-legend .ramp { width: 110px; height: 8px; border-radius: 2px; background: linear-gradient(90deg, var(--div-neg), var(--div-mid), var(--div-pos)); }
+
+  .verdict { padding: 16px 16px 14px; display: flex; flex-direction: column; gap: 14px; }
+  .answer { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .answer > div { border-radius: 8px; padding: 8px 12px; background: var(--paper); }
+  .answer .k { font-size: 12px; color: var(--muted); }
+  .answer .glyph { font-family: var(--f-display); font-weight: 800; font-size: 40px; line-height: 1.1; }
+  .answer .glyph small { font-family: var(--f-mono); font-weight: 400; font-size: 15px; color: var(--muted); margin-left: 6px; }
+  .answer .truth .glyph { color: var(--mark); }
+  .answer .guess .glyph { color: var(--pen); }
+  .hitbadge { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 14px; border-radius: 999px; padding: 2px 12px; width: fit-content; }
+  .hitbadge[data-hit="1"] { background: var(--good-bg); color: var(--good); }
+  .hitbadge[data-hit="0"] { background: var(--bad-bg); color: var(--bad); }
+  .bars { display: flex; flex-direction: column; gap: 7px; }
+  .bar { display: grid; grid-template-columns: 4.6em minmax(0, 1fr) 3.4em; gap: 8px; align-items: center; font-size: 14px; }
+  .bar .lab { font-family: var(--f-display); font-weight: 700; }
+  .bar .lab small { font-family: var(--f-mono); font-weight: 400; color: var(--muted); font-size: 11.5px; margin-left: 3px; }
+  .bar .track { position: relative; height: 14px; background: var(--paper); border-radius: 0 4px 4px 0; }
+  .bar .fill { position: absolute; inset: 0 auto 0 0; background: color-mix(in srgb, var(--pen) 38%, transparent); border-radius: 0 4px 4px 0; transition: width .35s ease; }
+  .bar[data-top="1"] .fill { background: var(--pen); }
+  .bar .chance { position: absolute; top: -3px; bottom: -3px; width: 0; border-left: 1px dashed var(--faint); }
+  .bar .pct { font-family: var(--f-mono); font-size: 12.5px; text-align: right; color: var(--muted); }
+  .bar .truthtag { font-size: 11px; color: var(--mark); font-weight: 700; margin-left: 4px; }
+  .verdict .note { font-size: 12.5px; color: var(--muted); margin: 0; }
+  .tally { border-top: 1px solid var(--line); padding: 12px 16px 14px; display: flex; flex-direction: column; gap: 8px; }
+  .tally .row { display: flex; justify-content: space-between; gap: 12px; font-size: 13.5px; }
+  .tally .row b { font-family: var(--f-mono); font-weight: 500; }
+  .tally .btns { display: flex; flex-wrap: wrap; gap: 8px; }
+  @media (prefers-reduced-motion: reduce) { .bar .fill { transition: none; } }
+
+  /* ---------- results ---------- */
+  .callout { border-radius: var(--r); padding: 18px 20px; background: var(--sheet); border: 1px solid var(--line); display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 18px; align-items: start; }
+  .callout .stamp { font-family: var(--f-display); font-weight: 800; font-size: 15px; border: 2px solid currentColor; border-radius: 6px; padding: 2px 10px; color: var(--mark); transform: rotate(-2deg); white-space: nowrap; }
+  .callout p { margin: 0; max-width: 60em; }
+  @media (max-width: 560px) { .callout { grid-template-columns: minmax(0, 1fr); } }
+  .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+  @media (max-width: 820px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .stat { background: var(--sheet); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .stat .k { font-size: 12.5px; color: var(--muted); }
+  .stat .v { font-family: var(--f-display); font-weight: 700; font-size: 30px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+  .stat .s { font-size: 12px; color: var(--muted); font-family: var(--f-mono); }
+  .charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
+  @media (max-width: 860px) { .charts { grid-template-columns: minmax(0, 1fr); } }
+  .chart { padding: 14px 16px 12px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .chart p.sub { margin: 0; font-size: 13px; color: var(--muted); }
+  .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .chart svg text { font-family: var(--f-mono); font-size: 11px; fill: var(--muted); }
+  .chart svg .lbl { font-family: var(--f-body); font-size: 12px; fill: var(--ink); }
+  .chart svg .gridl { stroke: var(--grid); stroke-width: 1; }
+  .chart svg .axis { stroke: var(--line); stroke-width: 1; }
+  .chart svg .chance { stroke: var(--faint); stroke-width: 1.2; stroke-dasharray: 4 3; }
+  .chart svg .hit { fill: transparent; cursor: default; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--muted); }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+  .legend i.dash { width: 14px; height: 0; border-top: 1.5px dashed var(--faint); border-radius: 0; vertical-align: 3px; }
+  .span2 { grid-column: 1 / -1; }
+
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 700; color: var(--muted); font-size: 12.5px; }
+  td.n { font-family: var(--f-mono); text-align: right; white-space: nowrap; }
+  .tablewrap { overflow-x: auto; }
+
+  .method { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  @media (max-width: 860px) { .method { grid-template-columns: minmax(0, 1fr); } }
+  .method .panel { padding: 14px 16px; }
+  .method p, .method li { font-size: 14px; }
+  .method p { margin: 6px 0 0; }
+  .method ul { margin: 6px 0 0; padding-left: 1.2em; }
+  a { color: var(--pen); }
+  footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 14px; }
+
+  .tip { position: fixed; z-index: 20; pointer-events: none; background: var(--ink); color: var(--paper); font-size: 12.5px; line-height: 1.5; padding: 6px 9px; border-radius: 6px; max-width: 260px; font-family: var(--f-body); }
+  .loading { padding: 40px; text-align: center; color: var(--muted); }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <p class="eyebrow">IMAGINED SPEECH · EEG 6ch · 公開データ 15人</p>
+      <h1>声を思い浮かべたときの脳波から、<span class="v">母音</span>を当てる</h1>
+      <p class="lede">声を出さずに /a/ /e/ /i/ /o/ /u/ を思い浮かべた4秒間の脳波を、ブラウザの中で分類します。
+        下の試行はどれも、その判定に使ったモデルの学習に入っていません。そのうえで、この方法がどれくらい当たるのかを正直に測りました。</p>
+    </div>
+    <svg class="headmap" viewBox="0 0 132 132" role="img" aria-label="電極の位置（国際10-20法）: F3 F4 C3 C4 P3 P4" id="headmap"></svg>
+  </header>
+
+  <section aria-labelledby="try-h">
+    <div class="section-head">
+      <h2 id="try-h">1試行ずつ判定する</h2>
+      <p>被験者と試行を選ぶと、6チャンネルの波形からスペクトルを計算し、母音ごとの確率を出します。計算はこのページの中だけで行います。</p>
+    </div>
+    <div class="tool" id="tool"><div class="panel loading">データを読みこんでいます…</div></div>
+  </section>
+
+  <section aria-labelledby="res-h">
+    <div class="section-head">
+      <h2 id="res-h">どれくらい当たるのか</h2>
+      <p>5種類から1つを選ぶので、でたらめに答えても20%は当たります。大事なのは20%をどれだけ超えるかです。</p>
+    </div>
+    <div id="results"></div>
+  </section>
+
+  <section aria-labelledby="m-h">
+    <div class="section-head">
+      <h2 id="m-h">データと方法</h2>
+    </div>
+    <div class="method" id="method"></div>
+  </section>
+
+  <footer id="footer"></footer>
+</div>
+<div class="tip" id="tip" hidden></div>
+
+<script src="src/features.js"></script>
+<script src="src/app.js"></script>
+<!-- artifact:end -->
+</body>
+</html>
