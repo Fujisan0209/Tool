@@ -1,11 +1,16 @@
 {
   "name": "java-error-yasashiku",
   "version": "1.0.0",
-  "description": "Javaのエラーメッセージを、初心者向けのやさしい日本語で説明するツール",
+  "description": "Java を学ぶ人・Spring Boot で API を作る人のための、ブラウザだけで動く小さなツール集",
   "private": true,
   "scripts": {
-    "test": "node --test test/*.test.js",
-    "build": "node scripts/build.js"
+    "test": "node --test test/*.test.js spring-test-gen/test/*.test.js",
+    "build": "node scripts/build.js",
+    "vendor": "node scripts/vendor-sdk.js"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@anthropic-ai/sdk": "0.137.0",
+    "esbuild": "0.28.2"
+  }
 }

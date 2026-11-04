@@ -1,4 +1,17 @@
-# Javaエラーやさしく解説
+# ツール集
+
+ブラウザだけで動く、小さなツールを置いています。どれも `dist/` の HTML を1つ開くだけで使えます。
+
+| ツール | 何をする | ファイル |
+| --- | --- | --- |
+| Javaエラーやさしく解説 | `javac` / `java` のエラーを、やさしい日本語で説明する | [`dist/java-error-yasashiku.html`](dist/java-error-yasashiku.html) |
+| 仕様書からSpringテスト | API の仕様書から、Spring Boot の Web API テストを Claude に作ってもらう | [`dist/spring-test-gen.html`](dist/spring-test-gen.html)（くわしくは [`spring-test-gen/README.md`](spring-test-gen/README.md)） |
+
+`src/` などを書きかえたら `npm run build` で `dist/` を作りなおし、`npm test` でテストします。
+
+---
+
+## Javaエラーやさしく解説
 
 Javaを習いはじめた人向けのツールです。`javac` や `java` が出したエラーメッセージを貼りつけると、
 **なにが起きたのか・よくある原因・なおし方・まちがい/正しいコード例** を、やさしい日本語で説明します。
@@ -8,7 +21,7 @@ Javaを習いはじめた人向けのツールです。`javac` や `java` が出
 - 実行時エラー（例外）は、スタックトレースから **自分のコードの行** を見つけます
 - すべてブラウザの中だけで動きます。貼りつけたエラーはどこにも送信しません
 
-## 使い方
+### 使い方
 
 **いちばん簡単な方法:** [`dist/java-error-yasashiku.html`](dist/java-error-yasashiku.html) を1つダウンロードして、ダブルクリックで開くだけです。
 
@@ -20,7 +33,7 @@ Javaを習いはじめた人向けのツールです。`javac` や `java` が出
 
 `src/` を書きかえたら、`npm run build` で `dist/java-error-yasashiku.html` を作りなおしてください。
 
-## 対応しているエラー（50種類）
+### 対応しているエラー（50種類）
 
 | 種類 | エラー |
 | --- | --- |
@@ -28,7 +41,7 @@ Javaを習いはじめた人向けのツールです。`javac` や `java` が出
 | 実行時エラー | NullPointerException、ArrayIndexOutOfBounds、StringIndexOutOfBounds、IndexOutOfBounds（List）、0 で割り算、NumberFormatException、InputMismatchException、NoSuchElementException、ClassCastException、StackOverflowError、OutOfMemoryError、ConcurrentModificationException、FileNotFoundException |
 | 準備・コマンド | `javac` が見つからない、ソースファイルが見つからない、メインクラスが見つからない、main メソッドがない、Java のバージョン違い |
 
-## ファイル
+### ファイル
 
 ```
 index.html          画面
@@ -38,13 +51,13 @@ src/app.js          画面の動き
 test/               テスト（fixtures/ は本物の OpenJDK 21 の出力）
 ```
 
-## テスト
+### テスト
 
 ```bash
 npm test
 ```
 
-## ルールの追加
+### ルールの追加
 
 `src/rules.js` に `rule({ id, kind, match, build })` を足します。上にあるルールから順に調べるので、
 細かいルールほど上に置きます。説明文の中の `` `...` `` はコードとして表示されます。

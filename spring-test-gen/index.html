@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- artifact:start -->
+<title>仕様書からSpringテスト</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@700;800&family=BIZ+UDPGothic:wght@400;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  /* Layout: a spec sheet on the left (what you hand over), a test report on the right (what comes back). Stacks on phones. */
+  :root {
+    --bg: #eef1ee;          /* page: drafting paper with a faint green cast */
+    --paper: #fbfcfa;       /* the spec sheet and report surfaces */
+    --ink: #16201c;
+    --muted: #59665f;
+    --line: #d6ddd7;
+    --accent: #1d6b55;      /* deep leaf: controls, focus, progress */
+    --accent-soft: #dcebe4;
+    --accent-ink: #ffffff;
+    --code-bg: #142019;     /* the editor slab */
+    --code-ink: #dbe6df;
+    --code-dim: #7f9488;
+    --tok-kw: #8fc7ff; --tok-str: #e7c37a; --tok-ann: #8ee0b5; --tok-com: #7f9488; --tok-num: #f0a37f;
+
+    --ok: #1f7a46;   --ok-bg: #e2f2e8;
+    --warn: #9a5b00; --warn-bg: #fbefd9;
+    --bad: #b8322a;  --bad-bg: #fbe6e3;
+    --info: #2b5c93; --info-bg: #e3edf8;
+
+    --m-get: #2b6cb0; --m-post: #1f7a46; --m-put: #9a5b00; --m-patch: #7a4fb0; --m-delete: #b8322a;
+
+    --f-display: "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", serif;
+    --f-body: "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif;
+    --f-mono: "IBM Plex Mono", "Noto Sans Mono CJK JP", "Osaka-Mono", "MS Gothic", ui-monospace, monospace;
+    --r: 8px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1512; --paper: #161e1a; --ink: #e3ebe6; --muted: #98a89f; --line: #2a3530;
+      --accent: #5fc19c; --accent-soft: #1b3229; --accent-ink: #08130e;
+      --code-bg: #0a100d; --code-ink: #d6e2db; --code-dim: #6f8479;
+      --ok: #6fd39b; --ok-bg: #163021; --warn: #f0b45c; --warn-bg: #33270f; --bad: #ff8f84; --bad-bg: #3a1d1a; --info: #8db8ec; --info-bg: #182638;
+      --m-get: #7fb2f0; --m-post: #6fd39b; --m-put: #f0b45c; --m-patch: #c3a2f0; --m-delete: #ff8f84;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1512; --paper: #161e1a; --ink: #e3ebe6; --muted: #98a89f; --line: #2a3530;
+    --accent: #5fc19c; --accent-soft: #1b3229; --accent-ink: #08130e;
+    --code-bg: #0a100d; --code-ink: #d6e2db; --code-dim: #6f8479;
+    --ok: #6fd39b; --ok-bg: #163021; --warn: #f0b45c; --warn-bg: #33270f; --bad: #ff8f84; --bad-bg: #3a1d1a; --info: #8db8ec; --info-bg: #182638;
+    --m-get: #7fb2f0; --m-post: #6fd39b; --m-put: #f0b45c; --m-patch: #c3a2f0; --m-delete: #ff8f84;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.7; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1320px; margin: 0 auto; padding-block: 24px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  code, kbd { font-family: var(--f-mono); font-size: .9em; }
+  button { font: inherit; color: inherit; }
+
+  /* ---------- header ---------- */
+  .masthead { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px 28px; margin-bottom: 20px; }
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .mark { flex: none; display: grid; grid-template-columns: auto auto; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px; background: var(--code-bg); font-family: var(--f-mono); font-size: 13px; font-weight: 600; line-height: 1; }
+  .mark .m { color: var(--tok-kw); } .mark .s { color: var(--tok-ann); }
+  h1 { font-family: var(--f-display); font-weight: 800; font-size: clamp(24px, 3vw, 32px); line-height: 1.25; margin: 0; letter-spacing: .02em; text-wrap: balance; }
+  .tagline { margin: 0; color: var(--muted); max-width: 44em; font-size: 14.5px; }
+
+  /* ---------- grid ---------- */
+  .grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 20px; align-items: start; }
+  @media (max-width: 960px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+  .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+  .sheet { background: var(--paper); border: 1px solid var(--line); border-radius: var(--r); min-width: 0; }
+  .sheet-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 12px; padding: 14px 18px 10px; border-bottom: 1px solid var(--line); }
+  .sheet-head h2 { font-family: var(--f-display); font-weight: 700; font-size: 19px; margin: 0; }
+  .sheet-head .hint { color: var(--muted); font-size: 13px; margin: 0; }
+  .sheet-body { padding: 14px 18px 18px; display: grid; gap: 14px; min-width: 0; }
+
+  .label { display: block; font-size: 12.5px; font-weight: 700; letter-spacing: .06em; color: var(--muted); margin-bottom: 4px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .field-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+
+  textarea, input[type="text"], input[type="password"], select {
+    width: 100%; font: inherit; color: var(--ink); background: var(--paper);
+    border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px;
+  }
+  textarea { font-family: var(--f-mono); font-size: 13px; line-height: 1.6; resize: vertical; tab-size: 2; }
+  #spec { min-height: 300px; }
+  #code-input { min-height: 140px; }
+  textarea:focus, input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .drop-on { border-color: var(--accent) !important; box-shadow: 0 0 0 3px var(--accent-soft); }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip-btn { cursor: pointer; background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 3px 12px; font-size: 13px; }
+  .chip-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  details.more { border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; }
+  details.more summary { cursor: pointer; font-weight: 700; font-size: 14px; }
+  details.more[open] summary { margin-bottom: 8px; }
+  details.more p { margin: 0 0 8px; font-size: 13px; color: var(--muted); }
+
+  /* radio cards for test style */
+  .styles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+  .style-card { position: relative; display: block; cursor: pointer; border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; }
+  .style-card input { position: absolute; opacity: 0; pointer-events: none; }
+  .style-card b { display: block; font-family: var(--f-mono); font-size: 12px; font-weight: 600; }
+  .style-card span { font-size: 13px; color: var(--muted); }
+  .style-card:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+  .style-card:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .style-card:has(input:disabled) { opacity: .45; cursor: not-allowed; }
+
+  /* engine segmented */
+  .seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 7px; padding: 2px; gap: 2px; }
+  .seg label { cursor: pointer; padding: 4px 12px; border-radius: 5px; font-size: 13.5px; }
+  .seg input { position: absolute; opacity: 0; pointer-events: none; }
+  .seg label:has(input:checked) { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+  .seg label:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: 1px; }
+  .seg label:has(input:disabled) { opacity: .4; cursor: not-allowed; }
+  .engine-note { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+  .key-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; margin-top: 8px; }
+  .check { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); white-space: nowrap; }
+
+  .btn { cursor: pointer; border-radius: 6px; padding: 8px 16px; border: 1px solid transparent; font-weight: 700; font-size: 14.5px; line-height: 1.4; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn-primary { background: var(--accent); color: var(--accent-ink); }
+  .btn-primary:not(:disabled):hover { filter: brightness(1.08); }
+  .btn-line { background: transparent; border-color: var(--line); }
+  .btn-line:not(:disabled):hover { border-color: var(--accent); color: var(--accent); }
+  .btn-sm { padding: 4px 10px; font-size: 13px; }
+  .btn-big { padding: 11px 20px; font-size: 16px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .actions .grow { flex: 1 1 14em; }
+  .fineprint { margin: 0; font-size: 12.5px; color: var(--muted); }
+
+  /* ---------- stepper (a real sequence) ---------- */
+  .steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; list-style: none; margin: 0; padding: 0; counter-reset: step; }
+  .steps li { position: relative; padding: 10px 12px 10px 44px; border: 1px solid var(--line); background: var(--paper); font-size: 13.5px; line-height: 1.4; min-width: 0; }
+  .steps li + li { border-left: 0; }
+  .steps li:first-child { border-radius: var(--r) 0 0 var(--r); }
+  .steps li:last-child { border-radius: 0 var(--r) var(--r) 0; }
+  .steps li::before { counter-increment: step; content: counter(step); position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-family: var(--f-mono); font-size: 12px; font-weight: 600; border: 1.5px solid var(--line); color: var(--muted); }
+  .steps b { display: block; }
+  .steps small { color: var(--muted); }
+  .steps li[data-state="active"]::before { border-color: var(--accent); color: var(--accent); }
+  .steps li[data-state="active"] b { color: var(--accent); }
+  .steps li[data-state="done"]::before { content: "✓"; background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  @media (max-width: 520px) { .steps li { padding-left: 38px; font-size: 12.5px; } .steps li::before { left: 9px; } .steps small { display: none; } }
+
+  /* ---------- report ---------- */
+  .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); padding: 0 12px; overflow-x: auto; }
+  .tab { cursor: pointer; background: none; border: 0; border-bottom: 2.5px solid transparent; padding: 10px 12px 8px; font-weight: 700; font-size: 14px; color: var(--muted); white-space: nowrap; }
+  .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+  .tab .count { font-family: var(--f-mono); font-weight: 500; font-size: 12px; margin-left: 4px; color: var(--muted); }
+
+  .example-flag { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; color: var(--warn); background: var(--warn-bg); border-radius: 4px; padding: 2px 8px; }
+  .summary-line { margin: 0; max-width: 60em; }
+  .stats { display: flex; flex-wrap: wrap; gap: 6px; }
+  .stat { font-size: 12.5px; border: 1px solid var(--line); border-radius: 4px; padding: 1px 8px; font-variant-numeric: tabular-nums; }
+  .stat b { font-family: var(--f-mono); }
+
+  .questions { background: var(--info-bg); border-radius: 6px; padding: 10px 14px; }
+  .questions h3 { margin: 0 0 4px; font-size: 13.5px; color: var(--info); letter-spacing: .04em; }
+  .questions ul { margin: 0; padding-left: 1.2em; display: grid; gap: 2px; font-size: 14px; }
+
+  .cls { border: 1px solid var(--line); border-radius: 6px; overflow: hidden; min-width: 0; }
+  .cls-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 8px 12px; background: color-mix(in srgb, var(--accent-soft) 55%, var(--paper)); border-bottom: 1px solid var(--line); }
+  .cls-head .name { font-family: var(--f-mono); font-weight: 600; font-size: 13.5px; overflow-wrap: anywhere; }
+  .cls-head .target { font-size: 12.5px; color: var(--muted); }
+  .cls-head .grow { flex: 1; }
+  .table-wrap { overflow-x: auto; }
+  table.cases { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .cases th { text-align: left; font-size: 11.5px; letter-spacing: .06em; color: var(--muted); font-weight: 700; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .cases td { padding: 5px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .cases tr:last-child td { border-bottom: 0; }
+  .cases tr.ep td { background: color-mix(in srgb, var(--line) 30%, transparent); padding: 4px 8px; }
+  .cases tr.off td:not(:first-child) { opacity: .45; }
+  .cases .id { font-family: var(--f-mono); font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .cases .st { font-family: var(--f-mono); font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .st-2 { color: var(--ok); } .st-4 { color: var(--warn); } .st-5 { color: var(--bad); }
+  .cases input.title { border: 1px solid transparent; background: transparent; padding: 2px 6px; min-width: 14em; }
+  .cases input.title:hover { border-color: var(--line); }
+  .cases .detail { display: block; font-size: 12px; color: var(--muted); padding: 0 6px; }
+  .method { display: inline-block; font-family: var(--f-mono); font-size: 11px; font-weight: 600; letter-spacing: .04em; padding: 0 6px; border-radius: 3px; border: 1px solid currentColor; margin-right: 6px; }
+  .m-GET { color: var(--m-get); } .m-POST { color: var(--m-post); } .m-PUT { color: var(--m-put); } .m-PATCH { color: var(--m-patch); } .m-DELETE { color: var(--m-delete); }
+  .path { font-family: var(--f-mono); font-size: 12.5px; overflow-wrap: anywhere; }
+  .cat { display: inline-block; font-size: 11.5px; white-space: nowrap; border-radius: 3px; padding: 0 6px; background: var(--accent-soft); color: var(--accent); }
+  .cat-validation, .cat-boundary { background: var(--warn-bg); color: var(--warn); }
+  .cat-notfound, .cat-conflict { background: var(--bad-bg); color: var(--bad); }
+  .cat-auth { background: var(--info-bg); color: var(--info); }
+  .cat-other { background: color-mix(in srgb, var(--line) 50%, transparent); color: var(--muted); }
+  .guess { font-size: 11px; font-weight: 700; color: var(--warn); white-space: nowrap; }
+  .del { cursor: pointer; background: none; border: 0; color: var(--muted); padding: 0 4px; font-size: 15px; line-height: 1; }
+  .del:hover { color: var(--bad); }
+
+  .empty { text-align: center; color: var(--muted); padding: 32px 16px; display: grid; gap: 8px; justify-items: center; }
+  .empty b { color: var(--ink); font-size: 16px; }
+
+  /* progress */
+  .progress { display: grid; gap: 6px; }
+  .job { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; font-size: 13.5px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; }
+  .job .name { font-family: var(--f-mono); font-size: 13px; overflow-wrap: anywhere; }
+  .job .state { font-size: 12.5px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
+  .job[data-state="run"] .dot { background: var(--accent); animation: pulse 1s ease-in-out infinite; }
+  .job[data-state="done"] .dot { background: var(--ok); }
+  .job[data-state="warn"] .dot { background: var(--warn); }
+  .job[data-state="error"] .dot { background: var(--bad); }
+  @keyframes pulse { 50% { opacity: .3; } }
+  @media (prefers-reduced-motion: reduce) { .job[data-state="run"] .dot { animation: none; } }
+  .thinking { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; padding: 10px 12px; border-radius: 6px; background: var(--accent-soft); font-size: 14px; }
+  .thinking .grow { flex: 1; }
+  .usage { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; margin: 0; }
+
+  /* coverage meter */
+  .cover { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; align-items: center; }
+  .cover .num { font-family: var(--f-mono); font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .cover .num small { font-size: 13px; color: var(--muted); font-weight: 500; }
+  .meter { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+  .meter i { display: block; height: 100%; background: var(--ok); }
+  .meter.partial i { background: var(--warn); }
+  .cover p { grid-column: 1 / -1; margin: 0; font-size: 13px; color: var(--muted); }
+  .missing-ids { font-family: var(--f-mono); font-size: 12.5px; color: var(--warn); }
+
+  .issues { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 13.5px; }
+  .issues li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: baseline; padding: 4px 8px; border-radius: 4px; }
+  .issues .lv { font-size: 11px; font-weight: 700; border-radius: 3px; padding: 0 6px; white-space: nowrap; }
+  .issues li.error { background: var(--bad-bg); } .issues li.error .lv { color: var(--bad); }
+  .issues li.warn { background: var(--warn-bg); } .issues li.warn .lv { color: var(--warn); }
+  .issues .where { font-family: var(--f-mono); font-size: 12px; color: var(--muted); margin-right: 6px; }
+  .all-clear { margin: 0; font-size: 13.5px; color: var(--ok); font-weight: 700; }
+
+  /* files + editor */
+  .files { display: flex; flex-wrap: wrap; gap: 4px; }
+  .file-tab { cursor: pointer; font-family: var(--f-mono); font-size: 12.5px; padding: 3px 10px; border-radius: 4px; border: 1px solid var(--line); background: transparent; display: inline-flex; gap: 6px; align-items: center; }
+  .file-tab[aria-selected="true"] { background: var(--code-bg); color: var(--code-ink); border-color: var(--code-bg); }
+  .file-tab .flag { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
+  .file-tab .flag.warn { background: var(--warn); } .file-tab .flag.error { background: var(--bad); }
+  .editor { background: var(--code-bg); color: var(--code-ink); border-radius: 6px; overflow: hidden; min-width: 0; }
+  .editor-bar { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; padding: 8px 12px; border-bottom: 1px solid color-mix(in srgb, var(--code-ink) 12%, transparent); font-family: var(--f-mono); font-size: 12px; color: var(--code-dim); }
+  .editor-bar .grow { flex: 1; overflow-wrap: anywhere; }
+  .editor-bar .btn-line { color: var(--code-ink); border-color: color-mix(in srgb, var(--code-ink) 25%, transparent); }
+  .editor-bar .btn-line:not(:disabled):hover { color: var(--tok-ann); border-color: var(--tok-ann); }
+  .editor pre { margin: 0; padding: 12px 0; overflow: auto; max-height: 620px; font-family: var(--f-mono); font-size: 12.5px; line-height: 1.6; counter-reset: ln; }
+  .editor pre .ln { display: block; padding: 0 14px 0 0; white-space: pre; }
+  .editor pre .ln::before { counter-increment: ln; content: counter(ln); display: inline-block; width: 3.4em; padding-right: 1em; text-align: right; color: var(--code-dim); opacity: .6; user-select: none; }
+  .editor pre .ln.hit { background: color-mix(in srgb, var(--bad) 22%, transparent); }
+  .k { color: var(--tok-kw); } .s { color: var(--tok-str); } .a { color: var(--tok-ann); } .c { color: var(--tok-com); font-style: italic; } .n { color: var(--tok-num); }
+  .deps { margin: 0; }
+  .deps summary { cursor: pointer; font-size: 13.5px; font-weight: 700; }
+  .deps pre { background: var(--code-bg); color: var(--code-ink); padding: 10px 12px; border-radius: 6px; overflow-x: auto; font-size: 12.5px; margin: 8px 0 0; }
+
+  /* manual (copy) mode */
+  .manual { display: grid; gap: 10px; }
+  .manual ol { margin: 0; padding-left: 1.4em; display: grid; gap: 4px; }
+  #answer { min-height: 180px; }
+
+  .notice { border-radius: 6px; padding: 10px 14px; font-size: 14px; }
+  .notice.error { background: var(--bad-bg); color: var(--bad); }
+  .notice.warn { background: var(--warn-bg); color: var(--warn); }
+  .notice.ok { background: var(--ok-bg); color: var(--ok); }
+
+  .how { margin-top: 28px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .how section { border-top: 2px solid var(--ink); padding-top: 10px; }
+  .how h2 { font-family: var(--f-display); font-size: 17px; margin: 0 0 4px; }
+  .how p { margin: 0; font-size: 14px; color: var(--muted); max-width: 34em; }
+  .foot { margin-top: 20px; font-size: 12.5px; color: var(--muted); }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+</style>
+<!-- artifact:end -->
+</head>
+<body>
+<div class="wrap">
+  <header class="masthead">
+    <div class="brand">
+      <div class="mark" aria-hidden="true"><span class="m">GET</span><span class="s">200 ✓</span></div>
+      <h1>仕様書からSpringテスト</h1>
+    </div>
+    <p class="tagline">API の仕様書を先に渡して、Spring Boot の Web API テストを Claude に作ってもらうツールです。まず「テスト観点」の表を作って確かめ、そのあと観点どおりの JUnit 5 テストコードを作ります。できたコードは、観点の漏れと、バージョンちがいのまちがいを自動でチェックします。</p>
+  </header>
+
+  <main class="grid">
+    <!-- ============ 左: 仕様書と設定 ============ -->
+    <div class="col">
+      <section class="sheet" aria-labelledby="spec-title">
+        <div class="sheet-head">
+          <h2 id="spec-title">仕様書</h2>
+          <p class="hint">Markdown・OpenAPI（YAML / JSON）・ふつうの文章、どれでも</p>
+        </div>
+        <div class="sheet-body">
+          <div>
+            <span class="label">例を読みこむ</span>
+            <div id="samples" class="chips"></div>
+          </div>
+          <div>
+            <div class="row" style="justify-content: space-between; margin-bottom: 4px;">
+              <label class="label" for="spec" style="margin: 0;">仕様書の本文</label>
+              <label class="btn btn-line btn-sm" for="spec-file" style="cursor: pointer;">ファイルを開く</label>
+              <input id="spec-file" type="file" accept=".md,.markdown,.txt,.yaml,.yml,.json,.adoc" class="sr">
+            </div>
+            <textarea id="spec" spellcheck="false" placeholder="ここに仕様書を貼りつけるか、ファイルをドロップしてください"></textarea>
+            <p id="spec-meta" class="fineprint"></p>
+          </div>
+          <details class="more" id="code-box">
+            <summary>いまあるコードも渡す（任意）</summary>
+            <p>コントローラ・DTO・サービス・例外クラスのコードを貼ると、クラス名やメソッド名をそれに合わせます。期待値は仕様書のほうを優先します。</p>
+            <textarea id="code-input" spellcheck="false" placeholder="@RestController&#10;@RequestMapping(&quot;/api/books&quot;)&#10;public class BookController { ... }"></textarea>
+          </details>
+        </div>
+      </section>
+
+      <section class="sheet" aria-labelledby="set-title">
+        <div class="sheet-head"><h2 id="set-title">テストの作り方</h2></div>
+        <div class="sheet-body">
+          <div class="field-grid">
+            <div>
+              <label class="label" for="boot">Spring Boot</label>
+              <select id="boot"></select>
+            </div>
+            <div>
+              <label class="label" for="pkg">テストのパッケージ</label>
+              <input id="pkg" type="text" spellcheck="false" value="com.example.demo">
+            </div>
+          </div>
+          <fieldset style="border: 0; padding: 0; margin: 0;">
+            <legend class="label">テストの方式</legend>
+            <div id="styles" class="styles"></div>
+          </fieldset>
+          <div class="field-grid">
+            <div>
+              <label class="label" for="model">モデル</label>
+              <select id="model"></select>
+            </div>
+            <div>
+              <label class="label" for="effort">考える深さ</label>
+              <select id="effort">
+                <option value="medium">ふつう（速い）</option>
+                <option value="high" selected>しっかり（おすすめ）</option>
+                <option value="xhigh">じっくり（大きな仕様向け）</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <span class="label" id="engine-label">Claude へのつなぎ方</span>
+            <div class="seg" role="radiogroup" aria-labelledby="engine-label">
+              <label><input type="radio" name="engine" value="claude">claude.ai</label>
+              <label><input type="radio" name="engine" value="api">API キー</label>
+              <label><input type="radio" name="engine" value="manual">コピーして使う</label>
+            </div>
+            <p id="engine-note" class="engine-note"></p>
+            <div id="key-box" class="key-row" hidden>
+              <input id="api-key" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-..." aria-label="Anthropic API キー">
+              <label class="check"><input id="remember-key" type="checkbox">このブラウザに覚える</label>
+            </div>
+          </div>
+          <div class="actions">
+            <button id="plan-btn" class="btn btn-primary btn-big" type="button">テスト観点を作る</button>
+            <p class="fineprint grow">仕様書は、選んだつなぎ方の Claude にだけ送ります。</p>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ============ 右: 観点とコード ============ -->
+    <div class="col" aria-live="polite">
+      <ol class="steps" id="steps">
+        <li data-step="plan"><b>テスト観点</b><small>仕様書から洗い出す</small></li>
+        <li data-step="code"><b>テストコード</b><small>観点1件 = テスト1つ</small></li>
+        <li data-step="check"><b>チェック</b><small>漏れ・まちがいを確認</small></li>
+      </ol>
+
+      <section class="sheet" aria-label="結果">
+        <div class="tabs" role="tablist">
+          <button class="tab" role="tab" id="tab-plan" aria-controls="panel-plan" aria-selected="true">テスト観点<span class="count" id="plan-count"></span></button>
+          <button class="tab" role="tab" id="tab-code" aria-controls="panel-code" aria-selected="false">テストコード<span class="count" id="code-count"></span></button>
+          <button class="tab" role="tab" id="tab-manual" aria-controls="panel-manual" aria-selected="false" hidden>コピーして使う</button>
+        </div>
+
+        <div class="sheet-body" id="panel-plan" role="tabpanel" aria-labelledby="tab-plan"></div>
+        <div class="sheet-body" id="panel-code" role="tabpanel" aria-labelledby="tab-code" hidden></div>
+        <div class="sheet-body" id="panel-manual" role="tabpanel" aria-labelledby="tab-manual" hidden>
+          <div class="manual">
+            <ol>
+              <li>下のボタンでプロンプトをコピーして、Claude（claude.ai など）のチャットに貼りつけます。</li>
+              <li>返ってきた答えを、まるごと下の欄に貼りつけて「答えを読みこむ」を押します。</li>
+              <li>コードを取り出して、観点の漏れとまちがいをチェックします。</li>
+            </ol>
+            <div class="actions">
+              <button id="copy-prompt" class="btn btn-primary" type="button">プロンプトをコピー</button>
+              <span id="prompt-size" class="fineprint"></span>
+            </div>
+            <label class="label" for="answer">Claude の答え</label>
+            <textarea id="answer" spellcheck="false" placeholder="答えをここに貼りつけ"></textarea>
+            <div class="actions"><button id="read-answer" class="btn btn-line" type="button">答えを読みこむ</button></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div class="how">
+    <section>
+      <h2>先に観点を見る</h2>
+      <p>いきなりコードを作らず、まず「何を確かめるか」の表を作ります。不要な観点はチェックを外し、タイトルは書きかえられます。仕様書のあいまいな点も一覧にします。</p>
+    </section>
+    <section>
+      <h2>観点IDで漏れを数える</h2>
+      <p>テストには <code>@DisplayName("[C001] …")</code> の形で観点IDを付けさせ、全部の観点がテストになったかを数えます。足りない分は、ボタン1つで書き足してもらえます。</p>
+    </section>
+    <section>
+      <h2>バージョンのちがいを見張る</h2>
+      <p>Spring Boot 4 で削除された <code>@MockBean</code>、移った <code>@WebMvcTest</code> のパッケージ、JUnit 4 の import などを、コンパイル前に見つけます。</p>
+    </section>
+  </div>
+  <p class="foot">API キーで使うときは、キーはこのブラウザから Anthropic の API に直接送るだけで、ほかには送りません。共有のパソコンでは「覚える」を付けないでください。仕様書が同じなら、2つ目以降のテストクラスは仕様書の部分がキャッシュから読まれ、入力の料金が約1/10になります。</p>
+</div>
+
+<script src="vendor/anthropic-sdk.js"></script>
+<script src="src/prompts.js"></script>
+<script src="src/core.js"></script>
+<script src="src/engines.js"></script>
+<script src="src/samples.js"></script>
+<script src="src/app.js"></script>
+</body>
+</html>
