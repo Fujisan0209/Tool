@@ -1,0 +1,1728 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- artifact:start -->
+<title>満足化・ゲーム理論ラボ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=BIZ+UDPGothic:wght@400;700&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+  /* Layout: 実験ノート — 上に4つの実験タブ、各実験は「条件」(左の操作盤) と「結果」(右) の2列。スマホでは縦に積む。 */
+  :root {
+    --bg: #f1f4f3;          /* 方眼紙のような、ほんのり緑がかった紙 */
+    --surface: #ffffff;
+    --ink: #17201e;
+    --muted: #56635f;
+    --faint: #8a9692;
+    --line: #d7dfdc;
+    --grid: #e7edeb;
+    --accent: #0d675f;      /* 深い青緑: 操作・フォーカス */
+    --accent-ink: #ffffff;
+    --accent-soft: #dcefeb;
+    --panel: #e8eeec;       /* 操作盤の地 */
+
+    /* データ用（検証済みの8色。色は戦略についていく） */
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
+    --s5: #e87ba4; --s6: #008300; --s7: #6250d6; --s8: #e34948;
+    --s1-soft: #b7d3f6; --s2-soft: #f6c3ab;
+    --seq-0: #f3f7fc; --seq-1: #cde2fb; --seq-2: #86b6ef; --seq-3: #3987e5; --seq-4: #1c5cab; --seq-5: #0d366b; --on-seq-hi: #ffffff;
+    --good: #1f7a4a; --good-bg: #e4f3ea;
+    --warn: #9a5b00; --warn-bg: #fbf0dc;
+
+    --f-display: "Dela Gothic One", "Hiragino Sans", "Yu Gothic", sans-serif;
+    --f-body: "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif;
+    --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+    --r: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e1413; --surface: #161f1d; --ink: #e3ebe8; --muted: #9aa9a4; --faint: #6c7b77;
+      --line: #2a3734; --grid: #1d2826; --accent: #52c2b2; --accent-ink: #062320; --accent-soft: #173a35; --panel: #121b19;
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+      --s1-soft: #1c4a80; --s2-soft: #7a3a1f;
+      --seq-0: #18222a; --seq-1: #184f95; --seq-2: #256abf; --seq-3: #3987e5; --seq-4: #6da7ec; --seq-5: #b7d3f6; --on-seq-hi: #0b1a2e;
+      --good: #6fd39b; --good-bg: #16301f; --warn: #f0b860; --warn-bg: #3a2c14;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e1413; --surface: #161f1d; --ink: #e3ebe8; --muted: #9aa9a4; --faint: #6c7b77;
+    --line: #2a3734; --grid: #1d2826; --accent: #52c2b2; --accent-ink: #062320; --accent-soft: #173a35; --panel: #121b19;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+    --s1-soft: #1c4a80; --s2-soft: #7a3a1f;
+    --seq-0: #18222a; --seq-1: #184f95; --seq-2: #256abf; --seq-3: #3987e5; --seq-4: #6da7ec; --seq-5: #b7d3f6; --on-seq-hi: #0b1a2e;
+    --good: #6fd39b; --good-bg: #16301f; --warn: #f0b860; --warn-bg: #3a2c14;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--f-body); font-size: 15px; line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 1280px; margin: 0 auto;
+    padding-block: 24px 64px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .num, output, .mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- header ---------- */
+  .masthead { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px 24px; margin-bottom: 18px; }
+  .brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
+  .logo { flex: none; width: 46px; height: 46px; display: grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 6px; border-radius: 10px; background: var(--ink); }
+  .logo i { border-radius: 2px; background: var(--bg); opacity: .9; }
+  .logo i:nth-child(1) { background: var(--accent); opacity: 1; }
+  h1 { font-family: var(--f-display); font-weight: 400; font-size: clamp(22px, 3.4vw, 32px); line-height: 1.25; margin: 0; letter-spacing: .01em; text-wrap: balance; }
+  .tagline { margin: 2px 0 0; color: var(--muted); font-size: 14px; max-width: 46em; }
+
+  /* ---------- tabs ---------- */
+  .tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; padding: 5px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); margin-bottom: 20px; }
+  @media (max-width: 760px) { .tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .tab { font: inherit; text-align: left; cursor: pointer; color: var(--muted); background: transparent; border: 1px solid transparent; border-radius: 8px; padding: 8px 12px; display: grid; gap: 0; text-decoration: none; }
+  .tab b { color: var(--ink); font-size: 15px; }
+  .tab span { font-size: 12px; line-height: 1.5; }
+  .tab:hover { background: var(--surface); }
+  .tab[aria-selected="true"] { background: var(--surface); border-color: var(--line); box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+  .tab[aria-selected="true"] b { color: var(--accent); }
+
+  /* ---------- experiment layout ---------- */
+  .exp { display: grid; grid-template-columns: minmax(0, 330px) minmax(0, 1fr); gap: 20px; align-items: start; }
+  @media (max-width: 900px) { .exp { grid-template-columns: minmax(0, 1fr); } }
+  .controls { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px 16px; display: grid; gap: 14px; max-height: calc(100vh - 24px); overflow-y: auto; }
+  @media (max-width: 900px) { .controls { position: static; max-height: none; } }
+  .controls h2 { font-size: 12px; letter-spacing: .1em; color: var(--muted); margin: 0; font-weight: 700; }
+  .group { display: grid; gap: 10px; }
+  .group + .group { border-top: 1px dashed var(--line); padding-top: 12px; }
+  .field { display: grid; gap: 2px; }
+  .field-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .field label, .field .lab { font-size: 14px; font-weight: 700; }
+  .field output { font-size: 14px; color: var(--accent); font-weight: 600; white-space: nowrap; }
+  .hint { font-size: 12px; color: var(--muted); line-height: 1.55; margin: 0; }
+  input[type="range"] { width: 100%; accent-color: var(--accent); margin: 4px 0 0; }
+  .seg { display: flex; flex-wrap: wrap; gap: 4px; }
+  .seg button, .chip { font: inherit; font-size: 13px; cursor: pointer; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 999px; padding: 3px 11px; }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .check { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; font-weight: 700; cursor: pointer; }
+  .check input { accent-color: var(--accent); width: 17px; height: 17px; margin-top: 4px; flex: none; }
+  .check small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; line-height: 1.5; }
+  .btn { font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; border-radius: 8px; padding: 6px 14px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .btn-primary:hover { color: var(--accent-ink); filter: brightness(1.08); }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .num-input { font: inherit; font-family: var(--f-mono); width: 100%; min-width: 0; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); text-align: center; }
+  .pay-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .pay-grid label { display: grid; gap: 2px; font-size: 12px; color: var(--muted); text-align: center; }
+  .pay-grid label b { font-family: var(--f-mono); color: var(--ink); font-size: 14px; }
+  .msg { font-size: 12.5px; border-radius: 6px; padding: 6px 10px; margin: 0; }
+  .msg.warn { background: var(--warn-bg); color: var(--warn); }
+
+  /* ---------- results ---------- */
+  .results { display: grid; gap: 16px; min-width: 0; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px 16px; min-width: 0; }
+  .card h3 { margin: 0 0 2px; font-size: 16px; text-wrap: balance; }
+  .card .sub { margin: 0 0 10px; color: var(--muted); font-size: 13px; }
+  .insight { background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); border-radius: var(--r); padding: 12px 16px; font-size: 15px; line-height: 1.8; }
+  .insight b { color: var(--accent); }
+  .insight .num { font-weight: 600; }
+
+  .tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+  @media (max-width: 1100px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .tile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px; display: grid; gap: 4px; align-content: start; position: relative; }
+  .tile.win { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  .tile-head { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; }
+  .key { flex: none; width: 14px; height: 3px; border-radius: 2px; }
+  .key.box { height: 12px; width: 12px; border-radius: 3px; }
+  .tile .big { font-family: var(--f-mono); font-size: 28px; font-weight: 600; line-height: 1.15; }
+  .tile .big small { font-size: 13px; color: var(--muted); font-weight: 400; margin-left: 2px; }
+  .tile .meta { font-size: 12.5px; color: var(--muted); line-height: 1.6; }
+  .tile .meta .num { color: var(--ink); }
+  .tile .desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .pill { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); letter-spacing: .04em; margin-left: auto; }
+  .pill.off { background: var(--panel); color: var(--muted); }
+
+  /* ---------- charts ---------- */
+  .chart { position: relative; width: 100%; min-width: 0; }
+  .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .chart .axis text, .chart .lbl { fill: var(--muted); font-family: var(--f-mono); font-size: 11px; }
+  .chart .axis-title { fill: var(--muted); font-family: var(--f-body); font-size: 12px; }
+  .chart .gridline { stroke: var(--grid); stroke-width: 1; }
+  .chart .baseline { stroke: var(--line); stroke-width: 1; }
+  .chart .cross { stroke: var(--faint); stroke-width: 1; }
+  .chart .direct { font-family: var(--f-body); font-size: 12px; font-weight: 700; fill: var(--ink); }
+  .tip { position: absolute; pointer-events: none; z-index: 5; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: 12.5px; line-height: 1.55; box-shadow: 0 6px 18px -8px rgba(0,0,0,.35); white-space: nowrap; }
+  .tip .t-head { color: var(--muted); font-size: 12px; }
+  .tip .t-row { display: flex; align-items: center; gap: 7px; }
+  .tip .t-row b { font-family: var(--f-mono); font-weight: 600; min-width: 3.5em; }
+  .tip .t-row span { color: var(--muted); }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; margin: 0 0 6px; padding: 0; list-style: none; }
+  .legend li { display: flex; align-items: center; gap: 6px; }
+
+  /* ---------- 2×2 matrix ---------- */
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 700; box-shadow: inset 0 0 0 1px var(--accent); }
+  .matrix-wrap { overflow-x: auto; }
+  table.matrix { border-collapse: separate; border-spacing: 6px; margin: 0 auto; }
+  table.matrix th { font-size: 13px; font-weight: 700; color: var(--muted); padding: 2px 6px; }
+  table.matrix th input { font: inherit; font-weight: 700; color: var(--ink); width: 7em; text-align: center; border: 1px dashed var(--line); background: transparent; border-radius: 6px; padding: 2px 4px; }
+  table.matrix td.cell { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 10px 8px; min-width: 150px; vertical-align: top; position: relative; }
+  td.cell.nash { border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent); }
+  .cell-pay { display: flex; gap: 8px; justify-content: center; }
+  .cell-pay label { display: grid; gap: 2px; justify-items: center; font-size: 11px; color: var(--muted); }
+  .cell-pay input { width: 4.2em; }
+  @media (max-width: 520px) {
+    table.matrix { border-spacing: 4px; }
+    table.matrix td.cell { min-width: 0; padding: 8px 6px 6px; }
+    table.matrix th input { width: 5em; }
+    .cell-pay { gap: 4px; }
+    .cell-pay input { width: 3.2em; }
+  }
+  .cell-pay .br input { border-color: currentColor; font-weight: 700; }
+  .cell-badges { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; margin-top: 6px; min-height: 20px; }
+  .badge { font-size: 11px; padding: 0 7px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .badge.nash { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; }
+  .facts { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 14px; }
+  .facts li { display: flex; gap: 8px; align-items: baseline; }
+  .facts li::before { content: ""; flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); transform: translateY(-2px); }
+  .two-col { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+  @media (max-width: 1100px) { .two-col { grid-template-columns: minmax(0, 1fr); } }
+  .br-chart { max-width: 520px; margin: 0 auto; cursor: crosshair; }
+
+  /* ---------- IPD ---------- */
+  .strat-chips { display: grid; gap: 4px; }
+  .strat-chip { display: flex; align-items: center; gap: 8px; font-size: 13.5px; cursor: pointer; padding: 3px 6px; border-radius: 6px; }
+  .strat-chip:hover { background: var(--surface); }
+  .strat-chip input { accent-color: var(--accent); flex: none; }
+  .bars { display: grid; gap: 6px; }
+  .bar-row { display: grid; grid-template-columns: 8.5em minmax(0, 1fr) 3.6em; align-items: center; gap: 10px; font-size: 13.5px; }
+  .bar-row .name { display: flex; align-items: center; gap: 6px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-track { height: 16px; position: relative; }
+  .bar-fill { position: absolute; inset: 0 auto 0 0; border-radius: 0 4px 4px 0; min-width: 2px; }
+  .bar-row .val { font-family: var(--f-mono); text-align: right; font-weight: 600; }
+  .heat-wrap { overflow-x: auto; }
+  table.heat { border-collapse: separate; border-spacing: 2px; font-size: 12px; margin: 0; }
+  table.heat th { font-weight: 700; color: var(--muted); padding: 2px 6px; white-space: nowrap; }
+  table.heat thead th { writing-mode: vertical-rl; text-orientation: mixed; vertical-align: bottom; height: 7.5em; text-align: left; }
+  table.heat tbody th { text-align: right; }
+  table.heat td { font-family: var(--f-mono); text-align: center; min-width: 40px; height: 30px; border-radius: 4px; }
+  .heat-scale { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); margin-top: 8px; }
+  .heat-scale i { display: block; width: 22px; height: 10px; }
+  .heat-scale i:first-of-type { border-radius: 3px 0 0 3px; }
+  .heat-scale i:last-of-type { border-radius: 0 3px 3px 0; }
+
+  /* ---------- spatial ---------- */
+  .world { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 260px); gap: 16px; align-items: start; }
+  @media (max-width: 1100px) { .world { grid-template-columns: minmax(0, 1fr); } }
+  .canvas-box { position: relative; width: 100%; max-width: 640px; aspect-ratio: 1; margin: 0 auto; border-radius: 8px; overflow: hidden; background: var(--panel); }
+  .canvas-box canvas { width: 100%; height: 100%; display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
+  .stat-list { display: grid; gap: 10px; margin: 0; }
+  .stat-list div { display: grid; }
+  .stat-list dt { font-size: 12px; color: var(--muted); }
+  .stat-list dd { margin: 0; font-family: var(--f-mono); font-size: 24px; font-weight: 600; line-height: 1.2; }
+  .playbar { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .foot { margin-top: 28px; color: var(--muted); font-size: 12.5px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <div class="brand">
+      <div class="logo" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      <div>
+        <h1>満足化・ゲーム理論ラボ</h1>
+        <p class="tagline">条件を動かすと、その場でシミュレーションをやり直します。「ほどほどで決める」と「全部比べる」はどちらが得か、協力はどんな条件で生き残るのかを、自分の手で確かめられます。</p>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="実験を選ぶ">
+    <a class="tab" role="tab" href="#satisfice" id="tab-satisfice" aria-controls="satisfice"><b>満足化</b><span>どこで探すのをやめるか</span></a>
+    <a class="tab" role="tab" href="#game" id="tab-game" aria-controls="game"><b>2×2ゲーム</b><span>ナッシュ均衡と最適反応</span></a>
+    <a class="tab" role="tab" href="#ipd" id="tab-ipd" aria-controls="ipd"><b>繰り返し囚人のジレンマ</b><span>総当たり戦と進化</span></a>
+    <a class="tab" role="tab" href="#spatial" id="tab-spatial" aria-controls="spatial"><b>空間ゲーム</b><span>となり同士の協力と裏切り</span></a>
+  </nav>
+
+  <!-- ======================= 満足化 ======================= -->
+  <section class="exp" id="satisfice" role="tabpanel" aria-labelledby="tab-satisfice">
+    <form class="controls" id="sat-form" onsubmit="return false">
+      <h2>条件</h2>
+      <div class="group">
+        <div class="field">
+          <div class="field-top"><label for="sat-n">候補の数</label><output for="sat-n" id="sat-n-out"></output></div>
+          <input type="range" id="sat-n" min="5" max="200" step="1" value="40">
+        </div>
+        <div class="field">
+          <div class="field-top"><label for="sat-cost">1つ調べるコスト</label><output for="sat-cost" id="sat-cost-out"></output></div>
+          <input type="range" id="sat-cost" min="0" max="3" step="0.05" value="0.5">
+          <p class="hint">候補の良さは 0〜100 点。手取り ＝ 選んだ候補の点 − コスト × 調べた数。</p>
+        </div>
+        <div class="field">
+          <span class="lab" id="sat-dist-lab">候補の良さの分布</span>
+          <div class="seg" id="sat-dist" role="group" aria-labelledby="sat-dist-lab">
+            <button type="button" data-v="uniform" aria-pressed="true">まんべんなく</button>
+            <button type="button" data-v="normal" aria-pressed="false">ふつうが多い</button>
+            <button type="button" data-v="rare" aria-pressed="false">当たりはまれ</button>
+          </div>
+        </div>
+        <label class="check"><input type="checkbox" id="sat-recall" checked><span>見送った候補にあとで戻れる<small>オフにすると「一度見送ったら二度と選べない」（結婚相手・物件探しの古典的な形）。全部見る最大化は使えなくなります。</small></span></label>
+      </div>
+      <div class="group">
+        <h2>戦略のパラメータ</h2>
+        <div class="field">
+          <div class="field-top"><label for="sat-asp">満足化の要求水準</label><output for="sat-asp" id="sat-asp-out"></output></div>
+          <input type="range" id="sat-asp" min="0" max="100" step="1" value="75">
+        </div>
+        <div class="field">
+          <div class="field-top"><label for="sat-drop">妥協の速さ（1つ見るごとに下げる点）</label><output for="sat-drop" id="sat-drop-out"></output></div>
+          <input type="range" id="sat-drop" min="0" max="5" step="0.1" value="1">
+          <p class="hint">「妥協する満足化」は上の要求水準から出発します。</p>
+        </div>
+        <div class="field">
+          <div class="field-top"><label for="sat-skip">見送りルールで見送る割合</label><output for="sat-skip" id="sat-skip-out"></output></div>
+          <input type="range" id="sat-skip" min="5" max="80" step="1" value="37">
+          <p class="hint">37%（≒1/e）は、戻れず・コストなしのとき最良を当てる確率が最大になる値です。</p>
+        </div>
+      </div>
+      <div class="group">
+        <div class="field">
+          <span class="lab" id="sat-trials-lab">試行回数</span>
+          <div class="seg" id="sat-trials" role="group" aria-labelledby="sat-trials-lab">
+            <button type="button" data-v="500" aria-pressed="false">500</button>
+            <button type="button" data-v="2000" aria-pressed="true">2,000</button>
+            <button type="button" data-v="10000" aria-pressed="false">10,000</button>
+          </div>
+        </div>
+        <div class="row"><button type="button" class="btn" id="sat-reroll">乱数を変えてやり直す</button><span class="hint mono" id="sat-seed"></span></div>
+      </div>
+    </form>
+
+    <div class="results">
+      <p class="insight" id="sat-insight" aria-live="polite"></p>
+      <div class="tiles" id="sat-tiles"></div>
+      <div class="card">
+        <h3>要求水準を変えると、満足化の手取りはどうなるか</h3>
+        <p class="sub">横軸: 満足化の要求水準 / 縦軸: 平均の手取り。横線は他の戦略。いちばん高い点が、この条件での「ちょうどよい妥協点」です。</p>
+        <ul class="legend" id="sat-sweep-legend"></ul>
+        <div class="chart" id="sat-sweep"></div>
+      </div>
+      <div class="card">
+        <h3>1回分のようす</h3>
+        <p class="sub">最初の試行で出てきた候補を順に並べたもの。▼ が各戦略の決めた候補です。点線は満足化の要求水準。</p>
+        <ul class="legend" id="sat-example-legend"></ul>
+        <div class="chart" id="sat-example"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= 2×2 ゲーム ======================= -->
+  <section class="exp" id="game" role="tabpanel" aria-labelledby="tab-game" hidden>
+    <div class="controls">
+      <h2>ゲームを選ぶ</h2>
+      <div class="presets" id="game-presets"></div>
+      <p class="hint" id="game-story"></p>
+      <div class="group">
+        <h2>わかったこと</h2>
+        <ul class="facts" id="game-facts"></ul>
+      </div>
+      <div class="group">
+        <p class="hint">得点の数字はそのまま書きかえられます。太字の数字は「相手の手に対する最適反応」。両方とも太字のマスがナッシュ均衡です。</p>
+      </div>
+    </div>
+    <div class="results">
+      <div class="card">
+        <h3>利得表</h3>
+        <p class="sub">各マスの左が<b>行プレイヤー</b>、右が<b>列プレイヤー</b>の得点。戦略の名前も書きかえられます。</p>
+        <div class="matrix-wrap"><table class="matrix" id="game-matrix"></table></div>
+      </div>
+      <div class="card">
+        <h3>最適反応と、進化のながれ</h3>
+        <p class="sub">横軸: 列プレイヤーが「<span id="game-xname"></span>」を選ぶ確率 / 縦軸: 行プレイヤーが「<span id="game-yname"></span>」を選ぶ確率。2本の最適反応の交点がナッシュ均衡。矢印は「得をする戦略ほど増える」（レプリケーター方程式）ときの動き。<b>図をクリック</b>すると、そこから出発した軌道を描きます。</p>
+        <ul class="legend" id="game-legend"></ul>
+        <div class="chart br-chart" id="game-br"></div>
+        <div class="row" style="justify-content:center;margin-top:8px"><button type="button" class="btn" id="game-clear">軌道を消す</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= 繰り返し囚人のジレンマ ======================= -->
+  <section class="exp" id="ipd" role="tabpanel" aria-labelledby="tab-ipd" hidden>
+    <form class="controls" id="ipd-form" onsubmit="return false">
+      <h2>得点（1回の対戦）</h2>
+      <div class="group">
+        <div class="pay-grid">
+          <label for="ipd-T"><b>T</b>裏切って勝つ<input class="num-input" type="number" id="ipd-T" value="5" step="0.5"></label>
+          <label for="ipd-R"><b>R</b>ともに協力<input class="num-input" type="number" id="ipd-R" value="3" step="0.5"></label>
+          <label for="ipd-P"><b>P</b>ともに裏切り<input class="num-input" type="number" id="ipd-P" value="1" step="0.5"></label>
+          <label for="ipd-S"><b>S</b>裏切られる<input class="num-input" type="number" id="ipd-S" value="0" step="0.5"></label>
+        </div>
+        <p class="msg warn" id="ipd-paywarn" hidden></p>
+      </div>
+      <div class="group">
+        <h2>対戦の条件</h2>
+        <div class="field">
+          <div class="field-top"><label for="ipd-rounds">1試合の回数</label><output id="ipd-rounds-out"></output></div>
+          <input type="range" id="ipd-rounds" min="5" max="500" step="5" value="100">
+        </div>
+        <div class="field">
+          <div class="field-top"><label for="ipd-noise">手のまちがい（ノイズ）</label><output id="ipd-noise-out"></output></div>
+          <input type="range" id="ipd-noise" min="0" max="20" step="0.5" value="2">
+          <p class="hint">協力するつもりが裏切りに（またはその逆に）なる確率。</p>
+        </div>
+        <div class="field">
+          <div class="field-top"><label for="ipd-reps">同じ組み合わせを何試合やるか</label><output id="ipd-reps-out"></output></div>
+          <input type="range" id="ipd-reps" min="1" max="30" step="1" value="10">
+        </div>
+        <label class="check"><input type="checkbox" id="ipd-self" checked><span>自分と同じ戦略とも対戦する</span></label>
+      </div>
+      <div class="group">
+        <h2>満足化プレイヤー</h2>
+        <div class="field">
+          <div class="field-top"><label for="ipd-asp">最初の要求水準</label><output id="ipd-asp-out"></output></div>
+          <input type="range" id="ipd-asp" min="0" max="6" step="0.1" value="2">
+          <p class="hint">P と R のあいだで固定すると「勝てば継続」とまったく同じ動きになります。</p>
+        </div>
+        <div class="field">
+          <div class="field-top"><label for="ipd-adapt">要求水準が経験に合わせて動く速さ</label><output id="ipd-adapt-out"></output></div>
+          <input type="range" id="ipd-adapt" min="0" max="0.5" step="0.01" value="0.1">
+        </div>
+      </div>
+      <div class="group">
+        <h2>参加する戦略</h2>
+        <div class="strat-chips" id="ipd-strats"></div>
+      </div>
+      <div class="group">
+        <h2>進化</h2>
+        <div class="field">
+          <div class="field-top"><label for="ipd-gens">世代数</label><output id="ipd-gens-out"></output></div>
+          <input type="range" id="ipd-gens" min="20" max="1000" step="10" value="300">
+        </div>
+        <div class="field">
+          <div class="field-top"><label for="ipd-mut">突然変異</label><output id="ipd-mut-out"></output></div>
+          <input type="range" id="ipd-mut" min="0" max="2" step="0.05" value="0.1">
+          <p class="hint">毎世代、この割合だけ全戦略に均等に入れかわる。絶滅した戦略が戻ってこられます。</p>
+        </div>
+        <div class="row"><button type="button" class="btn" id="ipd-reroll">乱数を変えてやり直す</button></div>
+      </div>
+    </form>
+    <div class="results">
+      <p class="insight" id="ipd-insight" aria-live="polite"></p>
+      <div class="two-col">
+        <div class="card">
+          <h3>総当たり戦の順位</h3>
+          <p class="sub">1回の対戦あたりの平均得点（全対戦相手の平均）</p>
+          <div class="bars" id="ipd-bars"></div>
+        </div>
+        <div class="card">
+          <h3>組み合わせごとの得点</h3>
+          <p class="sub">行の戦略が、列の戦略と当たったときの1回あたり平均得点</p>
+          <div class="heat-wrap"><table class="heat" id="ipd-heat"></table></div>
+          <div class="heat-scale" id="ipd-heat-scale"></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>進化: 集団の中の割合</h3>
+        <p class="sub">はじめは全戦略が同じ割合。得点が平均より高い戦略ほど次の世代で増えます（レプリケーター・ダイナミクス）。</p>
+        <ul class="legend" id="ipd-evo-legend"></ul>
+        <div class="chart" id="ipd-evo"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= 空間ゲーム ======================= -->
+  <section class="exp" id="spatial" role="tabpanel" aria-labelledby="tab-spatial" hidden>
+    <form class="controls" id="sp-form" onsubmit="return false">
+      <h2>条件</h2>
+      <div class="group">
+        <div class="field">
+          <div class="field-top"><label for="sp-b">裏切りの誘惑 b</label><output id="sp-b-out"></output></div>
+          <input type="range" id="sp-b" min="1" max="2.5" step="0.01" value="1.85">
+          <p class="hint">協力相手1人あたり、協力者は 1点、裏切り者は b 点。裏切り同士・裏切られた側は 0点。1.8〜2.0 あたりで万華鏡のような模様が出ます。</p>
+        </div>
+        <div class="field">
+          <span class="lab" id="sp-rule-lab">手の変え方</span>
+          <div class="seg" id="sp-rule" role="group" aria-labelledby="sp-rule-lab">
+            <button type="button" data-v="imitate" aria-pressed="true">いちばん得した隣をまねる</button>
+            <button type="button" data-v="satisfice" aria-pressed="false">満足していれば変えない</button>
+          </div>
+        </div>
+        <div class="field" id="sp-asp-field">
+          <div class="field-top"><label for="sp-asp">要求水準（1対戦あたり）</label><output id="sp-asp-out"></output></div>
+          <input type="range" id="sp-asp" min="0" max="2.5" step="0.05" value="0.7">
+          <p class="hint">「満足していれば変えない」のとき、得点がこれ以上なら手を変えず、未満のときだけ隣をまねます。</p>
+        </div>
+        <div class="field">
+          <div class="field-top"><label for="sp-mut">突然変異（毎ステップ）</label><output id="sp-mut-out"></output></div>
+          <input type="range" id="sp-mut" min="0" max="1" step="0.01" value="0">
+        </div>
+      </div>
+      <div class="group">
+        <h2>はじまり（変えるとリセット）</h2>
+        <div class="field">
+          <span class="lab" id="sp-start-lab">はじめの配置</span>
+          <div class="seg" id="sp-start" role="group" aria-labelledby="sp-start-lab">
+            <button type="button" data-v="random" aria-pressed="true">ばらばら</button>
+            <button type="button" data-v="center" aria-pressed="false">中央に裏切り者1人</button>
+          </div>
+        </div>
+        <div class="field" id="sp-ratio-field">
+          <div class="field-top"><label for="sp-ratio">はじめの協力者の割合</label><output id="sp-ratio-out"></output></div>
+          <input type="range" id="sp-ratio" min="5" max="99" step="1" value="90">
+        </div>
+        <div class="field">
+          <span class="lab" id="sp-size-lab">格子の大きさ</span>
+          <div class="seg" id="sp-size" role="group" aria-labelledby="sp-size-lab">
+            <button type="button" data-v="61" aria-pressed="false">61×61</button>
+            <button type="button" data-v="101" aria-pressed="true">101×101</button>
+            <button type="button" data-v="161" aria-pressed="false">161×161</button>
+          </div>
+        </div>
+      </div>
+      <div class="group">
+        <div class="field">
+          <div class="field-top"><label for="sp-speed">速さ（ステップ/秒）</label><output id="sp-speed-out"></output></div>
+          <input type="range" id="sp-speed" min="1" max="60" step="1" value="12">
+        </div>
+        <div class="playbar">
+          <button type="button" class="btn btn-primary" id="sp-play">一時停止</button>
+          <button type="button" class="btn" id="sp-step">1ステップ</button>
+          <button type="button" class="btn" id="sp-reset">リセット</button>
+        </div>
+      </div>
+    </form>
+    <div class="results">
+      <p class="insight" id="sp-insight" aria-live="polite"></p>
+      <div class="card">
+        <div class="world">
+          <div>
+            <ul class="legend" id="sp-legend"></ul>
+            <div class="canvas-box"><canvas id="sp-canvas" aria-label="格子の上の協力者と裏切り者の分布"></canvas></div>
+          </div>
+          <dl class="stat-list">
+            <div><dt>ステップ</dt><dd id="sp-t">0</dd></div>
+            <div><dt>協力者の割合</dt><dd id="sp-coop">—</dd></div>
+            <div><dt>このステップで手を変えた割合</dt><dd id="sp-change">—</dd></div>
+          </dl>
+        </div>
+      </div>
+      <div class="card">
+        <h3>協力者の割合の移り変わり</h3>
+        <p class="sub">直近 400 ステップ</p>
+        <div class="chart" id="sp-chart"></div>
+      </div>
+    </div>
+  </section>
+
+  <p class="foot">計算はすべてブラウザの中で行います。乱数はシードつきなので、同じ条件なら同じ結果になります。</p>
+</div>
+<!-- artifact:end -->
+
+<script>
+/* game-lab/src/sim.js */
+// 満足化・ゲーム理論ラボ: シミュレーションの中身（画面には触らない純粋な計算だけ）
+// ブラウザでは window.GameLabSim、Node では require() で読み込めます。
+(function (root) {
+  "use strict";
+
+  // ---------- 乱数（シードつき。同じ条件なら同じ結果になる） ----------
+  function mulberry32(seed) {
+    let a = seed >>> 0;
+    return function () {
+      a = (a + 0x6d2b79f5) >>> 0;
+      let t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  // =====================================================================
+  // 1. 満足化（探索をいつやめるか）
+  // =====================================================================
+  // 候補の良さは 0〜100 点。分布は3種類。
+  const DISTS = {
+    uniform: { name: "まんべんなく", draw: (r) => 100 * r() },
+    normal: {
+      name: "ふつうが多い",
+      draw: (r) => {
+        const u = 1 - r(), v = r();
+        const z = Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+        return Math.min(100, Math.max(0, 50 + 15 * z));
+      },
+    },
+    rare: { name: "当たりはまれ", draw: (r) => 100 * Math.pow(r(), 3) },
+  };
+
+  // trials × n 個の候補をまとめて作る（全戦略で同じ候補を使い、比べやすくする）
+  function sampleOptions(n, trials, dist, seed) {
+    const r = mulberry32(seed);
+    const draw = (DISTS[dist] || DISTS.uniform).draw;
+    const v = new Float64Array(n * trials);
+    for (let i = 0; i < v.length; i++) v[i] = draw(r);
+    return v;
+  }
+
+  const SEARCH_STRATEGIES = [
+    { id: "max", name: "最大化", short: "全部見て、いちばん良いものを選ぶ" },
+    { id: "sat", name: "満足化", short: "要求水準を超えたら、そこで決める" },
+    { id: "adapt", name: "妥協する満足化", short: "見るたびに要求水準を下げていく" },
+    { id: "secretary", name: "見送りルール", short: "最初の一部は見送り、それより良いものが来たら決める" },
+  ];
+
+  // 1回分の探索。結果は [選んだ位置, 見た数]
+  function searchOnce(v, off, n, id, p) {
+    const recall = p.recall;
+    let best = off; // 見た中で最良の位置
+    if (id === "max") {
+      if (!recall) return null; // 戻れないと「全部見てから選ぶ」はできない
+      for (let i = off + 1; i < off + n; i++) if (v[i] > v[best]) best = i;
+      return [best - off, n];
+    }
+    if (id === "sat" || id === "adapt") {
+      const drop = id === "adapt" ? p.drop : 0;
+      for (let k = 0; k < n; k++) {
+        const i = off + k;
+        if (v[i] > v[best]) best = i;
+        if (v[i] >= p.aspiration - drop * k) return [k, k + 1];
+      }
+      return [recall ? best - off : n - 1, n];
+    }
+    if (id === "secretary") {
+      const skip = Math.min(n - 1, Math.max(1, Math.round(n * p.skipRatio)));
+      for (let k = 1; k < skip; k++) if (v[off + k] > v[best]) best = off + k;
+      const bar = v[best];
+      for (let k = skip; k < n; k++) {
+        const i = off + k;
+        if (v[i] > v[best]) best = i;
+        if (v[i] > bar) return [k, k + 1];
+      }
+      return [recall ? best - off : n - 1, n];
+    }
+    throw new Error("unknown strategy " + id);
+  }
+
+  function quantile(sorted, q) {
+    if (!sorted.length) return NaN;
+    const x = (sorted.length - 1) * q, lo = Math.floor(x), hi = Math.ceil(x);
+    return sorted[lo] + (sorted[hi] - sorted[lo]) * (x - lo);
+  }
+
+  // 1つの戦略を trials 回ためした成績
+  function evaluateSearch(v, n, trials, id, p, withSpread) {
+    const nets = withSpread ? new Float64Array(trials) : null;
+    let sumV = 0, sumLook = 0, sumNet = 0, hit = 0;
+    for (let t = 0; t < trials; t++) {
+      const off = t * n;
+      const res = searchOnce(v, off, n, id, p);
+      if (!res) return null;
+      const val = v[off + res[0]];
+      const net = val - p.cost * res[1];
+      sumV += val; sumLook += res[1]; sumNet += net;
+      let mx = v[off];
+      for (let i = off + 1; i < off + n; i++) if (v[i] > mx) mx = v[i];
+      if (val === mx) hit++;
+      if (nets) nets[t] = net;
+    }
+    const out = { value: sumV / trials, looked: sumLook / trials, net: sumNet / trials, bestRate: hit / trials };
+    if (nets) {
+      nets.sort();
+      out.p10 = quantile(nets, 0.1);
+      out.p50 = quantile(nets, 0.5);
+      out.p90 = quantile(nets, 0.9);
+    }
+    return out;
+  }
+
+  // 条件をまとめて計算する（画面の「満足化」タブ1回分）
+  function runSearchLab(cfg) {
+    const { n, trials, dist, seed } = cfg;
+    const v = sampleOptions(n, trials, dist, seed);
+    const p = { cost: cfg.cost, recall: cfg.recall, aspiration: cfg.aspiration, drop: cfg.drop, skipRatio: cfg.skipRatio };
+    const results = {};
+    for (const s of SEARCH_STRATEGIES) results[s.id] = evaluateSearch(v, n, trials, s.id, p, true);
+
+    // 要求水準を 0〜100 で動かしたときの、満足化の手取り
+    const sweep = [];
+    for (let a = 0; a <= 100; a += 2) {
+      const r = evaluateSearch(v, n, trials, "sat", { ...p, aspiration: a }, false);
+      sweep.push({ aspiration: a, net: r.net, looked: r.looked, value: r.value });
+    }
+    let bestA = sweep[0];
+    for (const s of sweep) if (s.net > bestA.net) bestA = s;
+
+    // 「1回分のようす」用に、最初の試行の候補と各戦略の決定位置
+    const example = { values: Array.from(v.subarray(0, n)), picks: {} };
+    for (const s of SEARCH_STRATEGIES) {
+      const r = searchOnce(v, 0, n, s.id, p);
+      example.picks[s.id] = r ? { index: r[0], looked: r[1] } : null;
+    }
+    return { results, sweep, bestAspiration: bestA, example };
+  }
+
+  // =====================================================================
+  // 2. 2×2 ゲーム（ナッシュ均衡・最適反応・進化のながれ）
+  // =====================================================================
+  // A[i][j] = 行プレイヤーの得点、B[i][j] = 列プレイヤーの得点（i: 上/下, j: 左/右）
+  function analyze2x2(A, B) {
+    const nash = [], pareto = [];
+    for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) {
+      if (A[i][j] >= A[1 - i][j] && B[i][j] >= B[i][1 - j]) nash.push([i, j]);
+      let dominated = false;
+      for (let k = 0; k < 2; k++) for (let l = 0; l < 2; l++) {
+        if (k === i && l === j) continue;
+        if (A[k][l] >= A[i][j] && B[k][l] >= B[i][j] && (A[k][l] > A[i][j] || B[k][l] > B[i][j])) dominated = true;
+      }
+      if (!dominated) pareto.push([i, j]);
+    }
+    const rowDom = [0, 1].find((i) => A[i][0] > A[1 - i][0] && A[i][1] > A[1 - i][1]);
+    const colDom = [0, 1].find((j) => B[0][j] > B[0][1 - j] && B[1][j] > B[1][1 - j]);
+
+    // 混合戦略: 相手をちょうど迷わせる確率
+    const dq = A[0][0] - A[0][1] - A[1][0] + A[1][1];
+    const dp = B[0][0] - B[1][0] - B[0][1] + B[1][1];
+    const q = dq !== 0 ? (A[1][1] - A[0][1]) / dq : NaN; // 列が「左」を選ぶ確率
+    const p = dp !== 0 ? (B[1][1] - B[1][0]) / dp : NaN; // 行が「上」を選ぶ確率
+    let mixed = null;
+    if (p > 0 && p < 1 && q > 0 && q < 1) {
+      const ev = (M) => p * q * M[0][0] + p * (1 - q) * M[0][1] + (1 - p) * q * M[1][0] + (1 - p) * (1 - q) * M[1][1];
+      mixed = { p, q, rowPayoff: ev(A), colPayoff: ev(B) };
+    }
+    return {
+      nash, pareto, mixed,
+      rowDominant: rowDom === undefined ? null : rowDom,
+      colDominant: colDom === undefined ? null : colDom,
+    };
+  }
+
+  // 相手の混合確率に対する最適反応（折れ線の頂点）
+  // 行: 横軸 q に対する p、列: 縦軸 p に対する q
+  function bestResponses(A, B) {
+    const rowGain = (q) => (A[0][0] * q + A[0][1] * (1 - q)) - (A[1][0] * q + A[1][1] * (1 - q));
+    const colGain = (p) => (B[0][0] * p + B[1][0] * (1 - p)) - (B[0][1] * p + B[1][1] * (1 - p));
+    return { row: brPath(rowGain), col: brPath(colGain) };
+  }
+  function brPath(gain) {
+    const g0 = gain(0), g1 = gain(1), s = (g) => (g > 0 ? 1 : g < 0 ? 0 : 0.5);
+    if (g0 === 0 && g1 === 0) return { indifferent: true, pts: [] };
+    if (Math.sign(g0) === Math.sign(g1) || g0 === 0 || g1 === 0) {
+      // 交差しない（または端で0）: ほぼ一定
+      const v = s(g0 !== 0 ? g0 : g1);
+      if (g0 === 0) return { pts: [[0, 0], [0, 1], [0, v], [1, v]] };
+      if (g1 === 0) return { pts: [[0, v], [1, v], [1, 0], [1, 1]] };
+      return { pts: [[0, v], [1, v]] };
+    }
+    const x = g0 / (g0 - g1);
+    return { pts: [[0, s(g0)], [x, s(g0)], [x, s(g1)], [1, s(g1)]] };
+  }
+
+  // 2集団レプリケーター方程式の向き
+  function replicator2(A, B, p, q) {
+    const uU = A[0][0] * q + A[0][1] * (1 - q), uD = A[1][0] * q + A[1][1] * (1 - q);
+    const vL = B[0][0] * p + B[1][0] * (1 - p), vR = B[0][1] * p + B[1][1] * (1 - p);
+    return [p * (1 - p) * (uU - uD), q * (1 - q) * (vL - vR)];
+  }
+  // (p, q) から出発した軌道（RK4）
+  function trajectory2(A, B, p0, q0, steps, dt) {
+    steps = steps || 600; dt = dt || 0.02;
+    const out = [[p0, q0]];
+    let p = p0, q = q0;
+    const scale = Math.max(1e-9, ...[0, 1].flatMap((i) => [0, 1].map((j) => Math.max(Math.abs(A[i][j]), Math.abs(B[i][j])))));
+    const h = dt * 4 / scale;
+    for (let s = 0; s < steps; s++) {
+      const k1 = replicator2(A, B, p, q);
+      const k2 = replicator2(A, B, p + h / 2 * k1[0], q + h / 2 * k1[1]);
+      const k3 = replicator2(A, B, p + h / 2 * k2[0], q + h / 2 * k2[1]);
+      const k4 = replicator2(A, B, p + h * k3[0], q + h * k3[1]);
+      const np = Math.min(1, Math.max(0, p + h / 6 * (k1[0] + 2 * k2[0] + 2 * k3[0] + k4[0])));
+      const nq = Math.min(1, Math.max(0, q + h / 6 * (k1[1] + 2 * k2[1] + 2 * k3[1] + k4[1])));
+      if (Math.abs(np - p) + Math.abs(nq - q) < 1e-7) break;
+      p = np; q = nq;
+      out.push([p, q]);
+    }
+    return out;
+  }
+
+  // =====================================================================
+  // 3. 繰り返し囚人のジレンマ（総当たり戦 → 進化）
+  // =====================================================================
+  const C = 0, D = 1;
+  // 並び順 = 色の順番（色は戦略についていく。並べ替えても色は変わらない）
+  const IPD_STRATEGIES = [
+    { id: "tft", name: "しっぺ返し", desc: "最初は協力。あとは相手が前回したことをまねる" },
+    { id: "alld", name: "いつも裏切る", desc: "毎回かならず裏切る" },
+    { id: "wsls", name: "勝てば継続", desc: "うまくいけば同じ手、だめなら手を変える（パブロフ）" },
+    { id: "grim", name: "トリガー", desc: "協力するが、一度でも裏切られたら永久に裏切る" },
+    { id: "gtft", name: "寛大なしっぺ返し", desc: "しっぺ返しだが、裏切られても 1/3 の確率で許す" },
+    { id: "allc", name: "いつも協力", desc: "毎回かならず協力する" },
+    { id: "sat", name: "満足化", desc: "得点が要求水準以上なら同じ手、未満なら手を変える。要求水準は経験に合わせて動く" },
+    { id: "rand", name: "でたらめ", desc: "半々の確率で協力か裏切り" },
+  ];
+
+  function payoffOf(pay, a, b) {
+    // pay = {T, R, P, S}
+    if (a === C) return b === C ? pay.R : pay.S;
+    return b === C ? pay.T : pay.P;
+  }
+
+  function newState(id, cfg) {
+    return { grim: false, asp: cfg.satAspiration, last: C, lastPay: null };
+  }
+
+  function decide(id, t, st, oppLast, r, cfg) {
+    switch (id) {
+      case "allc": return C;
+      case "alld": return D;
+      case "rand": return r() < 0.5 ? C : D;
+      case "tft": return t === 0 ? C : oppLast;
+      case "gtft": return t === 0 || oppLast === C ? C : r() < 1 / 3 ? C : D;
+      case "grim": return st.grim ? D : C;
+      case "wsls": {
+        if (t === 0) return C;
+        return st.lastPay >= cfg.pay.R ? st.last : 1 - st.last;
+      }
+      case "sat": {
+        if (t === 0) return C;
+        return st.lastPay >= st.asp ? st.last : 1 - st.last;
+      }
+    }
+    throw new Error("unknown strategy " + id);
+  }
+
+  function afterRound(id, st, myMove, oppMove, myPay, cfg) {
+    if (oppMove === D) st.grim = true;
+    if (id === "sat") st.asp = (1 - cfg.satAdapt) * st.asp + cfg.satAdapt * myPay;
+    st.last = myMove;
+    st.lastPay = myPay;
+  }
+
+  // 1試合。戻り値: 1回あたりの平均得点と協力率
+  function playMatch(ia, ib, cfg, r) {
+    const sa = newState(ia, cfg), sb = newState(ib, cfg);
+    let la = C, lb = C, ta = 0, tb = 0, ca = 0, cb = 0;
+    for (let t = 0; t < cfg.rounds; t++) {
+      let a = decide(ia, t, sa, lb, r, cfg);
+      let b = decide(ib, t, sb, la, r, cfg);
+      if (cfg.noise > 0) {
+        if (r() < cfg.noise) a = 1 - a;
+        if (r() < cfg.noise) b = 1 - b;
+      }
+      const pa = payoffOf(cfg.pay, a, b), pb = payoffOf(cfg.pay, b, a);
+      afterRound(ia, sa, a, b, pa, cfg);
+      afterRound(ib, sb, b, a, pb, cfg);
+      ta += pa; tb += pb;
+      if (a === C) ca++;
+      if (b === C) cb++;
+      la = a; lb = b;
+    }
+    const n = cfg.rounds;
+    return [ta / n, tb / n, ca / n, cb / n];
+  }
+
+  // 総当たり戦。M[i][j] = 戦略 i が j と当たったときの1回あたり平均得点
+  function tournament(ids, cfg) {
+    const r = mulberry32(cfg.seed);
+    const k = ids.length;
+    const M = Array.from({ length: k }, () => new Array(k).fill(0));
+    const coop = Array.from({ length: k }, () => new Array(k).fill(0));
+    const reps = Math.max(1, cfg.reps);
+    for (let i = 0; i < k; i++) for (let j = i; j < k; j++) {
+      let si = 0, sj = 0, ci = 0, cj = 0;
+      for (let rep = 0; rep < reps; rep++) {
+        const res = playMatch(ids[i], ids[j], cfg, r);
+        si += res[0]; sj += res[1]; ci += res[2]; cj += res[3];
+      }
+      if (i === j) {
+        M[i][i] = (si + sj) / (2 * reps);
+        coop[i][i] = (ci + cj) / (2 * reps);
+      } else {
+        M[i][j] = si / reps; M[j][i] = sj / reps;
+        coop[i][j] = ci / reps; coop[j][i] = cj / reps;
+      }
+    }
+    const scores = M.map((row, i) => {
+      let s = 0, c = 0;
+      for (let j = 0; j < k; j++) if (cfg.selfPlay || i !== j) { s += row[j]; c++; }
+      return c ? s / c : 0;
+    });
+    return { ids, M, coop, scores };
+  }
+
+  // 離散レプリケーター・ダイナミクス: 得点が平均より高い戦略ほど増える
+  function evolve(M, gens, mutation, x0) {
+    const k = M.length;
+    let x = x0 ? x0.slice() : new Array(k).fill(1 / k);
+    let min = Infinity;
+    for (const row of M) for (const v of row) if (v < min) min = v;
+    const shift = -min + 0.1; // 適応度を正にする
+    const hist = [x.slice()];
+    for (let g = 0; g < gens; g++) {
+      const f = M.map((row) => row.reduce((s, v, j) => s + v * x[j], 0) + shift);
+      const mean = f.reduce((s, v, i) => s + v * x[i], 0);
+      let nx = x.map((xi, i) => (xi * f[i]) / mean);
+      if (mutation > 0) nx = nx.map((xi) => (1 - mutation) * xi + mutation / k);
+      const sum = nx.reduce((a, b) => a + b, 0);
+      x = nx.map((xi) => xi / sum);
+      hist.push(x);
+    }
+    return hist;
+  }
+
+  // =====================================================================
+  // 4. 空間ゲーム（格子の上の囚人のジレンマ: Nowak & May 1992）
+  // =====================================================================
+  // 各マスは 協力(1) か 裏切り(0)。自分＋まわり8マスと対戦し、
+  // 協力相手1人につき 協力者は 1点、裏切り者は b 点もらう。
+  function spatialCreate(L, cfg) {
+    const r = mulberry32(cfg.seed);
+    const g = new Uint8Array(L * L);
+    if (cfg.start === "center") {
+      g.fill(1);
+      g[(L >> 1) * L + (L >> 1)] = 0;
+    } else {
+      for (let i = 0; i < g.length; i++) g[i] = r() < cfg.coopRatio ? 1 : 0;
+    }
+    return { L, g, prev: g.slice(), score: new Float64Array(L * L), cnt: new Uint8Array(L * L), r, t: 0 };
+  }
+
+  function spatialStep(S, cfg) {
+    const { L, g, score, cnt, r } = S;
+    const b = cfg.b;
+    // まわり（自分を含む9マス）の協力者の数
+    for (let y = 0; y < L; y++) {
+      const ym = ((y + L - 1) % L) * L, y0 = y * L, yp = ((y + 1) % L) * L;
+      for (let x = 0; x < L; x++) {
+        const xm = (x + L - 1) % L, xp = (x + 1) % L;
+        cnt[y0 + x] = g[ym + xm] + g[ym + x] + g[ym + xp] + g[y0 + xm] + g[y0 + x] + g[y0 + xp] + g[yp + xm] + g[yp + x] + g[yp + xp];
+      }
+    }
+    for (let i = 0; i < g.length; i++) score[i] = g[i] ? cnt[i] : cnt[i] * b;
+
+    S.prev.set(g);
+    const prev = S.prev;
+    const satisfice = cfg.rule === "satisfice";
+    const need = cfg.aspiration * 9;
+    for (let y = 0; y < L; y++) {
+      const ym = ((y + L - 1) % L) * L, y0 = y * L, yp = ((y + 1) % L) * L;
+      for (let x = 0; x < L; x++) {
+        const me = y0 + x;
+        if (satisfice && score[me] >= need) { g[me] = prev[me]; continue; }
+        const xm = (x + L - 1) % L, xp = (x + 1) % L;
+        let best = me, bs = score[me];
+        const nb = [ym + xm, ym + x, ym + xp, y0 + xm, y0 + xp, yp + xm, yp + x, yp + xp];
+        for (let k = 0; k < 8; k++) if (score[nb[k]] > bs) { bs = score[nb[k]]; best = nb[k]; }
+        g[me] = prev[best];
+      }
+    }
+    if (cfg.mutation > 0) for (let i = 0; i < g.length; i++) if (r() < cfg.mutation) g[i] = 1 - g[i];
+    S.t++;
+    let c = 0;
+    for (let i = 0; i < g.length; i++) c += g[i];
+    return c / g.length;
+  }
+
+  const api = {
+    mulberry32, DISTS, SEARCH_STRATEGIES, sampleOptions, searchOnce, evaluateSearch, runSearchLab,
+    analyze2x2, bestResponses, replicator2, trajectory2,
+    IPD_STRATEGIES, payoffOf, playMatch, tournament, evolve,
+    spatialCreate, spatialStep,
+  };
+  root.GameLabSim = api;
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+})(typeof window !== "undefined" ? window : globalThis);
+
+</script>
+<script>
+/* game-lab/src/app.js */
+// 満足化・ゲーム理論ラボ: 画面の動き
+(function () {
+  "use strict";
+  const Sim = window.GameLabSim;
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const fmt = (v, d = 1) => (Number.isFinite(v) ? v.toFixed(d) : "—");
+  const pct = (v, d = 0) => (Number.isFinite(v) ? (v * 100).toFixed(d) + "%" : "—");
+  const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+  // 変更を1フレームにまとめて再計算する
+  function scheduler(fn) {
+    let queued = false;
+    return () => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(() => { queued = false; fn(); });
+    };
+  }
+
+  function seg(id, onChange) {
+    const el = $(id);
+    el.addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-v]");
+      if (!b) return;
+      for (const x of el.querySelectorAll("button")) x.setAttribute("aria-pressed", String(x === b));
+      onChange(b.dataset.v);
+    });
+    return () => el.querySelector('button[aria-pressed="true"]').dataset.v;
+  }
+  function range(id, format, onChange) {
+    const el = $(id), out = $(id + "-out");
+    const show = () => { if (out) out.textContent = format(+el.value); };
+    el.addEventListener("input", () => { show(); onChange(); });
+    show();
+    return () => +el.value;
+  }
+  function legend(id, items) {
+    const ul = $(id);
+    ul.replaceChildren(...items.map((it) => {
+      const li = document.createElement("li");
+      const k = document.createElement("span");
+      k.className = "key" + (it.box ? " box" : "");
+      k.style.background = it.color;
+      if (it.dash) k.style.background = `repeating-linear-gradient(90deg, ${it.color} 0 4px, transparent 4px 7px)`;
+      if (it.dot) { k.className = "key box"; k.style.borderRadius = "50%"; k.style.width = k.style.height = "10px"; }
+      li.append(k, document.createTextNode(it.name));
+      return li;
+    }));
+  }
+
+  // =====================================================================
+  // グラフ部品（SVG）
+  // =====================================================================
+  function niceTicks(min, max, count) {
+    const span = max - min || 1;
+    const step0 = span / Math.max(1, count);
+    const mag = Math.pow(10, Math.floor(Math.log10(step0)));
+    const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= step0) || 10 * mag;
+    const out = [];
+    for (let v = Math.ceil(min / step - 1e-9) * step; v <= max + 1e-9; v += step) out.push(+v.toFixed(10));
+    return out;
+  }
+
+  function tipEl(chart) {
+    let tip = chart.querySelector(".tip");
+    if (!tip) { tip = document.createElement("div"); tip.className = "tip"; tip.hidden = true; chart.appendChild(tip); }
+    return tip;
+  }
+  function fillTip(tip, head, rows) {
+    const h = document.createElement("div");
+    h.className = "t-head"; h.textContent = head;
+    const items = rows.map((r) => {
+      const d = document.createElement("div"); d.className = "t-row";
+      const k = document.createElement("i"); k.className = "key"; k.style.background = r.color;
+      const b = document.createElement("b"); b.textContent = r.value;
+      const s = document.createElement("span"); s.textContent = r.name;
+      d.append(k, b, s);
+      return d;
+    });
+    tip.replaceChildren(h, ...items);
+  }
+  function placeTip(chart, tip, px, py) {
+    tip.hidden = false;
+    const cw = chart.clientWidth, tw = tip.offsetWidth, th = tip.offsetHeight;
+    let left = px + 14;
+    if (left + tw > cw) left = px - tw - 14;
+    tip.style.left = Math.max(0, left) + "px";
+    tip.style.top = Math.max(0, py - th / 2) + "px";
+  }
+
+  const charts = new Set();
+  const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver((entries) => {
+    for (const e of entries) {
+      const el = e.target;
+      if (el._render && Math.abs((el._w || 0) - el.clientWidth) > 2) el._render();
+    }
+  }) : null;
+  function register(el, render) {
+    el._render = () => { el._w = el.clientWidth; render(); };
+    if (!charts.has(el)) { charts.add(el); if (ro) ro.observe(el); }
+    el._render();
+  }
+
+  // 折れ線グラフ: 十字線とツールチップつき
+  function lineChart(el, o) {
+    register(el, () => drawLine(el, o));
+  }
+  function drawLine(el, o) {
+    const W = Math.max(280, el.clientWidth || 600), H = o.height || 260;
+    const m = { l: 48, r: o.right || 18, t: 12, b: 40 };
+    const iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const X = (v) => m.l + ((v - o.x.min) / (o.x.max - o.x.min || 1)) * iw;
+    const Y = (v) => m.t + ih - ((v - o.y.min) / (o.y.max - o.y.min || 1)) * ih;
+    const xt = o.x.ticks || niceTicks(o.x.min, o.x.max, Math.max(3, Math.floor(iw / 80)));
+    const yt = o.y.ticks || niceTicks(o.y.min, o.y.max, 5);
+    const xf = o.x.fmt || ((v) => v), yf = o.y.fmt || ((v) => v);
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.label || "")}">`;
+    s += `<g class="axis">`;
+    for (const v of yt) s += `<line class="gridline" x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${m.l - 8}" y="${Y(v) + 4}" text-anchor="end">${esc(yf(v))}</text>`;
+    for (const v of xt) s += `<text x="${X(v)}" y="${H - m.b + 16}" text-anchor="middle">${esc(xf(v))}</text>`;
+    s += `<line class="baseline" x1="${m.l}" x2="${W - m.r}" y1="${m.t + ih}" y2="${m.t + ih}"/>`;
+    s += `</g>`;
+    if (o.x.title) s += `<text class="axis-title" x="${m.l + iw / 2}" y="${H - 4}" text-anchor="middle">${esc(o.x.title)}</text>`;
+    if (o.y.title) s += `<text class="axis-title" transform="translate(12 ${m.t + ih / 2}) rotate(-90)" text-anchor="middle">${esc(o.y.title)}</text>`;
+    for (const h of o.hlines || []) {
+      if (!Number.isFinite(h.y)) continue;
+      s += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(h.y)}" y2="${Y(h.y)}" style="stroke:${h.color}" stroke-width="2" stroke-dasharray="6 4"/>`;
+    }
+    for (const sr of o.series) {
+      const d = sr.pts.map((p, i) => (i ? "L" : "M") + X(p[0]).toFixed(1) + " " + Y(p[1]).toFixed(1)).join("");
+      s += `<path d="${d}" fill="none" style="stroke:${sr.color}" stroke-width="${sr.width || 2}" stroke-linejoin="round" stroke-linecap="round"/>`;
+    }
+    for (const mk of o.markers || []) {
+      s += `<circle cx="${X(mk.x)}" cy="${Y(mk.y)}" r="5" style="fill:${mk.color};stroke:var(--surface)" stroke-width="2"/>`;
+      if (mk.label) s += `<text class="direct" x="${X(mk.x)}" y="${Y(mk.y) - 10}" text-anchor="${X(mk.x) > W - 90 ? "end" : X(mk.x) < m.l + 60 ? "start" : "middle"}">${esc(mk.label)}</text>`;
+    }
+    // 右端の直接ラベル（重ならないようにずらす）
+    if (o.directLabels) {
+      const labs = o.series.map((sr) => ({ sr, y: Y(sr.pts[sr.pts.length - 1][1]), last: sr.pts[sr.pts.length - 1][1] }))
+        .filter((l) => o.directLabels(l.sr, l.last)).sort((a, b) => a.y - b.y);
+      for (let i = 1; i < labs.length; i++) if (labs[i].y - labs[i - 1].y < 14) labs[i].y = labs[i - 1].y + 14;
+      for (const l of labs) s += `<text class="direct" x="${W - m.r + 6}" y="${Math.min(l.y, m.t + ih) + 4}">${esc(l.sr.name)}</text>`;
+    }
+    s += `<g class="hover" visibility="hidden"><line class="cross" y1="${m.t}" y2="${m.t + ih}"/>`;
+    for (const sr of o.series) s += `<circle r="4" style="fill:${sr.color};stroke:var(--surface)" stroke-width="2"/>`;
+    s += `</g><rect class="hit" x="${m.l}" y="${m.t}" width="${iw}" height="${ih}" fill="transparent"/></svg>`;
+    el.innerHTML = s;
+    const tip = tipEl(el);
+    const svg = el.querySelector("svg"), hover = svg.querySelector(".hover"), hit = svg.querySelector(".hit");
+    const base = o.series[0].pts;
+    const move = (ev) => {
+      const r = svg.getBoundingClientRect();
+      const px = ((ev.clientX - r.left) / r.width) * W;
+      const xv = o.x.min + ((px - m.l) / iw) * (o.x.max - o.x.min);
+      let lo = 0, hi = base.length - 1;
+      while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (base[mid][0] < xv) lo = mid; else hi = mid; }
+      const i = Math.abs(base[lo][0] - xv) < Math.abs(base[hi][0] - xv) ? lo : hi;
+      const cx = X(base[i][0]);
+      hover.setAttribute("visibility", "visible");
+      hover.querySelector("line").setAttribute("x1", cx);
+      hover.querySelector("line").setAttribute("x2", cx);
+      hover.querySelectorAll("circle").forEach((c, k) => { c.setAttribute("cx", cx); c.setAttribute("cy", Y(o.series[k].pts[i][1])); });
+      const rows = o.series.map((sr) => ({ name: sr.name, color: sr.color, v: sr.pts[i][1] }));
+      for (const h of o.hlines || []) if (Number.isFinite(h.y)) rows.push({ name: h.name, color: h.color, v: h.y });
+      rows.sort((a, b) => b.v - a.v);
+      fillTip(tip, o.tipHead ? o.tipHead(base[i][0]) : xf(base[i][0]), rows.map((rw) => ({ ...rw, value: yf(rw.v, true) })));
+      placeTip(el, tip, (cx / W) * r.width, ((ev.clientY - r.top)));
+    };
+    hit.addEventListener("pointermove", move);
+    hit.addEventListener("pointerdown", move);
+    hit.addEventListener("pointerleave", () => { hover.setAttribute("visibility", "hidden"); tip.hidden = true; });
+  }
+
+  // =====================================================================
+  // 1. 満足化
+  // =====================================================================
+  const SEARCH_COLORS = { max: "var(--s1)", sat: "var(--s2)", adapt: "var(--s3)", secretary: "var(--s4)" };
+  const satState = { seed: 20261104 };
+  const sat = {
+    n: range("sat-n", (v) => v + " 個", () => satRun()),
+    cost: range("sat-cost", (v) => v.toFixed(2) + " 点", () => satRun()),
+    asp: range("sat-asp", (v) => v + " 点", () => satRun()),
+    drop: range("sat-drop", (v) => v.toFixed(1) + " 点", () => satRun()),
+    skip: range("sat-skip", (v) => v + "%", () => satRun()),
+    dist: seg("sat-dist", () => satRun()),
+    trials: seg("sat-trials", () => satRun()),
+  };
+  $("sat-recall").addEventListener("change", () => satRun());
+  $("sat-reroll").addEventListener("click", () => { satState.seed = (Math.random() * 2 ** 31) >>> 0; satRun(); });
+
+  const satRun = scheduler(function () {
+    const cfg = {
+      n: sat.n(), cost: sat.cost(), aspiration: sat.asp(), drop: sat.drop(), skipRatio: sat.skip() / 100,
+      dist: sat.dist(), trials: +sat.trials(), recall: $("sat-recall").checked, seed: satState.seed,
+    };
+    $("sat-seed").textContent = "シード " + satState.seed;
+    const lab = Sim.runSearchLab(cfg);
+    renderSatTiles(lab, cfg);
+    renderSatInsight(lab, cfg);
+    renderSatSweep(lab, cfg);
+    renderSatExample(lab, cfg);
+  });
+
+  function satWinner(lab) {
+    let w = null;
+    for (const s of Sim.SEARCH_STRATEGIES) {
+      const r = lab.results[s.id];
+      if (r && (!w || r.net > lab.results[w].net)) w = s.id;
+    }
+    return w;
+  }
+
+  function renderSatTiles(lab, cfg) {
+    const w = satWinner(lab);
+    const html = Sim.SEARCH_STRATEGIES.map((s) => {
+      const r = lab.results[s.id];
+      const head = `<div class="tile-head"><span class="key" style="background:${SEARCH_COLORS[s.id]}"></span>${esc(s.name)}${s.id === w ? '<span class="pill">最高</span>' : ""}</div>`;
+      if (!r) return `<div class="tile">${head}<div class="big" style="color:var(--faint)">—</div><div class="meta">戻れない設定では使えません。全部見たあと、最良の候補はもう見送っています。</div><div class="desc">${esc(s.short)}</div></div>`;
+      return `<div class="tile${s.id === w ? " win" : ""}">${head}
+        <div class="big">${fmt(r.net)}<small>点</small></div>
+        <div class="meta">平均の手取り<br>選んだ候補 <span class="num">${fmt(r.value)}</span>点 ・ 調べた数 <span class="num">${fmt(r.looked)}</span><br>最良を選べた <span class="num">${pct(r.bestRate)}</span> ・ ばらつき <span class="num">${fmt(r.p10, 0)}〜${fmt(r.p90, 0)}</span></div>
+        <div class="desc">${esc(s.short)}</div></div>`;
+    }).join("");
+    $("sat-tiles").innerHTML = html;
+  }
+
+  function renderSatInsight(lab, cfg) {
+    const w = satWinner(lab), R = lab.results, best = lab.bestAspiration;
+    const name = (id) => Sim.SEARCH_STRATEGIES.find((s) => s.id === id).name;
+    let t = `この条件では <b>${esc(name(w))}</b> の手取りがいちばん高く、平均 <span class="num">${fmt(R[w].net)}</span> 点でした。`;
+    const diff = best.net - R.sat.net;
+    t += ` 満足化の要求水準は <span class="num">${best.aspiration}</span> 点のときが最もよく（平均 <span class="num">${fmt(best.net)}</span> 点）`;
+    t += diff > 0.05 ? `、いまの ${cfg.aspiration} 点より <span class="num">${fmt(diff)}</span> 点上です。` : `、いまの設定がほぼ最適です。`;
+    if (R.max) {
+      const gap = R.sat.net - R.max.net;
+      t += ` 全部見る最大化はいつも最良を選びますが、調べるコストが毎回 <span class="num">${fmt(cfg.cost * cfg.n)}</span> 点かかるため`;
+      t += gap > 0 ? `、満足化より <span class="num">${fmt(gap)}</span> 点低くなりました。` : `、それでも満足化より <span class="num">${fmt(-gap)}</span> 点高くなっています。コストを上げると逆転します。`;
+    } else {
+      t += ` 戻れない設定では「全部見てから選ぶ」はできません。見送りルールと満足化の差を見てください。`;
+    }
+    $("sat-insight").innerHTML = t;
+  }
+
+  function renderSatSweep(lab, cfg) {
+    const R = lab.results;
+    const ys = lab.sweep.map((s) => s.net).concat(Object.values(R).filter(Boolean).map((r) => r.net));
+    let ymin = Math.min(...ys), ymax = Math.max(...ys);
+    const pad = (ymax - ymin) * 0.12 || 5;
+    ymin = Math.floor((ymin - pad) / 5) * 5; ymax = Math.ceil((ymax + pad) / 5) * 5;
+    const hl = [];
+    if (R.max) hl.push({ name: "最大化", color: SEARCH_COLORS.max, y: R.max.net });
+    hl.push({ name: "妥協する満足化", color: SEARCH_COLORS.adapt, y: R.adapt.net });
+    hl.push({ name: "見送りルール", color: SEARCH_COLORS.secretary, y: R.secretary.net });
+    legend("sat-sweep-legend", [{ name: "満足化（要求水準ごと）", color: SEARCH_COLORS.sat }, ...hl.map((h) => ({ name: h.name, color: h.color, dash: true }))]);
+    const cur = lab.sweep.reduce((a, b) => (Math.abs(b.aspiration - cfg.aspiration) < Math.abs(a.aspiration - cfg.aspiration) ? b : a));
+    lineChart($("sat-sweep"), {
+      label: "要求水準と平均の手取り",
+      height: 270,
+      x: { min: 0, max: 100, ticks: [0, 20, 40, 60, 80, 100], title: "要求水準（点）" },
+      y: { min: ymin, max: ymax, title: "平均の手取り（点）", fmt: (v, tip) => (tip ? v.toFixed(1) : v) },
+      series: [{ name: "満足化", color: SEARCH_COLORS.sat, pts: lab.sweep.map((s) => [s.aspiration, s.net]) }],
+      hlines: hl,
+      markers: [
+        { x: lab.bestAspiration.aspiration, y: lab.bestAspiration.net, color: SEARCH_COLORS.sat, label: `最適 ${lab.bestAspiration.aspiration}点` },
+        ...(Math.abs(cur.aspiration - lab.bestAspiration.aspiration) > 3 ? [{ x: cur.aspiration, y: cur.net, color: "var(--ink)", label: "いまの設定" }] : []),
+      ],
+      tipHead: (x) => `要求水準 ${x} 点`,
+    });
+  }
+
+  function renderSatExample(lab, cfg) {
+    const el = $("sat-example");
+    legend("sat-example-legend", [
+      { name: "候補の良さ", color: "var(--seq-2)", box: true },
+      ...Sim.SEARCH_STRATEGIES.filter((s) => lab.example.picks[s.id]).map((s) => ({ name: s.name, color: SEARCH_COLORS[s.id] })),
+    ]);
+    register(el, () => {
+      const vals = lab.example.values, n = vals.length;
+      const W = Math.max(280, el.clientWidth || 600), H = 250;
+      const m = { l: 40, r: 10, t: 64, b: 30 };
+      const iw = W - m.l - m.r, ih = H - m.t - m.b;
+      const bw = iw / n, gap = bw > 6 ? 2 : bw > 3 ? 1 : 0;
+      const Y = (v) => m.t + ih - (v / 100) * ih;
+      let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="1回分の候補と各戦略の決定"><g class="axis">`;
+      for (const v of [0, 25, 50, 75, 100]) s += `<line class="gridline" x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${m.l - 6}" y="${Y(v) + 4}" text-anchor="end">${v}</text>`;
+      const step = Math.ceil(n / Math.max(4, Math.floor(iw / 50)));
+      for (let i = 0; i < n; i += step) s += `<text x="${m.l + (i + 0.5) * bw}" y="${H - m.b + 16}" text-anchor="middle">${i + 1}</text>`;
+      s += `</g>`;
+      // 見送りルールの見送りゾーン
+      const skip = Math.min(n - 1, Math.max(1, Math.round(n * cfg.skipRatio)));
+      s += `<rect x="${m.l}" y="${m.t}" width="${skip * bw}" height="${ih}" style="fill:var(--s4)" opacity="0.08"/>`;
+      s += `<text class="lbl" x="${m.l + 4}" y="${m.t + 12}">見送りゾーン</text>`;
+      const chosen = new Set(Object.values(lab.example.picks).filter(Boolean).map((p) => p.index));
+      for (let i = 0; i < n; i++) {
+        const x = m.l + i * bw + gap / 2, w = Math.max(1, bw - gap), y = Y(vals[i]);
+        const h = m.t + ih - y, r = Math.min(4, w / 2, h);
+        s += `<path d="M${x} ${m.t + ih}V${y + r}q0 ${-r} ${r} ${-r}h${w - 2 * r}q${r} 0 ${r} ${r}V${m.t + ih}Z" style="fill:var(${chosen.has(i) ? "--seq-3" : "--seq-2"})"/>`;
+      }
+      // 要求水準のライン
+      s += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(cfg.aspiration)}" y2="${Y(cfg.aspiration)}" style="stroke:var(--s2)" stroke-width="2" stroke-dasharray="6 4"/>`;
+      const endA = cfg.aspiration - cfg.drop * (n - 1);
+      s += `<line x1="${m.l + bw / 2}" x2="${m.l + (n - 0.5) * bw}" y1="${Y(cfg.aspiration)}" y2="${Y(Math.max(-30, endA))}" style="stroke:var(--s3)" stroke-width="2" stroke-dasharray="2 4"/>`;
+      // 各戦略の ▼
+      const byIndex = {};
+      for (const st of Sim.SEARCH_STRATEGIES) {
+        const p = lab.example.picks[st.id];
+        if (p) (byIndex[p.index] = byIndex[p.index] || []).push(st);
+      }
+      for (const [idx, list] of Object.entries(byIndex)) {
+        const cx = m.l + (+idx + 0.5) * bw;
+        list.forEach((st, k) => {
+          const ty = Y(vals[idx]) - 8 - k * 13;
+          s += `<path d="M${cx - 6} ${ty - 9}L${cx + 6} ${ty - 9}L${cx} ${ty}Z" style="fill:${SEARCH_COLORS[st.id]};stroke:var(--surface)" stroke-width="1.5"/>`;
+        });
+      }
+      for (let i = 0; i < n; i++) s += `<rect class="bar-hit" data-i="${i}" x="${m.l + i * bw}" y="${m.t - 50}" width="${bw}" height="${ih + 50}" fill="transparent"/>`;
+      s += `</svg>`;
+      el.innerHTML = s;
+      const tip = tipEl(el), svg = el.querySelector("svg");
+      svg.addEventListener("pointermove", (ev) => {
+        const t = ev.target.closest(".bar-hit");
+        if (!t) { tip.hidden = true; return; }
+        const i = +t.dataset.i;
+        const rows = [{ name: "この候補の良さ", color: "var(--seq-2)", value: fmt(vals[i]) }];
+        for (const st of byIndex[i] || []) {
+          const p = lab.example.picks[st.id];
+          rows.push({ name: `${st.name}が決定（調べた数 ${p.looked}）`, color: SEARCH_COLORS[st.id], value: fmt(vals[i] - cfg.cost * p.looked) });
+        }
+        fillTip(tip, `${i + 1} 番目の候補`, rows);
+        const r = svg.getBoundingClientRect();
+        placeTip(el, tip, ev.clientX - r.left, ev.clientY - r.top);
+      });
+      svg.addEventListener("pointerleave", () => { tip.hidden = true; });
+    });
+  }
+
+  // =====================================================================
+  // 2. 2×2 ゲーム
+  // =====================================================================
+  const sym = (A) => A.map((row, i) => row.map((_, j) => A[j][i]));
+  const PRESETS = [
+    { id: "pd", name: "囚人のジレンマ", rows: ["協力", "裏切り"], A: [[3, 0], [5, 1]],
+      story: "2人とも協力すれば 3点ずつ。でも相手が何をしても、自分は裏切ったほうが得。だから2人とも裏切り、1点ずつになる。" },
+    { id: "stag", name: "鹿狩り", rows: ["鹿", "うさぎ"], A: [[4, 0], [3, 3]],
+      story: "2人で協力すれば鹿（4点）がとれるが、1人だけだと何もとれない。うさぎ（3点）なら1人でも確実。信頼の問題。" },
+    { id: "chicken", name: "チキンゲーム", rows: ["よける", "直進"], A: [[3, 1], [4, 0]],
+      story: "向かい合って車を走らせる。よけたほうは「弱虫」だが、2人とも直進すると大事故（0点）。" },
+    { id: "bos", name: "行き先の調整", rows: ["映画", "野球"], A: [[3, 0], [0, 2]], B: [[2, 0], [0, 3]],
+      story: "2人とも一緒に出かけたいが、行の人は映画、列の人は野球のほうが好き。別々になるのがいちばんつまらない。" },
+    { id: "mp", name: "コイン合わせ", rows: ["表", "裏"], A: [[1, -1], [-1, 1]], B: [[-1, 1], [1, -1]],
+      story: "そろえば行の勝ち、ずれれば列の勝ち。読まれたら負けるので、純粋戦略の均衡はない。" },
+    { id: "harmony", name: "ハーモニー", rows: ["協力", "裏切り"], A: [[4, 3], [2, 1]],
+      story: "協力がいつも得なので、ジレンマがない。比較のための対照実験。" },
+  ];
+  const game = { A: null, B: null, rows: null, cols: null, preset: "pd", trajs: [] };
+
+  function loadPreset(id) {
+    const p = PRESETS.find((x) => x.id === id);
+    game.preset = id;
+    game.A = p.A.map((r) => r.slice());
+    game.B = (p.B || sym(p.A)).map((r) => r.slice());
+    game.rows = p.rows.slice();
+    game.cols = (p.cols || p.rows).slice();
+    game.trajs = [];
+    $("game-story").textContent = p.story;
+    for (const b of $("game-presets").children) b.setAttribute("aria-pressed", String(b.dataset.v === id));
+    buildMatrix();
+    seedTrajs();
+    gameRender();
+  }
+  function seedTrajs() {
+    game.trajs = [[0.15, 0.85], [0.85, 0.15], [0.3, 0.3], [0.7, 0.7], [0.55, 0.45]].map(([p, q]) => Sim.trajectory2(game.A, game.B, p, q));
+  }
+
+  $("game-presets").innerHTML = PRESETS.map((p) => `<button type="button" class="chip" data-v="${p.id}" aria-pressed="false">${esc(p.name)}</button>`).join("");
+  $("game-presets").addEventListener("click", (e) => { const b = e.target.closest("button[data-v]"); if (b) loadPreset(b.dataset.v); });
+
+  function buildMatrix() {
+    const t = $("game-matrix");
+    const lab = (who, i) => `<input id="lab-${who}-${i}" aria-label="${who === "r" ? "行" : "列"}プレイヤーの戦略${i + 1}の名前" value="${esc((who === "r" ? game.rows : game.cols)[i])}">`;
+    let h = `<tr><th></th><th>列: ${lab("c", 0)}</th><th>列: ${lab("c", 1)}</th></tr>`;
+    for (let i = 0; i < 2; i++) {
+      h += `<tr><th>行: ${lab("r", i)}</th>`;
+      for (let j = 0; j < 2; j++) {
+        h += `<td class="cell" id="cell-${i}${j}"><div class="cell-pay">
+          <label style="color:var(--s1)"><span>行</span><input class="num-input" type="number" step="0.5" id="pa-${i}${j}" value="${game.A[i][j]}"></label>
+          <label style="color:var(--s2)"><span>列</span><input class="num-input" type="number" step="0.5" id="pb-${i}${j}" value="${game.B[i][j]}"></label>
+        </div><div class="cell-badges" id="badges-${i}${j}"></div></td>`;
+      }
+      h += `</tr>`;
+    }
+    t.innerHTML = h;
+  }
+  $("game-matrix").addEventListener("input", (e) => {
+    const id = e.target.id;
+    if (/^p[ab]-\d\d$/.test(id)) {
+      const v = parseFloat(e.target.value);
+      if (!Number.isFinite(v)) return;
+      const i = +id[3], j = +id[4];
+      (id[1] === "a" ? game.A : game.B)[i][j] = v;
+      game.preset = null;
+      for (const b of $("game-presets").children) b.setAttribute("aria-pressed", "false");
+      $("game-story").textContent = "自分で作ったゲームです。";
+      seedTrajs();
+    } else if (/^lab-[rc]-\d$/.test(id)) {
+      (id[4] === "r" ? game.rows : game.cols)[+id[6]] = e.target.value || "?";
+    }
+    gameRenderSoon();
+  });
+  $("game-clear").addEventListener("click", () => { game.trajs = []; gameRender(); });
+
+  const gameRenderSoon = scheduler(() => gameRender());
+  function gameRender() {
+    const { A, B } = game;
+    const an = Sim.analyze2x2(A, B);
+    const isNash = (i, j) => an.nash.some(([a, b]) => a === i && b === j);
+    const isPareto = (i, j) => an.pareto.some(([a, b]) => a === i && b === j);
+    for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) {
+      $("cell-" + i + j).classList.toggle("nash", isNash(i, j));
+      $("pa-" + i + j).parentElement.classList.toggle("br", A[i][j] >= A[1 - i][j]);
+      $("pb-" + i + j).parentElement.classList.toggle("br", B[i][j] >= B[i][1 - j]);
+      const bd = $("badges-" + i + j);
+      bd.innerHTML = (isNash(i, j) ? '<span class="badge nash">ナッシュ均衡</span>' : "") + (isPareto(i, j) ? '<span class="badge">パレート最適</span>' : "");
+    }
+    const cell = (i, j) => `（${game.rows[i]}, ${game.cols[j]}）`;
+    const facts = [];
+    facts.push(an.nash.length ? `純粋戦略のナッシュ均衡: ${an.nash.map(([i, j]) => cell(i, j)).join("、")}` : "純粋戦略のナッシュ均衡はありません。");
+    if (an.mixed) facts.push(`混合戦略の均衡: 行は「${game.rows[0]}」を ${pct(an.mixed.p)}、列は「${game.cols[0]}」を ${pct(an.mixed.q)} の確率で選ぶ。期待得点は 行 ${fmt(an.mixed.rowPayoff, 2)}・列 ${fmt(an.mixed.colPayoff, 2)}。`);
+    if (an.rowDominant !== null) facts.push(`行プレイヤーには「${game.rows[an.rowDominant]}」が支配戦略（相手が何を選んでも、こちらのほうが得）。`);
+    if (an.colDominant !== null) facts.push(`列プレイヤーには「${game.cols[an.colDominant]}」が支配戦略。`);
+    const bad = an.nash.filter(([i, j]) => !isPareto(i, j));
+    if (bad.length) facts.push(`均衡 ${bad.map(([i, j]) => cell(i, j)).join("、")} はパレート最適ではありません。2人とも得をする別の結果があるのに、そこへ行けない。これが社会的ジレンマです。`);
+    if (an.nash.length >= 2) facts.push("均衡が複数あります。どちらに落ち着くかは、出発点（相手への予想）しだい。右の図で、出発点を変えて軌道を描いてみてください。");
+    $("game-facts").replaceChildren(...facts.map((f) => { const li = document.createElement("li"); li.textContent = f; return li; }));
+    $("game-xname").textContent = game.cols[0];
+    $("game-yname").textContent = game.rows[0];
+    legend("game-legend", [
+      { name: "行の最適反応", color: "var(--s1)" },
+      { name: "列の最適反応", color: "var(--s2)" },
+      { name: "ナッシュ均衡", color: "var(--accent)", dot: true },
+      { name: "進化の軌道", color: "var(--ink)" },
+    ]);
+    drawBR(an);
+  }
+
+  function drawBR(an) {
+    const el = $("game-br");
+    register(el, () => {
+      const W = Math.max(260, Math.min(520, el.clientWidth || 480)), m = { l: 44, r: 16, t: 14, b: 40 };
+      const size = W - m.l - m.r, H = size + m.t + m.b;
+      const X = (q) => m.l + q * size, Y = (p) => m.t + (1 - p) * size;
+      const { A, B } = game;
+      let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="最適反応と進化の流れ"><g class="axis">`;
+      for (const v of [0, 0.25, 0.5, 0.75, 1]) {
+        s += `<line class="gridline" x1="${X(0)}" x2="${X(1)}" y1="${Y(v)}" y2="${Y(v)}"/><line class="gridline" x1="${X(v)}" x2="${X(v)}" y1="${Y(0)}" y2="${Y(1)}"/>`;
+        s += `<text x="${m.l - 6}" y="${Y(v) + 4}" text-anchor="end">${v * 100}%</text><text x="${X(v)}" y="${Y(0) + 16}" text-anchor="middle">${v * 100}%</text>`;
+      }
+      s += `<rect x="${X(0)}" y="${Y(1)}" width="${size}" height="${size}" fill="none" style="stroke:var(--line)"/></g>`;
+      s += `<text class="axis-title" x="${m.l + size / 2}" y="${H - 4}" text-anchor="middle">列が「${esc(game.cols[0])}」を選ぶ確率</text>`;
+      s += `<text class="axis-title" transform="translate(12 ${m.t + size / 2}) rotate(-90)" text-anchor="middle">行が「${esc(game.rows[0])}」を選ぶ確率</text>`;
+      // 矢印の場
+      const k = 11;
+      let maxMag = 0;
+      const field = [];
+      for (let a = 0; a < k; a++) for (let b = 0; b < k; b++) {
+        const q = (a + 0.5) / k, p = (b + 0.5) / k;
+        const [dp, dq] = Sim.replicator2(A, B, p, q);
+        const mag = Math.hypot(dp, dq);
+        maxMag = Math.max(maxMag, mag);
+        field.push([q, p, dq, dp, mag]);
+      }
+      const cellPx = size / k;
+      for (const [q, p, dq, dp, mag] of field) {
+        if (mag < 1e-9) continue;
+        const len = cellPx * 0.42 * Math.sqrt(mag / maxMag) + 2;
+        const ux = dq / mag, uy = -dp / mag;
+        const x0 = X(q) - ux * len / 2, y0 = Y(p) - uy * len / 2, x1 = X(q) + ux * len / 2, y1 = Y(p) + uy * len / 2;
+        const hx = -ux * 4, hy = -uy * 4;
+        s += `<path d="M${x0.toFixed(1)} ${y0.toFixed(1)}L${x1.toFixed(1)} ${y1.toFixed(1)}M${(x1 + hx - uy * 3).toFixed(1)} ${(y1 + hy + ux * 3).toFixed(1)}L${x1.toFixed(1)} ${y1.toFixed(1)}L${(x1 + hx + uy * 3).toFixed(1)} ${(y1 + hy - ux * 3).toFixed(1)}" fill="none" style="stroke:var(--faint)" stroke-width="1.2" stroke-linecap="round" opacity="0.8"/>`;
+      }
+      // 最適反応
+      const br = Sim.bestResponses(A, B);
+      const path = (pts, swap) => pts.map((pt, i) => { const q = swap ? pt[1] : pt[0], p = swap ? pt[0] : pt[1]; return (i ? "L" : "M") + X(q).toFixed(1) + " " + Y(p).toFixed(1); }).join("");
+      // 行: pts = [q, p] / 列: pts = [p, q]
+      if (br.row.pts.length) s += `<path d="${path(br.row.pts, false)}" fill="none" style="stroke:var(--s1)" stroke-width="3" stroke-linejoin="round"/>`;
+      if (br.col.pts.length) s += `<path d="${path(br.col.pts, true)}" fill="none" style="stroke:var(--s2)" stroke-width="3" stroke-linejoin="round" stroke-dasharray="${br.row.pts.length ? "0" : "0"}"/>`;
+      // 軌道
+      for (const tr of game.trajs) {
+        const d = tr.map(([p, q], i) => (i ? "L" : "M") + X(q).toFixed(1) + " " + Y(p).toFixed(1)).join("");
+        const [p0, q0] = tr[0], [p1, q1] = tr[tr.length - 1];
+        s += `<path d="${d}" fill="none" style="stroke:var(--ink)" stroke-width="2" stroke-linecap="round"/>`;
+        s += `<circle cx="${X(q0)}" cy="${Y(p0)}" r="3.5" style="fill:var(--surface);stroke:var(--ink)" stroke-width="2"/>`;
+        s += `<circle cx="${X(q1)}" cy="${Y(p1)}" r="3" style="fill:var(--ink)"/>`;
+      }
+      // 均衡
+      const eq = an.nash.map(([i, j]) => [i === 0 ? 1 : 0, j === 0 ? 1 : 0]);
+      if (an.mixed) eq.push([an.mixed.p, an.mixed.q]);
+      for (const [p, q] of eq) s += `<circle cx="${X(q)}" cy="${Y(p)}" r="7" style="fill:var(--accent);stroke:var(--surface)" stroke-width="2.5"/>`;
+      s += `<rect class="hit" x="${X(0)}" y="${Y(1)}" width="${size}" height="${size}" fill="transparent"/></svg>`;
+      el.innerHTML = s;
+      const svg = el.querySelector("svg"), tip = tipEl(el);
+      const toPQ = (ev) => {
+        const r = svg.getBoundingClientRect();
+        const x = ((ev.clientX - r.left) / r.width) * W, y = ((ev.clientY - r.top) / r.height) * H;
+        return [Math.min(1, Math.max(0, 1 - (y - m.t) / size)), Math.min(1, Math.max(0, (x - m.l) / size))];
+      };
+      const hit = svg.querySelector(".hit");
+      hit.addEventListener("click", (ev) => {
+        const [p, q] = toPQ(ev);
+        game.trajs.push(Sim.trajectory2(game.A, game.B, p, q));
+        if (game.trajs.length > 12) game.trajs.shift();
+        drawBR(an);
+      });
+      hit.addEventListener("pointermove", (ev) => {
+        const [p, q] = toPQ(ev);
+        const uU = A[0][0] * q + A[0][1] * (1 - q), uD = A[1][0] * q + A[1][1] * (1 - q);
+        const vL = B[0][0] * p + B[1][0] * (1 - p), vR = B[0][1] * p + B[1][1] * (1 - p);
+        fillTip(tip, `行「${game.rows[0]}」${pct(p)}・列「${game.cols[0]}」${pct(q)}`, [
+          { name: `行が「${game.rows[0]}」を選んだときの期待得点`, color: "var(--s1)", value: fmt(uU, 2) },
+          { name: `行が「${game.rows[1]}」を選んだときの期待得点`, color: "var(--s1)", value: fmt(uD, 2) },
+          { name: `列が「${game.cols[0]}」を選んだときの期待得点`, color: "var(--s2)", value: fmt(vL, 2) },
+          { name: `列が「${game.cols[1]}」を選んだときの期待得点`, color: "var(--s2)", value: fmt(vR, 2) },
+        ]);
+        const r = svg.getBoundingClientRect();
+        placeTip(el, tip, ev.clientX - r.left, ev.clientY - r.top);
+      });
+      hit.addEventListener("pointerleave", () => { tip.hidden = true; });
+    });
+  }
+
+  // =====================================================================
+  // 3. 繰り返し囚人のジレンマ
+  // =====================================================================
+  const IPD_COLORS = {};
+  Sim.IPD_STRATEGIES.forEach((s, i) => { IPD_COLORS[s.id] = `var(--s${i + 1})`; });
+  const ipdName = (id) => Sim.IPD_STRATEGIES.find((s) => s.id === id).name;
+  const ipdState = { seed: 1104 };
+  $("ipd-strats").innerHTML = Sim.IPD_STRATEGIES.map((s) =>
+    `<label class="strat-chip" title="${esc(s.desc)}"><input type="checkbox" id="ipd-st-${s.id}" value="${s.id}" checked><span class="key box" style="background:${IPD_COLORS[s.id]}"></span><span>${esc(s.name)}</span></label>`).join("");
+  const ipd = {
+    rounds: range("ipd-rounds", (v) => v + " 回", () => ipdRun()),
+    noise: range("ipd-noise", (v) => v.toFixed(1) + "%", () => ipdRun()),
+    reps: range("ipd-reps", (v) => v + " 試合", () => ipdRun()),
+    asp: range("ipd-asp", (v) => v.toFixed(1) + " 点", () => ipdRun()),
+    adapt: range("ipd-adapt", (v) => (v === 0 ? "固定" : v.toFixed(2)), () => ipdRun()),
+    gens: range("ipd-gens", (v) => v + " 世代", () => ipdRun()),
+    mut: range("ipd-mut", (v) => v.toFixed(2) + "%", () => ipdRun()),
+  };
+  for (const id of ["ipd-T", "ipd-R", "ipd-P", "ipd-S"]) $(id).addEventListener("input", () => ipdRun());
+  $("ipd-self").addEventListener("change", () => ipdRun());
+  $("ipd-strats").addEventListener("change", (e) => {
+    const on = [...$("ipd-strats").querySelectorAll("input:checked")];
+    if (on.length < 2) e.target.checked = true; // 2つ以上は必要
+    ipdRun();
+  });
+  $("ipd-reroll").addEventListener("click", () => { ipdState.seed = (Math.random() * 2 ** 31) >>> 0; ipdRun(); });
+
+  const ipdRun = scheduler(function () {
+    const num = (id, d) => { const v = parseFloat($(id).value); return Number.isFinite(v) ? v : d; };
+    const pay = { T: num("ipd-T", 5), R: num("ipd-R", 3), P: num("ipd-P", 1), S: num("ipd-S", 0) };
+    const warns = [];
+    if (!(pay.T > pay.R && pay.R > pay.P && pay.P > pay.S)) warns.push("T > R > P > S になっていないので、囚人のジレンマではありません（計算はそのまま続けます）。");
+    if (2 * pay.R <= pay.T + pay.S) warns.push("2R > T + S でないと、交互に裏切り合うほうが協力し続けるより得になります。");
+    $("ipd-paywarn").hidden = !warns.length;
+    $("ipd-paywarn").textContent = warns.join(" ");
+    const ids = Sim.IPD_STRATEGIES.map((s) => s.id).filter((id) => $("ipd-st-" + id).checked);
+    const cfg = {
+      pay, rounds: ipd.rounds(), noise: ipd.noise() / 100, reps: ipd.reps(), satAspiration: ipd.asp(), satAdapt: ipd.adapt(),
+      seed: ipdState.seed, selfPlay: $("ipd-self").checked,
+    };
+    const t = Sim.tournament(ids, cfg);
+    const hist = Sim.evolve(t.M, ipd.gens(), ipd.mut() / 100, null);
+    renderIpdBars(t, pay);
+    renderIpdHeat(t, pay);
+    renderIpdEvo(t, hist);
+    renderIpdInsight(t, hist, cfg);
+  });
+
+  function renderIpdBars(t, pay) {
+    const order = t.ids.map((id, i) => ({ id, s: t.scores[i] })).sort((a, b) => b.s - a.s);
+    const max = Math.max(pay.T, ...t.scores, 0.0001), min = Math.min(0, pay.S, ...t.scores);
+    $("ipd-bars").innerHTML = order.map(({ id, s }) => {
+      const w = ((s - min) / (max - min)) * 100;
+      return `<div class="bar-row" title="${esc(Sim.IPD_STRATEGIES.find((x) => x.id === id).desc)}"><span class="name"><span class="key box" style="background:${IPD_COLORS[id]}"></span>${esc(ipdName(id))}</span>
+        <span class="bar-track"><span class="bar-fill" style="width:${w.toFixed(1)}%;background:${IPD_COLORS[id]}"></span></span><span class="val">${fmt(s, 2)}</span></div>`;
+    }).join("");
+  }
+
+  function renderIpdHeat(t, pay) {
+    const lo = Math.min(pay.S, pay.P), hi = Math.max(pay.T, pay.R);
+    const bin = (v) => Math.max(0, Math.min(5, Math.floor(((v - lo) / (hi - lo || 1)) * 6)));
+    let h = `<thead><tr><th></th>${t.ids.map((id) => `<th scope="col">${esc(ipdName(id))}</th>`).join("")}</tr></thead><tbody>`;
+    t.ids.forEach((id, i) => {
+      h += `<tr><th scope="row">${esc(ipdName(id))}</th>`;
+      t.ids.forEach((jd, j) => {
+        const v = t.M[i][j], b = bin(v);
+        h += `<td style="background:var(--seq-${b});color:${b >= 3 ? "var(--on-seq-hi)" : "var(--ink)"}" title="${esc(ipdName(id))} 対 ${esc(ipdName(jd))}: ${fmt(v, 2)} 点（協力率 ${pct(t.coop[i][j])}）">${fmt(v, 1)}</td>`;
+      });
+      h += `</tr>`;
+    });
+    $("ipd-heat").innerHTML = h + "</tbody>";
+    $("ipd-heat-scale").innerHTML = `<span class="num">${fmt(lo, 1)}</span>${[0, 1, 2, 3, 4, 5].map((b) => `<i style="background:var(--seq-${b})"></i>`).join("")}<span class="num">${fmt(hi, 1)}</span><span>点</span>`;
+  }
+
+  function renderIpdEvo(t, hist) {
+    const series = t.ids.map((id, i) => ({ name: ipdName(id), color: IPD_COLORS[id], pts: hist.map((x, g) => [g, x[i]]) }));
+    legend("ipd-evo-legend", series.map((s) => ({ name: s.name, color: s.color })));
+    lineChart($("ipd-evo"), {
+      label: "世代ごとの戦略の割合",
+      height: 300, right: 116,
+      x: { min: 0, max: hist.length - 1, title: "世代" },
+      y: { min: 0, max: 1, ticks: [0, 0.25, 0.5, 0.75, 1], fmt: (v, tip) => pct(v, tip ? 1 : 0), title: "集団の中の割合" },
+      series,
+      directLabels: (sr, last) => last >= 0.06,
+      tipHead: (g) => `${g} 世代目`,
+    });
+  }
+
+  function renderIpdInsight(t, hist, cfg) {
+    const top = t.ids[t.scores.indexOf(Math.max(...t.scores))];
+    const last = hist[hist.length - 1];
+    const order = t.ids.map((id, i) => ({ id, x: last[i] })).sort((a, b) => b.x - a.x);
+    let s = `総当たり戦の1位は <b>${esc(ipdName(top))}</b>（1回あたり平均 <span class="num">${fmt(Math.max(...t.scores), 2)}</span> 点）。`;
+    s += ` 進化させると、${hist.length - 1} 世代後には <b>${esc(ipdName(order[0].id))}</b> が <span class="num">${pct(order[0].x)}</span>`;
+    s += order[1] && order[1].x > 0.1 ? `、${esc(ipdName(order[1].id))} が <span class="num">${pct(order[1].x)}</span> を占めています。` : ` を占めています。`;
+    const coopNow = t.ids.reduce((acc, id, i) => acc + last[i] * t.ids.reduce((a2, jd, j) => a2 + last[j] * t.coop[i][j], 0), 0);
+    s += ` このときの集団全体の協力率はおよそ <span class="num">${pct(coopNow)}</span>。`;
+    if (order[0].id === "alld" && order[0].x > 0.5) s += " 協力が崩れて裏切りが広がりました。1試合の回数を増やしたり、ノイズを減らしたりすると変わるか試してください。";
+    else if (cfg.rounds <= 10) s += " 試合が短いと、将来の仕返しがこわくないので、裏切りが得になりやすくなります。";
+    else if (cfg.noise >= 0.05 && t.ids.includes("tft")) s += " ノイズが大きいと、しっぺ返し同士は1回のまちがいから報復合戦になります。許す戦略や「勝てば継続」が有利になりやすい条件です。";
+    else if (cfg.noise === 0 && t.ids.includes("tft")) s += " ノイズが0だと、協力的な戦略どうしは区別がつかず、割合がほとんど動かないことがあります。";
+    $("ipd-insight").innerHTML = s;
+  }
+
+  // =====================================================================
+  // 4. 空間ゲーム
+  // =====================================================================
+  const sp = {
+    b: range("sp-b", (v) => v.toFixed(2), () => spInsight()),
+    asp: range("sp-asp", (v) => v.toFixed(2) + " 点", () => {}),
+    mut: range("sp-mut", (v) => v.toFixed(2) + "%", () => {}),
+    ratio: range("sp-ratio", (v) => v + "%", () => spReset()),
+    speed: range("sp-speed", (v) => v, () => {}),
+    rule: seg("sp-rule", () => { spShowFields(); spInsight(); }),
+    start: seg("sp-start", () => { spShowFields(); spReset(); }),
+    size: seg("sp-size", () => spReset()),
+  };
+  const spS = { S: null, hist: [], playing: true, acc: 0, lastT: 0, change: 0, colors: null, img: null, lastChart: 0, seed: 7 };
+  const canvas = $("sp-canvas"), ctx = canvas.getContext("2d");
+
+  function spShowFields() {
+    $("sp-asp-field").hidden = sp.rule() !== "satisfice";
+    $("sp-ratio-field").hidden = sp.start() !== "random";
+  }
+  function hexRgb(h) {
+    const m = /^#?([0-9a-f]{6})$/i.exec(h);
+    if (!m) return [128, 128, 128];
+    const n = parseInt(m[1], 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+  function spColors() {
+    spS.colors = { cc: hexRgb(cssVar("--s1")), dc: hexRgb(cssVar("--s1-soft")), dd: hexRgb(cssVar("--s2")), cd: hexRgb(cssVar("--s2-soft")) };
+  }
+  function spReset() {
+    const L = +sp.size();
+    spS.seed = (spS.seed * 1103515245 + 12345) >>> 0;
+    spS.S = Sim.spatialCreate(L, { seed: spS.seed, start: sp.start(), coopRatio: sp.ratio() / 100 });
+    canvas.width = canvas.height = L;
+    spS.img = ctx.createImageData(L, L);
+    spS.hist = [[0, coopFrac()]];
+    spS.change = NaN;
+    spDraw();
+    spStats(true);
+  }
+  function coopFrac() { let c = 0; for (const v of spS.S.g) c += v; return c / spS.S.g.length; }
+  function spStep() {
+    const f = Sim.spatialStep(spS.S, { b: sp.b(), rule: sp.rule(), aspiration: sp.asp(), mutation: sp.mut() / 100 });
+    const { g, prev } = spS.S;
+    let ch = 0;
+    for (let i = 0; i < g.length; i++) if (g[i] !== prev[i]) ch++;
+    spS.change = ch / g.length;
+    spS.hist.push([spS.S.t, f]);
+    if (spS.hist.length > 400) spS.hist.shift();
+  }
+  function spDraw() {
+    if (!spS.colors) spColors();
+    const { g, prev } = spS.S, d = spS.img.data, c = spS.colors;
+    for (let i = 0, k = 0; i < g.length; i++, k += 4) {
+      const col = g[i] ? (prev[i] ? c.cc : c.dc) : (prev[i] ? c.cd : c.dd);
+      d[k] = col[0]; d[k + 1] = col[1]; d[k + 2] = col[2]; d[k + 3] = 255;
+    }
+    ctx.putImageData(spS.img, 0, 0);
+  }
+  function spStats(forceChart) {
+    $("sp-t").textContent = spS.S.t;
+    $("sp-coop").textContent = pct(coopFrac(), 1);
+    $("sp-change").textContent = Number.isFinite(spS.change) ? pct(spS.change, 1) : "—";
+    const now = performance.now();
+    if (forceChart || now - spS.lastChart > 300) {
+      spS.lastChart = now;
+      const h = spS.hist;
+      lineChart($("sp-chart"), {
+        label: "協力者の割合の推移", height: 200,
+        x: { min: h[0][0], max: Math.max(h[0][0] + 1, h[h.length - 1][0]), title: "ステップ" },
+        y: { min: 0, max: 1, ticks: [0, 0.25, 0.5, 0.75, 1], fmt: (v, tip) => pct(v, tip ? 1 : 0) },
+        series: [{ name: "協力者の割合", color: "var(--s1)", pts: h }],
+        tipHead: (x) => `${x} ステップ目`,
+      });
+      spInsight();
+    }
+  }
+  function spInsight() {
+    const b = sp.b(), c = spS.S ? coopFrac() : NaN;
+    let s = `いま協力者は <span class="num">${pct(c, 1)}</span>。`;
+    if (sp.rule() === "satisfice") {
+      s += ` 「満足していれば変えない」では、要求水準 <span class="num">${sp.asp().toFixed(2)}</span> 点以上とれているマスは手を変えません。要求水準を下げると、裏切り者も協力者も今の手に満足して動かなくなり、模様が凍りつきます。`;
+    } else if (b < 9 / 8) {
+      s += ` b = <span class="num">${b.toFixed(2)}</span> では、裏切り者は協力者のかたまりに勝てず、広がれません（目安: b < 1.125）。`;
+    } else if (b < 1.8) {
+      s += ` b = <span class="num">${b.toFixed(2)}</span> では、協力者はかたまりを作って身を守り、多数派を保ちやすい範囲です（目安: b < 1.8）。`;
+    } else if (b < 2) {
+      s += ` b = <span class="num">${b.toFixed(2)}</span> は、協力と裏切りが入りまじって模様が動き続ける範囲です（目安: 1.8〜2.0）。「中央に裏切り者1人」で始めると万華鏡のような図形になります。`;
+    } else {
+      s += ` b = <span class="num">${b.toFixed(2)}</span> では誘惑が強く、裏切りが広がりやすくなります（目安: b > 2）。`;
+    }
+    s += " 混ぜずに隣としか対戦しない「空間」があるだけで、全員が混ざる場合より協力が生き残りやすくなるのがポイントです。";
+    $("sp-insight").innerHTML = s;
+  }
+  legend("sp-legend", [
+    { name: "協力（そのまま）", color: "var(--s1)", box: true },
+    { name: "協力に変わった", color: "var(--s1-soft)", box: true },
+    { name: "裏切り（そのまま）", color: "var(--s2)", box: true },
+    { name: "裏切りに変わった", color: "var(--s2-soft)", box: true },
+  ]);
+  $("sp-play").addEventListener("click", () => { spS.playing = !spS.playing; $("sp-play").textContent = spS.playing ? "一時停止" : "再生"; });
+  $("sp-step").addEventListener("click", () => { spS.playing = false; $("sp-play").textContent = "再生"; spStep(); spDraw(); spStats(true); });
+  $("sp-reset").addEventListener("click", () => spReset());
+
+  function spLoop(now) {
+    requestAnimationFrame(spLoop);
+    if (document.hidden || $("spatial").hidden || !spS.playing) { spS.lastT = now; return; }
+    const dt = Math.min(200, now - (spS.lastT || now));
+    spS.lastT = now;
+    spS.acc += dt * sp.speed() / 1000;
+    let steps = 0;
+    while (spS.acc >= 1 && steps < 6) { spStep(); spS.acc -= 1; steps++; }
+    if (spS.acc > 6) spS.acc = 0;
+    if (steps) { spDraw(); spStats(false); }
+  }
+
+  // テーマが変わったら canvas の色を取りなおす
+  const reColor = () => { spS.colors = null; if (spS.S) spDraw(); };
+  if (window.matchMedia) window.matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", reColor);
+  new MutationObserver(reColor).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  // =====================================================================
+  // タブ（#satisfice / #game / #ipd / #spatial）
+  // =====================================================================
+  const TABS = ["satisfice", "game", "ipd", "spatial"];
+  function showTab() {
+    const h = location.hash.slice(1);
+    const cur = TABS.includes(h) ? h : "satisfice";
+    for (const t of TABS) {
+      $(t).hidden = t !== cur;
+      $("tab-" + t).setAttribute("aria-selected", String(t === cur));
+    }
+    for (const el of charts) if (!el.closest("[hidden]")) el._render();
+  }
+  window.addEventListener("hashchange", showTab);
+
+  // ---- 起動 ----
+  loadPreset("pd");
+  spShowFields();
+  spReset();
+  showTab();
+  satRun();
+  ipdRun();
+  requestAnimationFrame(spLoop);
+})();
+
+</script>
+</html>

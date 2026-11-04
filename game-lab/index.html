@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- artifact:start -->
+<title>満足化・ゲーム理論ラボ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=BIZ+UDPGothic:wght@400;700&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+  /* Layout: 実験ノート — 上に4つの実験タブ、各実験は「条件」(左の操作盤) と「結果」(右) の2列。スマホでは縦に積む。 */
+  :root {
+    --bg: #f1f4f3;          /* 方眼紙のような、ほんのり緑がかった紙 */
+    --surface: #ffffff;
+    --ink: #17201e;
+    --muted: #56635f;
+    --faint: #8a9692;
+    --line: #d7dfdc;
+    --grid: #e7edeb;
+    --accent: #0d675f;      /* 深い青緑: 操作・フォーカス */
+    --accent-ink: #ffffff;
+    --accent-soft: #dcefeb;
+    --panel: #e8eeec;       /* 操作盤の地 */
+
+    /* データ用（検証済みの8色。色は戦略についていく） */
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
+    --s5: #e87ba4; --s6: #008300; --s7: #6250d6; --s8: #e34948;
+    --s1-soft: #b7d3f6; --s2-soft: #f6c3ab;
+    --seq-0: #f3f7fc; --seq-1: #cde2fb; --seq-2: #86b6ef; --seq-3: #3987e5; --seq-4: #1c5cab; --seq-5: #0d366b; --on-seq-hi: #ffffff;
+    --good: #1f7a4a; --good-bg: #e4f3ea;
+    --warn: #9a5b00; --warn-bg: #fbf0dc;
+
+    --f-display: "Dela Gothic One", "Hiragino Sans", "Yu Gothic", sans-serif;
+    --f-body: "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif;
+    --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+    --r: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e1413; --surface: #161f1d; --ink: #e3ebe8; --muted: #9aa9a4; --faint: #6c7b77;
+      --line: #2a3734; --grid: #1d2826; --accent: #52c2b2; --accent-ink: #062320; --accent-soft: #173a35; --panel: #121b19;
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+      --s1-soft: #1c4a80; --s2-soft: #7a3a1f;
+      --seq-0: #18222a; --seq-1: #184f95; --seq-2: #256abf; --seq-3: #3987e5; --seq-4: #6da7ec; --seq-5: #b7d3f6; --on-seq-hi: #0b1a2e;
+      --good: #6fd39b; --good-bg: #16301f; --warn: #f0b860; --warn-bg: #3a2c14;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e1413; --surface: #161f1d; --ink: #e3ebe8; --muted: #9aa9a4; --faint: #6c7b77;
+    --line: #2a3734; --grid: #1d2826; --accent: #52c2b2; --accent-ink: #062320; --accent-soft: #173a35; --panel: #121b19;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+    --s1-soft: #1c4a80; --s2-soft: #7a3a1f;
+    --seq-0: #18222a; --seq-1: #184f95; --seq-2: #256abf; --seq-3: #3987e5; --seq-4: #6da7ec; --seq-5: #b7d3f6; --on-seq-hi: #0b1a2e;
+    --good: #6fd39b; --good-bg: #16301f; --warn: #f0b860; --warn-bg: #3a2c14;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--f-body); font-size: 15px; line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 1280px; margin: 0 auto;
+    padding-block: 24px 64px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .num, output, .mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- header ---------- */
+  .masthead { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px 24px; margin-bottom: 18px; }
+  .brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
+  .logo { flex: none; width: 46px; height: 46px; display: grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 6px; border-radius: 10px; background: var(--ink); }
+  .logo i { border-radius: 2px; background: var(--bg); opacity: .9; }
+  .logo i:nth-child(1) { background: var(--accent); opacity: 1; }
+  h1 { font-family: var(--f-display); font-weight: 400; font-size: clamp(22px, 3.4vw, 32px); line-height: 1.25; margin: 0; letter-spacing: .01em; text-wrap: balance; }
+  .tagline { margin: 2px 0 0; color: var(--muted); font-size: 14px; max-width: 46em; }
+
+  /* ---------- tabs ---------- */
+  .tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; padding: 5px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); margin-bottom: 20px; }
+  @media (max-width: 760px) { .tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .tab { font: inherit; text-align: left; cursor: pointer; color: var(--muted); background: transparent; border: 1px solid transparent; border-radius: 8px; padding: 8px 12px; display: grid; gap: 0; text-decoration: none; }
+  .tab b { color: var(--ink); font-size: 15px; }
+  .tab span { font-size: 12px; line-height: 1.5; }
+  .tab:hover { background: var(--surface); }
+  .tab[aria-selected="true"] { background: var(--surface); border-color: var(--line); box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+  .tab[aria-selected="true"] b { color: var(--accent); }
+
+  /* ---------- experiment layout ---------- */
+  .exp { display: grid; grid-template-columns: minmax(0, 330px) minmax(0, 1fr); gap: 20px; align-items: start; }
+  @media (max-width: 900px) { .exp { grid-template-columns: minmax(0, 1fr); } }
+  .controls { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px 16px; display: grid; gap: 14px; max-height: calc(100vh - 24px); overflow-y: auto; }
+  @media (max-width: 900px) { .controls { position: static; max-height: none; } }
+  .controls h2 { font-size: 12px; letter-spacing: .1em; color: var(--muted); margin: 0; font-weight: 700; }
+  .group { display: grid; gap: 10px; }
+  .group + .group { border-top: 1px dashed var(--line); padding-top: 12px; }
+  .field { display: grid; gap: 2px; }
+  .field-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .field label, .field .lab { font-size: 14px; font-weight: 700; }
+  .field output { font-size: 14px; color: var(--accent); font-weight: 600; white-space: nowrap; }
+  .hint { font-size: 12px; color: var(--muted); line-height: 1.55; margin: 0; }
+  input[type="range"] { width: 100%; accent-color: var(--accent); margin: 4px 0 0; }
+  .seg { display: flex; flex-wrap: wrap; gap: 4px; }
+  .seg button, .chip { font: inherit; font-size: 13px; cursor: pointer; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 999px; padding: 3px 11px; }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .check { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; font-weight: 700; cursor: pointer; }
+  .check input { accent-color: var(--accent); width: 17px; height: 17px; margin-top: 4px; flex: none; }
+  .check small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; line-height: 1.5; }
+  .btn { font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; border-radius: 8px; padding: 6px 14px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .btn-primary:hover { color: var(--accent-ink); filter: brightness(1.08); }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .num-input { font: inherit; font-family: var(--f-mono); width: 100%; min-width: 0; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); text-align: center; }
+  .pay-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .pay-grid label { display: grid; gap: 2px; font-size: 12px; color: var(--muted); text-align: center; }
+  .pay-grid label b { font-family: var(--f-mono); color: var(--ink); font-size: 14px; }
+  .msg { font-size: 12.5px; border-radius: 6px; padding: 6px 10px; margin: 0; }
+  .msg.warn { background: var(--warn-bg); color: var(--warn); }
+
+  /* ---------- results ---------- */
+  .results { display: grid; gap: 16px; min-width: 0; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px 16px; min-width: 0; }
+  .card h3 { margin: 0 0 2px; font-size: 16px; text-wrap: balance; }
+  .card .sub { margin: 0 0 10px; color: var(--muted); font-size: 13px; }
+  .insight { background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); border-radius: var(--r); padding: 12px 16px; font-size: 15px; line-height: 1.8; }
+  .insight b { color: var(--accent); }
+  .insight .num { font-weight: 600; }
+
+  .tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+  @media (max-width: 1100px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .tile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px; display: grid; gap: 4px; align-content: start; position: relative; }
+  .tile.win { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  .tile-head { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; }
+  .key { flex: none; width: 14px; height: 3px; border-radius: 2px; }
+  .key.box { height: 12px; width: 12px; border-radius: 3px; }
+  .tile .big { font-family: var(--f-mono); font-size: 28px; font-weight: 600; line-height: 1.15; }
+  .tile .big small { font-size: 13px; color: var(--muted); font-weight: 400; margin-left: 2px; }
+  .tile .meta { font-size: 12.5px; color: var(--muted); line-height: 1.6; }
+  .tile .meta .num { color: var(--ink); }
+  .tile .desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .pill { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); letter-spacing: .04em; margin-left: auto; }
+  .pill.off { background: var(--panel); color: var(--muted); }
+
+  /* ---------- charts ---------- */
+  .chart { position: relative; width: 100%; min-width: 0; }
+  .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .chart .axis text, .chart .lbl { fill: var(--muted); font-family: var(--f-mono); font-size: 11px; }
+  .chart .axis-title { fill: var(--muted); font-family: var(--f-body); font-size: 12px; }
+  .chart .gridline { stroke: var(--grid); stroke-width: 1; }
+  .chart .baseline { stroke: var(--line); stroke-width: 1; }
+  .chart .cross { stroke: var(--faint); stroke-width: 1; }
+  .chart .direct { font-family: var(--f-body); font-size: 12px; font-weight: 700; fill: var(--ink); }
+  .tip { position: absolute; pointer-events: none; z-index: 5; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: 12.5px; line-height: 1.55; box-shadow: 0 6px 18px -8px rgba(0,0,0,.35); white-space: nowrap; }
+  .tip .t-head { color: var(--muted); font-size: 12px; }
+  .tip .t-row { display: flex; align-items: center; gap: 7px; }
+  .tip .t-row b { font-family: var(--f-mono); font-weight: 600; min-width: 3.5em; }
+  .tip .t-row span { color: var(--muted); }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; margin: 0 0 6px; padding: 0; list-style: none; }
+  .legend li { display: flex; align-items: center; gap: 6px; }
+
+  /* ---------- 2×2 matrix ---------- */
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 700; box-shadow: inset 0 0 0 1px var(--accent); }
+  .matrix-wrap { overflow-x: auto; }
+  table.matrix { border-collapse: separate; border-spacing: 6px; margin: 0 auto; }
+  table.matrix th { font-size: 13px; font-weight: 700; color: var(--muted); padding: 2px 6px; }
+  table.matrix th input { font: inherit; font-weight: 700; color: var(--ink); width: 7em; text-align: center; border: 1px dashed var(--line); background: transparent; border-radius: 6px; padding: 2px 4px; }
+  table.matrix td.cell { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 10px 8px; min-width: 150px; vertical-align: top; position: relative; }
+  td.cell.nash { border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent); }
+  .cell-pay { display: flex; gap: 8px; justify-content: center; }
+  .cell-pay label { display: grid; gap: 2px; justify-items: center; font-size: 11px; color: var(--muted); }
+  .cell-pay input { width: 4.2em; }
+  @media (max-width: 520px) {
+    table.matrix { border-spacing: 4px; }
+    table.matrix td.cell { min-width: 0; padding: 8px 6px 6px; }
+    table.matrix th input { width: 5em; }
+    .cell-pay { gap: 4px; }
+    .cell-pay input { width: 3.2em; }
+  }
+  .cell-pay .br input { border-color: currentColor; font-weight: 700; }
+  .cell-badges { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; margin-top: 6px; min-height: 20px; }
+  .badge { font-size: 11px; padding: 0 7px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .badge.nash { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; }
+  .facts { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 14px; }
+  .facts li { display: flex; gap: 8px; align-items: baseline; }
+  .facts li::before { content: ""; flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); transform: translateY(-2px); }
+  .two-col { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+  @media (max-width: 1100px) { .two-col { grid-template-columns: minmax(0, 1fr); } }
+  .br-chart { max-width: 520px; margin: 0 auto; cursor: crosshair; }
+
+  /* ---------- IPD ---------- */
+  .strat-chips { display: grid; gap: 4px; }
+  .strat-chip { display: flex; align-items: center; gap: 8px; font-size: 13.5px; cursor: pointer; padding: 3px 6px; border-radius: 6px; }
+  .strat-chip:hover { background: var(--surface); }
+  .strat-chip input { accent-color: var(--accent); flex: none; }
+  .bars { display: grid; gap: 6px; }
+  .bar-row { display: grid; grid-template-columns: 8.5em minmax(0, 1fr) 3.6em; align-items: center; gap: 10px; font-size: 13.5px; }
+  .bar-row .name { display: flex; align-items: center; gap: 6px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-track { height: 16px; position: relative; }
+  .bar-fill { position: absolute; inset: 0 auto 0 0; border-radius: 0 4px 4px 0; min-width: 2px; }
+  .bar-row .val { font-family: var(--f-mono); text-align: right; font-weight: 600; }
+  .heat-wrap { overflow-x: auto; }
+  table.heat { border-collapse: separate; border-spacing: 2px; font-size: 12px; margin: 0; }
+  table.heat th { font-weight: 700; color: var(--muted); padding: 2px 6px; white-space: nowrap; }
+  table.heat thead th { writing-mode: vertical-rl; text-orientation: mixed; vertical-align: bottom; height: 7.5em; text-align: left; }
+  table.heat tbody th { text-align: right; }
+  table.heat td { font-family: var(--f-mono); text-align: center; min-width: 40px; height: 30px; border-radius: 4px; }
+  .heat-scale { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); margin-top: 8px; }
+  .heat-scale i { display: block; width: 22px; height: 10px; }
+  .heat-scale i:first-of-type { border-radius: 3px 0 0 3px; }
+  .heat-scale i:last-of-type { border-radius: 0 3px 3px 0; }
+
+  /* ---------- spatial ---------- */
+  .world { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 260px); gap: 16px; align-items: start; }
+  @media (max-width: 1100px) { .world { grid-template-columns: minmax(0, 1fr); } }
+  .canvas-box { position: relative; width: 100%; max-width: 640px; aspect-ratio: 1; margin: 0 auto; border-radius: 8px; overflow: hidden; background: var(--panel); }
+  .canvas-box canvas { width: 100%; height: 100%; display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
+  .stat-list { display: grid; gap: 10px; margin: 0; }
+  .stat-list div { display: grid; }
+  .stat-list dt { font-size: 12px; color: var(--muted); }
+  .stat-list dd { margin: 0; font-family: var(--f-mono); font-size: 24px; font-weight: 600; line-height: 1.2; }
+  .playbar { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .foot { margin-top: 28px; color: var(--muted); font-size: 12.5px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <div class="brand">
+      <div class="logo" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      <div>
+        <h1>満足化・ゲーム理論ラボ</h1>
+        <p class="tagline">条件を動かすと、その場でシミュレーションをやり直します。「ほどほどで決める」と「全部比べる」はどちらが得か、協力はどんな条件で生き残るのかを、自分の手で確かめられます。</p>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="実験を選ぶ">
+    <a class="tab" role="tab" href="#satisfice" id="tab-satisfice" aria-controls="satisfice"><b>満足化</b><span>どこで探すのをやめるか</span></a>
+    <a class="tab" role="tab" href="#game" id="tab-game" aria-controls="game"><b>2×2ゲーム</b><span>ナッシュ均衡と最適反応</span></a>
+    <a class="tab" role="tab" href="#ipd" id="tab-ipd" aria-controls="ipd"><b>繰り返し囚人のジレンマ</b><span>総当たり戦と進化</span></a>
+    <a class="tab" role="tab" href="#spatial" id="tab-spatial" aria-controls="spatial"><b>空間ゲーム</b><span>となり同士の協力と裏切り</span></a>
+  </nav>
+
+  <!-- ======================= 満足化 ======================= -->
+  <section class="exp" id="satisfice" role="tabpanel" aria-labelledby="tab-satisfice">
+    <form class="controls" id="sat-form" onsubmit="return false">
+      <h2>条件</h2>
+      <div class="group">
+        <div class="field">
+          <div class="field-top"><label for="sat-n">候補の数</label><output for="sat-n" id="sat-n-out"></output></div>
+          <input type="range" id="sat-n" min="5" max="200" step="1" value="40">
+        </div>
+        <div class="field">
+          <div class="field-top"><label for="sat-cost">1つ調べるコスト</label><output for="sat-cost" id="sat-cost-out"></output></div>
+          <input type="range" id="sat-cost" min="0" max="3" step="0.05" value="0.5">
+          <p class="hint">候補の良さは 0〜100 点。手取り ＝ 選んだ候補の点 − コスト × 調べた数。</p>
+        </div>
+        <div class="field">
+          <span class="lab" id="sat-dist-lab">候補の良さの分布</span>
+          <div class="seg" id="sat-dist" role="group" aria-labelledby="sat-dist-lab">
+            <button type="button" data-v="uniform" aria-pressed="true">まんべんなく</button>
+            <button type="button" data-v="normal" aria-pressed="false">ふつうが多い</button>
+            <button type="button" data-v="rare" aria-pressed="false">当たりはまれ</button>
+          </div>
+        </div>
+        <label class="check"><input type="checkbox" id="sat-recall" checked><span>見送った候補にあとで戻れる<small>オフにすると「一度見送ったら二度と選べない」（結婚相手・物件探しの古典的な形）。全部見る最大化は使えなくなります。</small></span></label>
+      </div>
+      <div class="group">
+        <h2>戦略のパラメータ</h2>
+        <div class="field">
+          <div class="field-top"><label for="sat-asp">満足化の要求水準</label><output for="sat-asp" id="sat-asp-out"></output></div>
+          <input type="range" id="sat-asp" min="0" max="100" step="1" value="75">
+        </div>
+        <div class="field">
+          <div class="field-top"><label for="sat-drop">妥協の速さ（1つ見るごとに下げる点）</label><output for="sat-drop" id="sat-drop-out"></output></div>
+          <input type="range" id="sat-drop" min="0" max="5" step="0.1" value="1">
+          <p class="hint">「妥協する満足化」は上の要求水準から出発します。</p>
+        </div>
+        <div class="field">
+          <div class="field-top"><label for="sat-skip">見送りルールで見送る割合</label><output for="sat-skip" id="sat-skip-out"></output></div>
+          <input type="range" id="sat-skip" min="5" max="80" step="1" value="37">
+          <p class="hint">37%（≒1/e）は、戻れず・コストなしのとき最良を当てる確率が最大になる値です。</p>
+        </div>
+      </div>
+      <div class="group">
+        <div class="field">
+          <span class="lab" id="sat-trials-lab">試行回数</span>
+          <div class="seg" id="sat-trials" role="group" aria-labelledby="sat-trials-lab">
+            <button type="button" data-v="500" aria-pressed="false">500</button>
+            <button type="button" data-v="2000" aria-pressed="true">2,000</button>
+            <button type="button" data-v="10000" aria-pressed="false">10,000</button>
+          </div>
+        </div>
+        <div class="row"><button type="button" class="btn" id="sat-reroll">乱数を変えてやり直す</button><span class="hint mono" id="sat-seed"></span></div>
+      </div>
+    </form>
+
+    <div class="results">
+      <p class="insight" id="sat-insight" aria-live="polite"></p>
+      <div class="tiles" id="sat-tiles"></div>
+      <div class="card">
+        <h3>要求水準を変えると、満足化の手取りはどうなるか</h3>
+        <p class="sub">横軸: 満足化の要求水準 / 縦軸: 平均の手取り。横線は他の戦略。いちばん高い点が、この条件での「ちょうどよい妥協点」です。</p>
+        <ul class="legend" id="sat-sweep-legend"></ul>
+        <div class="chart" id="sat-sweep"></div>
+      </div>
+      <div class="card">
+        <h3>1回分のようす</h3>
+        <p class="sub">最初の試行で出てきた候補を順に並べたもの。▼ が各戦略の決めた候補です。点線は満足化の要求水準。</p>
+        <ul class="legend" id="sat-example-legend"></ul>
+        <div class="chart" id="sat-example"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= 2×2 ゲーム ======================= -->
+  <section class="exp" id="game" role="tabpanel" aria-labelledby="tab-game" hidden>
+    <div class="controls">
+      <h2>ゲームを選ぶ</h2>
+      <div class="presets" id="game-presets"></div>
+      <p class="hint" id="game-story"></p>
+      <div class="group">
+        <h2>わかったこと</h2>
+        <ul class="facts" id="game-facts"></ul>
+      </div>
+      <div class="group">
+        <p class="hint">得点の数字はそのまま書きかえられます。太字の数字は「相手の手に対する最適反応」。両方とも太字のマスがナッシュ均衡です。</p>
+      </div>
+    </div>
+    <div class="results">
+      <div class="card">
+        <h3>利得表</h3>
+        <p class="sub">各マスの左が<b>行プレイヤー</b>、右が<b>列プレイヤー</b>の得点。戦略の名前も書きかえられます。</p>
+        <div class="matrix-wrap"><table class="matrix" id="game-matrix"></table></div>
+      </div>
+      <div class="card">
+        <h3>最適反応と、進化のながれ</h3>
+        <p class="sub">横軸: 列プレイヤーが「<span id="game-xname"></span>」を選ぶ確率 / 縦軸: 行プレイヤーが「<span id="game-yname"></span>」を選ぶ確率。2本の最適反応の交点がナッシュ均衡。矢印は「得をする戦略ほど増える」（レプリケーター方程式）ときの動き。<b>図をクリック</b>すると、そこから出発した軌道を描きます。</p>
+        <ul class="legend" id="game-legend"></ul>
+        <div class="chart br-chart" id="game-br"></div>
+        <div class="row" style="justify-content:center;margin-top:8px"><button type="button" class="btn" id="game-clear">軌道を消す</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= 繰り返し囚人のジレンマ ======================= -->
+  <section class="exp" id="ipd" role="tabpanel" aria-labelledby="tab-ipd" hidden>
+    <form class="controls" id="ipd-form" onsubmit="return false">
+      <h2>得点（1回の対戦）</h2>
+      <div class="group">
+        <div class="pay-grid">
+          <label for="ipd-T"><b>T</b>裏切って勝つ<input class="num-input" type="number" id="ipd-T" value="5" step="0.5"></label>
+          <label for="ipd-R"><b>R</b>ともに協力<input class="num-input" type="number" id="ipd-R" value="3" step="0.5"></label>
+          <label for="ipd-P"><b>P</b>ともに裏切り<input class="num-input" type="number" id="ipd-P" value="1" step="0.5"></label>
+          <label for="ipd-S"><b>S</b>裏切られる<input class="num-input" type="number" id="ipd-S" value="0" step="0.5"></label>
+        </div>
+        <p class="msg warn" id="ipd-paywarn" hidden></p>
+      </div>
+      <div class="group">
+        <h2>対戦の条件</h2>
+        <div class="field">
+          <div class="field-top"><label for="ipd-rounds">1試合の回数</label><output id="ipd-rounds-out"></output></div>
+          <input type="range" id="ipd-rounds" min="5" max="500" step="5" value="100">
+        </div>
+        <div class="field">
+          <div class="field-top"><label for="ipd-noise">手のまちがい（ノイズ）</label><output id="ipd-noise-out"></output></div>
+          <input type="range" id="ipd-noise" min="0" max="20" step="0.5" value="2">
+          <p class="hint">協力するつもりが裏切りに（またはその逆に）なる確率。</p>
+        </div>
+        <div class="field">
+          <div class="field-top"><label for="ipd-reps">同じ組み合わせを何試合やるか</label><output id="ipd-reps-out"></output></div>
+          <input type="range" id="ipd-reps" min="1" max="30" step="1" value="10">
+        </div>
+        <label class="check"><input type="checkbox" id="ipd-self" checked><span>自分と同じ戦略とも対戦する</span></label>
+      </div>
+      <div class="group">
+        <h2>満足化プレイヤー</h2>
+        <div class="field">
+          <div class="field-top"><label for="ipd-asp">最初の要求水準</label><output id="ipd-asp-out"></output></div>
+          <input type="range" id="ipd-asp" min="0" max="6" step="0.1" value="2">
+          <p class="hint">P と R のあいだで固定すると「勝てば継続」とまったく同じ動きになります。</p>
+        </div>
+        <div class="field">
+          <div class="field-top"><label for="ipd-adapt">要求水準が経験に合わせて動く速さ</label><output id="ipd-adapt-out"></output></div>
+          <input type="range" id="ipd-adapt" min="0" max="0.5" step="0.01" value="0.1">
+        </div>
+      </div>
+      <div class="group">
+        <h2>参加する戦略</h2>
+        <div class="strat-chips" id="ipd-strats"></div>
+      </div>
+      <div class="group">
+        <h2>進化</h2>
+        <div class="field">
+          <div class="field-top"><label for="ipd-gens">世代数</label><output id="ipd-gens-out"></output></div>
+          <input type="range" id="ipd-gens" min="20" max="1000" step="10" value="300">
+        </div>
+        <div class="field">
+          <div class="field-top"><label for="ipd-mut">突然変異</label><output id="ipd-mut-out"></output></div>
+          <input type="range" id="ipd-mut" min="0" max="2" step="0.05" value="0.1">
+          <p class="hint">毎世代、この割合だけ全戦略に均等に入れかわる。絶滅した戦略が戻ってこられます。</p>
+        </div>
+        <div class="row"><button type="button" class="btn" id="ipd-reroll">乱数を変えてやり直す</button></div>
+      </div>
+    </form>
+    <div class="results">
+      <p class="insight" id="ipd-insight" aria-live="polite"></p>
+      <div class="two-col">
+        <div class="card">
+          <h3>総当たり戦の順位</h3>
+          <p class="sub">1回の対戦あたりの平均得点（全対戦相手の平均）</p>
+          <div class="bars" id="ipd-bars"></div>
+        </div>
+        <div class="card">
+          <h3>組み合わせごとの得点</h3>
+          <p class="sub">行の戦略が、列の戦略と当たったときの1回あたり平均得点</p>
+          <div class="heat-wrap"><table class="heat" id="ipd-heat"></table></div>
+          <div class="heat-scale" id="ipd-heat-scale"></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>進化: 集団の中の割合</h3>
+        <p class="sub">はじめは全戦略が同じ割合。得点が平均より高い戦略ほど次の世代で増えます（レプリケーター・ダイナミクス）。</p>
+        <ul class="legend" id="ipd-evo-legend"></ul>
+        <div class="chart" id="ipd-evo"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= 空間ゲーム ======================= -->
+  <section class="exp" id="spatial" role="tabpanel" aria-labelledby="tab-spatial" hidden>
+    <form class="controls" id="sp-form" onsubmit="return false">
+      <h2>条件</h2>
+      <div class="group">
+        <div class="field">
+          <div class="field-top"><label for="sp-b">裏切りの誘惑 b</label><output id="sp-b-out"></output></div>
+          <input type="range" id="sp-b" min="1" max="2.5" step="0.01" value="1.85">
+          <p class="hint">協力相手1人あたり、協力者は 1点、裏切り者は b 点。裏切り同士・裏切られた側は 0点。1.8〜2.0 あたりで万華鏡のような模様が出ます。</p>
+        </div>
+        <div class="field">
+          <span class="lab" id="sp-rule-lab">手の変え方</span>
+          <div class="seg" id="sp-rule" role="group" aria-labelledby="sp-rule-lab">
+            <button type="button" data-v="imitate" aria-pressed="true">いちばん得した隣をまねる</button>
+            <button type="button" data-v="satisfice" aria-pressed="false">満足していれば変えない</button>
+          </div>
+        </div>
+        <div class="field" id="sp-asp-field">
+          <div class="field-top"><label for="sp-asp">要求水準（1対戦あたり）</label><output id="sp-asp-out"></output></div>
+          <input type="range" id="sp-asp" min="0" max="2.5" step="0.05" value="0.7">
+          <p class="hint">「満足していれば変えない」のとき、得点がこれ以上なら手を変えず、未満のときだけ隣をまねます。</p>
+        </div>
+        <div class="field">
+          <div class="field-top"><label for="sp-mut">突然変異（毎ステップ）</label><output id="sp-mut-out"></output></div>
+          <input type="range" id="sp-mut" min="0" max="1" step="0.01" value="0">
+        </div>
+      </div>
+      <div class="group">
+        <h2>はじまり（変えるとリセット）</h2>
+        <div class="field">
+          <span class="lab" id="sp-start-lab">はじめの配置</span>
+          <div class="seg" id="sp-start" role="group" aria-labelledby="sp-start-lab">
+            <button type="button" data-v="random" aria-pressed="true">ばらばら</button>
+            <button type="button" data-v="center" aria-pressed="false">中央に裏切り者1人</button>
+          </div>
+        </div>
+        <div class="field" id="sp-ratio-field">
+          <div class="field-top"><label for="sp-ratio">はじめの協力者の割合</label><output id="sp-ratio-out"></output></div>
+          <input type="range" id="sp-ratio" min="5" max="99" step="1" value="90">
+        </div>
+        <div class="field">
+          <span class="lab" id="sp-size-lab">格子の大きさ</span>
+          <div class="seg" id="sp-size" role="group" aria-labelledby="sp-size-lab">
+            <button type="button" data-v="61" aria-pressed="false">61×61</button>
+            <button type="button" data-v="101" aria-pressed="true">101×101</button>
+            <button type="button" data-v="161" aria-pressed="false">161×161</button>
+          </div>
+        </div>
+      </div>
+      <div class="group">
+        <div class="field">
+          <div class="field-top"><label for="sp-speed">速さ（ステップ/秒）</label><output id="sp-speed-out"></output></div>
+          <input type="range" id="sp-speed" min="1" max="60" step="1" value="12">
+        </div>
+        <div class="playbar">
+          <button type="button" class="btn btn-primary" id="sp-play">一時停止</button>
+          <button type="button" class="btn" id="sp-step">1ステップ</button>
+          <button type="button" class="btn" id="sp-reset">リセット</button>
+        </div>
+      </div>
+    </form>
+    <div class="results">
+      <p class="insight" id="sp-insight" aria-live="polite"></p>
+      <div class="card">
+        <div class="world">
+          <div>
+            <ul class="legend" id="sp-legend"></ul>
+            <div class="canvas-box"><canvas id="sp-canvas" aria-label="格子の上の協力者と裏切り者の分布"></canvas></div>
+          </div>
+          <dl class="stat-list">
+            <div><dt>ステップ</dt><dd id="sp-t">0</dd></div>
+            <div><dt>協力者の割合</dt><dd id="sp-coop">—</dd></div>
+            <div><dt>このステップで手を変えた割合</dt><dd id="sp-change">—</dd></div>
+          </dl>
+        </div>
+      </div>
+      <div class="card">
+        <h3>協力者の割合の移り変わり</h3>
+        <p class="sub">直近 400 ステップ</p>
+        <div class="chart" id="sp-chart"></div>
+      </div>
+    </div>
+  </section>
+
+  <p class="foot">計算はすべてブラウザの中で行います。乱数はシードつきなので、同じ条件なら同じ結果になります。</p>
+</div>
+<!-- artifact:end -->
+
+<script src="src/sim.js"></script>
+<script src="src/app.js"></script>
+</html>
