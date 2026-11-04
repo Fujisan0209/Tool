@@ -286,10 +286,14 @@
     const R = D.results, w = R.within, l = R.loso;
     const box = $("#results");
     const sig = w.p_perm < 0.05;
+    const sorted = [...w.null].sort((a, b) => a - b);
+    const nullMean = sorted.reduce((a, b) => a + b, 0) / sorted.length;
+    const null95 = sorted[Math.floor(sorted.length * 0.95)];
+    const nGe = sorted.filter((v) => v >= w.acc).length;
     const lift = (w.acc - 0.2) * 100;
     const verdict = sig
       ? `被験者ごとに学習すると正解率は ${pct(w.acc)} で、偶然の 20% より ${lift.toFixed(1)} ポイント高く、ラベルをでたらめにした場合（置換検定）と比べても偶然とは言いにくい差です（p = ${w.p_perm.toFixed(3)}）。ただし差はごくわずかで、1回の判定はほぼ当てずっぽうと変わりません。`
-      : `被験者ごとに学習すると正解率は ${pct(w.acc)} でした。偶然の 20% との差は ${lift.toFixed(1)} ポイントしかなく、ラベルをでたらめにしても同じくらいの値がよく出ます（置換検定 p = ${w.p_perm.toFixed(2)}）。この方法とデータでは、母音を読み取れているとは言えません。`;
+      : `被験者ごとに学習すると正解率は ${pct(w.acc)} でした。偶然の 20% との差は ${lift.toFixed(1)} ポイントしかなく、ラベルをでたらめにしても同じくらいの値がよく出ます（${w.null.length}回中${nGe}回が実際以上、置換検定 p = ${w.p_perm.toFixed(2)}）。この方法とデータでは、母音を読み取れているとは言えません。`;
     box.innerHTML = `
       <div class="callout"><span class="stamp">${sig ? "わずかに偶然以上" : "偶然と区別できない"}</span><p>${verdict}
         別の人のデータだけで学習した場合（被験者間）は ${pct(l.acc)} です。同じ手順で「想像したか、声に出したか」を見分けると ${pct(R.checks[0].acc, 0)} 当たるので、計算は脳波の違いを拾えています。それでも母音どうしの違いは、このデータとこの方法ではほとんど読み取れませんでした。</p></div>
@@ -301,7 +305,7 @@
       </div>
       <div class="charts">
         <div class="panel chart"><h3>ラベルをでたらめにしたら、どれくらい当たるか</h3>
-          <p class="sub">同じ手順をラベルのシャッフル付きで${w.null.length}回。縦線が実際の正解率です。</p><svg id="c-null"></svg>
+          <p class="sub">同じ手順をラベルのシャッフル付きで${w.null.length}回。平均 ${pct(nullMean)}、上位5%の境目 ${pct(null95)}。母音ごとの試行数が少し違うので、でたらめでも20%をやや超えます。</p><svg id="c-null"></svg>
           <div class="legend"><span><i style="background:var(--faint)"></i>シャッフルした場合</span><span><i style="background:var(--mark)"></i>実際</span></div></div>
         <div class="panel chart"><h3>被験者ごとの正解率</h3>
           <p class="sub">点が正解率、線が95%信頼区間。偶然の20%を超えて有意なのは15人中${w.n_significant}人（偶然でも平均0.75人は出ます）。</p><svg id="c-subj"></svg>
