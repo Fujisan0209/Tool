@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>声の感情メーター</title>
+<meta name="description" content="マイクや音声ファイルから声の感情を推定し、グラフで表示するブラウザツール。音声は端末の外に送信されません。">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <h1>声の感情メーター</h1>
+    <p class="sub">声の高さ・抑揚・大きさ・響きから感情を推定します。音声はこの端末の中だけで処理されます。</p>
+  </div>
+  <div class="actions">
+    <button id="btnMic" class="btn primary" type="button"><span class="ico" aria-hidden="true">●</span><span class="lbl">マイクで開始</span></button>
+    <label class="btn" for="fileInput">音声ファイルを解析</label>
+    <input id="fileInput" type="file" accept="audio/*,video/*" hidden>
+    <button id="btnDemo" class="btn" type="button">デモ音声</button>
+    <button id="btnCsv" class="btn ghost" type="button" disabled>CSV 書き出し</button>
+  </div>
+</header>
+
+<div id="status" class="status" role="status" aria-live="polite">マイクで開始するか、音声ファイルを選んでください。</div>
+<div id="progress" class="progress" hidden><div class="bar"></div></div>
+<audio id="player" controls hidden></audio>
+
+<main class="grid">
+  <section class="card now" aria-labelledby="nowTitle">
+    <h2 id="nowTitle">いまの感情</h2>
+    <div class="hero">
+      <span id="heroEmoji" class="emoji" aria-hidden="true">🎙️</span>
+      <div>
+        <div id="heroLabel" class="hero-label">待機中</div>
+        <div id="heroSub" class="hero-sub">話しかけると推定が始まります</div>
+      </div>
+    </div>
+    <ul id="bars" class="bars"></ul>
+    <div class="meters">
+      <div><span class="k">覚醒度</span><span id="mA" class="v">–</span></div>
+      <div><span class="k">感情価</span><span id="mV" class="v">–</span></div>
+      <div><span class="k">声の高さ</span><span id="mF" class="v">–</span></div>
+      <div><span class="k">音量</span><span id="mD" class="v">–</span></div>
+    </div>
+  </section>
+
+  <section class="card wide" aria-labelledby="tlTitle">
+    <div class="card-head">
+      <h2 id="tlTitle">感情の推移</h2>
+      <ul id="legend" class="legend"></ul>
+    </div>
+    <div class="plot tall"><canvas id="cvTimeline" aria-label="感情確率の時間推移（積み上げ面グラフ）" role="img"></canvas></div>
+    <p class="hint">グラフ上をなぞると各時点の内訳を表示。ファイル解析時はクリックでその位置から再生します。灰色の隙間は無音区間です。</p>
+  </section>
+
+  <section class="card" aria-labelledby="avTitle">
+    <h2 id="avTitle">感情マップ</h2>
+    <div class="plot square"><canvas id="cvMap" aria-label="覚醒度と感情価の2次元マップ" role="img"></canvas></div>
+    <p class="hint">横軸＝快↔不快（感情価）、縦軸＝興奮↔落ち着き（覚醒度）。線は直近 4 秒の軌跡です。</p>
+  </section>
+
+  <section class="card" aria-labelledby="pitchTitle">
+    <h2 id="pitchTitle">声の高さ <span class="unit">Hz</span></h2>
+    <div class="plot short"><canvas id="cvPitch" aria-label="声の高さの推移" role="img"></canvas></div>
+    <h2 id="dbTitle" class="mt">音量 <span class="unit">dBFS</span></h2>
+    <div class="plot short"><canvas id="cvDb" aria-label="音量の推移" role="img"></canvas></div>
+  </section>
+
+  <section class="card" aria-labelledby="sumTitle">
+    <h2 id="sumTitle">集計</h2>
+    <p id="sumNote" class="hint">発話区間で最も強かった感情の時間割合です。</p>
+    <ul id="sumBars" class="bars sum"></ul>
+    <details class="table-view">
+      <summary>表で見る</summary>
+      <table>
+        <thead><tr><th>感情</th><th class="num">時間</th><th class="num">割合</th><th class="num">平均確率</th></tr></thead>
+        <tbody id="sumTable"></tbody>
+      </table>
+    </details>
+  </section>
+
+  <section class="card wide about">
+    <h2>しくみと注意</h2>
+    <ul>
+      <li>50 ミリ秒ごとに <b>声の高さ（YIN 法）・抑揚の幅・ピッチの揺れ・音量と変化・スペクトル重心・高域比・平坦度・音節の速さ</b> を計算し、直近 1.5 秒の特徴から 5 つの感情の確率を求めます。</li>
+      <li>声の高さや音量は人とマイクで大きく違うため、<b>その人のふだんの話し方（中央値）を基準</b>にした相対評価です。マイク使用時は最初の 5〜10 秒、普段の声で話すと安定します。ファイル解析では全体から基準を作ってから推定します。</li>
+      <li>声の調子（韻律）だけを見ており、言葉の意味は使いません。学習済み AI ではなくルールベースの推定なので、結果は目安としてご利用ください。</li>
+      <li>音声データはどこにも送信・保存されません（すべてブラウザ内で処理）。</li>
+    </ul>
+  </section>
+</main>
+
+<div id="tip" class="tip" hidden></div>
+
+<script src="js/dsp.js"></script>
+<script src="js/emotion.js"></script>
+<script src="js/demo.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

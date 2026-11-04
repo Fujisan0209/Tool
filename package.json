@@ -1,0 +1,11 @@
+{
+  "name": "voice-emotion-meter",
+  "version": "1.0.0",
+  "private": true,
+  "description": "声の感情を推定してグラフで見せるブラウザツール（依存ライブラリなし）",
+  "scripts": {
+    "test": "node test/run.js",
+    "start": "python3 -m http.server 8000"
+  },
+  "license": "MIT"
+}
