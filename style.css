@@ -63,7 +63,9 @@ body {
   background: var(--page);
   color: var(--ink);
   font: 15px/1.6 system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
-  padding: 20px 16px 40px;
+  padding-block: 20px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
   max-width: 1240px;
   margin: 0 auto;
 }

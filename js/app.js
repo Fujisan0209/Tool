@@ -63,7 +63,19 @@
   }
   function signed(x) { return (x >= 0 ? '+' : '−') + Math.abs(x).toFixed(2); }
 
-  function updateNow(r) {
+  /** ファイル全体の平均確率を 1 つの結果として表す（再生前の表示用） */
+  function overallResult() {
+    var s = EMO.summarize(state.results, HOP);
+    if (!s.speechSec) return null;
+    var best = E[0].id, a = 0, v = 0;
+    E.forEach(function (e) {
+      if (s.meanProb[e.id] > s.meanProb[best]) best = e.id;
+      a += s.meanProb[e.id] * e.a; v += s.meanProb[e.id] * e.v;
+    });
+    return { active: true, probs: s.meanProb, dominant: best, arousal: a, valence: v, f0: 0, db: NaN };
+  }
+
+  function updateNow(r, subText) {
     if (!r || !r.active) {
       el.heroEmoji.textContent = state.mode ? '🤫' : '🎙️';
       el.heroLabel.textContent = state.mode ? '無音' : '待機中';
@@ -82,7 +94,7 @@
     el.heroEmoji.textContent = top.emoji;
     el.heroLabel.textContent = top.label;
     var p = r.probs[top.id];
-    el.heroSub.textContent = '確信度 ' + Math.round(p * 100) + '%' + (p < 0.4 ? '（あいまい）' : '');
+    el.heroSub.textContent = subText || ('確信度 ' + Math.round(p * 100) + '%' + (p < 0.4 ? '（あいまい）' : ''));
     E.forEach(function (e) {
       var b = nowBars[e.id];
       b.fill.style.width = (r.probs[e.id] * 100).toFixed(1) + '%';
@@ -92,7 +104,7 @@
     el.mA.textContent = signed(r.arousal);
     el.mV.textContent = signed(r.valence);
     el.mF.textContent = r.f0 ? Math.round(r.f0) + ' Hz' : '–';
-    el.mD.textContent = r.db.toFixed(0) + ' dB';
+    el.mD.textContent = isFinite(r.db) ? r.db.toFixed(0) + ' dB' : '–';
   }
 
   var lastSumAt = 0;
@@ -167,7 +179,9 @@
       for (var k = Math.max(0, i - Math.round(TRAIL_SEC / HOP)); k <= i; k++) trail.push(state.results[k]);
     }
     CH.circumplex(el.map, trail, th);
-    updateNow(displayResultAt(focusT));
+    if (state.mode === 'file' && state.hoverT == null && el.player.paused && !el.player.currentTime && state.results.length) {
+      updateNow(overallResult(), '全体の平均（再生するとその時点の感情）');
+    } else updateNow(displayResultAt(focusT));
     updateSummary();
   }
 
@@ -274,7 +288,10 @@
       setStatus('録音中… 最初の 5〜10 秒は普段の声で話すと基準が安定します。');
       invalidate();
     }).catch(function (err) {
-      setStatus('マイクを使えませんでした: ' + (err && err.message ? err.message : err));
+      var name = err && err.name;
+      setStatus(name === 'NotAllowedError' || name === 'SecurityError'
+        ? 'マイクを使う許可がありません。ブラウザで許可するか、音声ファイルの解析をお使いください。'
+        : 'マイクを使えませんでした（' + (err && err.message ? err.message : err) + '）。');
     });
   }
 
@@ -348,7 +365,7 @@
     return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
   }
 
-  el.demo.addEventListener('click', function () {
+  function runDemo() {
     setStatus('デモ音声を生成中…');
     setTimeout(function () {
       var sr = 16000, d = DEMO.makeDemo(sr);
@@ -356,10 +373,11 @@
         return E.filter(function (e) { return e.id === s.id; })[0].label;
       }).join('→');
       analyzeSamples(d.samples, sr, 'デモ音声', wavUrl(d.samples, sr)).then(function () {
-        setStatus('デモ音声（合成、6 秒ごとに ' + names + '）を解析しました。');
+        setStatus('表示中はデモ音声（合成、6 秒ごとに ' + names + '）の解析結果です。マイクか音声ファイルで試せます。');
       });
     }, 20);
-  });
+  }
+  el.demo.addEventListener('click', runDemo);
 
   // ---------- CSV ----------
   el.csv.addEventListener('click', function () {
@@ -372,11 +390,25 @@
         [r.active ? r.arousal.toFixed(3) : '', r.active ? r.valence.toFixed(3) : '',
           r.f0 ? r.f0.toFixed(1) : '', r.db.toFixed(1)]).join(','));
     });
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob(['﻿' + lines.join('\n')], { type: 'text/csv' }));
-    a.download = 'voice-emotion-' + new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-') + '.csv';
-    a.click();
-    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+    var data = '﻿' + lines.join('\n');
+    var filename = 'voice-emotion-' + new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-') + '.csv';
+    // claude.ai のアーティファクト内では downloads 機能で保存する（通常のリンク保存は無効なため）
+    var dlp = window.claude && window.claude.use ? window.claude.use('downloads') : Promise.resolve(null);
+    dlp.then(function (dl) {
+      if (dl) {
+        return dl.save({ filename: filename, data: data }).then(function () {
+          setStatus('CSV を保存しました: ' + filename);
+        }, function (err) {
+          setStatus(err && err.code === 'declined' ? 'CSV の保存をキャンセルしました。'
+            : 'この表示環境では CSV を保存できませんでした（' + (err && err.code || err) + '）。');
+        });
+      }
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([data], { type: 'text/csv' }));
+      a.download = filename;
+      a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+    });
   });
 
   // ---------- その他 ----------
@@ -391,4 +423,6 @@
 
   updateSummary(true);
   requestAnimationFrame(loop);
+  // 開いた直後から使い方が分かるよう、デモ音声の解析結果を表示しておく
+  runDemo();
 })();

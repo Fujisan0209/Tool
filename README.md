@@ -18,6 +18,14 @@ python3 -m http.server 8000
 - **デモ音声** — 合成音声（平常→喜び→平常→怒り→平常→悲しみ→平常→不安）で動作を確認できます
 - **CSV 書き出し** — 時刻ごとの各感情の確率・覚醒度・感情価・声の高さ・音量
 
+### 1 ファイル版
+
+```bash
+node tools/build-artifact.js dist/voice-emotion.html
+```
+
+CSS と JS をすべて埋め込んだ 1 つの HTML を作ります（配布や claude.ai アーティファクト用）。
+
 ## 表示されるグラフ
 
 | グラフ | 内容 |
