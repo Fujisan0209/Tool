@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- artifact:start -->
+<title>仕様ズレチェッカー</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Zen+Old+Mincho:wght@600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  /* Layout: a proofreading desk — spec on paper (left), code on a slab (right), proof marks listed below as a 校正 sheet. */
+  :root {
+    --bg: #edf0ec;            /* desk: pale sage grey */
+    --paper: #fbfcf9;         /* spec sheet */
+    --surface: #ffffff;
+    --ink: #1c2420;
+    --muted: #5a6760;
+    --line: #d3dad4;
+    --accent: #2b4c8c;        /* 藍: controls, focus */
+    --accent-ink: #ffffff;
+    --slab: #192026;          /* code slab */
+    --slab-2: #11171c;
+    --slab-ink: #d6dee6;
+    --slab-dim: #7b8894;
+    --slab-line: #29323b;
+    --slab-hi: #33414f;
+    --red: #c3361d;   --red-bg: #fbe8e2;    /* 朱: 食い違い・未実装 */
+    --amber: #9a6400; --amber-bg: #faefd6;  /* 山吹: 要確認 */
+    --green: #23714a; --green-bg: #e1f1e7;  /* 若竹: 一致 */
+    --slate: #4f6274; --slate-bg: #e5ebf0;  /* 鼠: 仕様にない */
+    --code-bg: #e9eee9;
+
+    --f-display: "Zen Old Mincho", "Hiragino Mincho ProN", "Yu Mincho", serif;
+    --f-body: "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif;
+    --f-mono: "JetBrains Mono", "BIZ UDGothic", "Noto Sans Mono CJK JP", ui-monospace, monospace;
+    --r: 8px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #121614; --paper: #1b211e; --surface: #1a1f1c; --ink: #e3e9e4; --muted: #9aa8a0; --line: #2c3530;
+      --accent: #8fa9ec; --accent-ink: #0d1424;
+      --slab: #0f1418; --slab-2: #0a0e11; --slab-ink: #d6dee6; --slab-dim: #74818d; --slab-line: #222b33; --slab-hi: #2a3846;
+      --red: #ff8a73; --red-bg: #3a1f19; --amber: #f0b54d; --amber-bg: #33280f;
+      --green: #6fd09c; --green-bg: #15301f; --slate: #a4b6c8; --slate-bg: #1e2833; --code-bg: #26302b;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #121614; --paper: #1b211e; --surface: #1a1f1c; --ink: #e3e9e4; --muted: #9aa8a0; --line: #2c3530;
+    --accent: #8fa9ec; --accent-ink: #0d1424;
+    --slab: #0f1418; --slab-2: #0a0e11; --slab-ink: #d6dee6; --slab-dim: #74818d; --slab-line: #222b33; --slab-hi: #2a3846;
+    --red: #ff8a73; --red-bg: #3a1f19; --amber: #f0b54d; --amber-bg: #33280f;
+    --green: #6fd09c; --green-bg: #15301f; --slate: #a4b6c8; --slate-bg: #1e2833; --code-bg: #26302b;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--f-body); font-size: 15px; line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 1280px; margin: 0 auto; padding-block: 26px 64px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  code { font-family: var(--f-mono); font-size: .88em; background: var(--code-bg); border-radius: 4px; padding: .05em .35em; overflow-wrap: anywhere; }
+
+  /* ---------- header ---------- */
+  .top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px 28px; margin-bottom: 20px; }
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .mark {
+    flex: none; width: 46px; height: 46px; border-radius: 6px; border: 2.5px solid var(--red); color: var(--red);
+    display: grid; place-items: center; font-family: var(--f-display); font-weight: 700; font-size: 26px; line-height: 1;
+    transform: rotate(-5deg);
+  }
+  h1 { font-family: var(--f-display); font-weight: 700; font-size: clamp(25px, 3.4vw, 34px); line-height: 1.25; margin: 0; letter-spacing: .02em; text-wrap: balance; }
+  .tagline { margin: 2px 0 0; color: var(--muted); font-size: 14px; }
+  .langs { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; font-size: 12.5px; color: var(--muted); }
+  .langs li { border: 1px solid var(--line); border-radius: 999px; padding: 1px 10px; background: var(--surface); }
+
+  /* ---------- input panes ---------- */
+  .desk { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+  @media (max-width: 900px) { .desk { grid-template-columns: minmax(0, 1fr); } }
+  .pane { min-width: 0; border-radius: var(--r); overflow: hidden; display: flex; flex-direction: column; position: relative; }
+  .pane-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 9px 12px; min-height: 48px; }
+  .pane-label { font-family: var(--f-display); font-weight: 700; font-size: 16px; letter-spacing: .04em; }
+  .pane-file { font-family: var(--f-mono); font-size: 12px; opacity: .75; overflow-wrap: anywhere; min-width: 0; }
+  .pane-tools { margin-left: auto; display: flex; flex-wrap: wrap; gap: 6px; }
+  .pane-foot { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 6px 12px; font-size: 12px; font-family: var(--f-mono); }
+  .pane-foot .sample-flag { margin-left: auto; }
+  .tool {
+    cursor: pointer; font-size: 13px; border-radius: 6px; padding: 4px 10px; background: transparent; border: 1px solid currentColor;
+    display: inline-flex; align-items: center; gap: 6px; line-height: 1.4;
+  }
+  .tool svg { width: 14px; height: 14px; flex: none; }
+  .sample-flag { font-size: 12px; padding: 0 8px; border-radius: 4px; background: var(--amber-bg); color: var(--amber); font-family: var(--f-body); font-weight: 700; }
+
+  .pane-spec { background: var(--paper); border: 1px solid var(--line); box-shadow: 0 1px 0 rgba(0,0,0,.03), 0 12px 28px -22px rgba(20,40,30,.45); }
+  .pane-spec .pane-head { border-bottom: 1px solid var(--line); }
+  .pane-spec .tool { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+  .pane-spec .tool:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  .pane-spec .pane-foot { color: var(--muted); border-top: 1px solid var(--line); }
+  #spec-input {
+    display: block; width: 100%; height: 400px; min-height: 180px; resize: vertical; border: 0; outline: none; margin: 0;
+    background:
+      linear-gradient(to right, transparent 46px, color-mix(in srgb, var(--red) 35%, transparent) 46px, color-mix(in srgb, var(--red) 35%, transparent) 47px, transparent 47px),
+      var(--paper);
+    color: var(--ink); font-family: var(--f-body); font-size: 14px; line-height: 1.75;
+    padding: 12px 16px 12px 60px; tab-size: 4;
+  }
+
+  .pane-code { background: var(--slab); color: var(--slab-ink); box-shadow: 0 12px 28px -20px rgba(5,10,20,.7); }
+  .pane-code .pane-head { border-bottom: 1px solid var(--slab-line); }
+  .pane-code .tool { color: var(--slab-ink); border-color: var(--slab-line); }
+  .pane-code .tool:hover { background: var(--slab-hi); }
+  .pane-code .pane-foot { color: var(--slab-dim); border-top: 1px solid var(--slab-line); }
+  .tabs { display: flex; gap: 2px; overflow-x: auto; padding: 6px 8px 0; background: var(--slab-2); scrollbar-width: thin; }
+  .tab {
+    flex: none; display: inline-flex; align-items: center; gap: 4px; max-width: 220px;
+    border: 0; border-radius: 6px 6px 0 0; padding: 5px 4px 5px 10px; cursor: pointer;
+    background: transparent; color: var(--slab-dim); font-family: var(--f-mono); font-size: 12px;
+  }
+  .tab[aria-selected="true"] { background: var(--slab); color: var(--slab-ink); }
+  .tab:hover { color: var(--slab-ink); }
+  .tab .tab-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tab .x { display: grid; place-items: center; width: 18px; height: 18px; border-radius: 4px; color: var(--slab-dim); }
+  .tab .x:hover { background: var(--slab-hi); color: var(--slab-ink); }
+  .tab-add { padding: 5px 10px; }
+  .file-select { margin: 6px 8px 0; background: var(--slab-2); color: var(--slab-ink); border: 1px solid var(--slab-line); border-radius: 6px; font-family: var(--f-mono); font-size: 12px; padding: 4px 6px; max-width: calc(100% - 16px); }
+  .editor { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); height: 400px; min-height: 180px; resize: vertical; overflow: hidden; }
+  .gutter {
+    margin: 0; padding: 12px 10px 12px 12px; text-align: right; color: var(--slab-dim); background: var(--slab);
+    font-family: var(--f-mono); font-size: 13px; line-height: 1.6; overflow: hidden; user-select: none; min-width: 44px;
+    border-right: 1px solid var(--slab-line); white-space: pre; font-variant-numeric: tabular-nums;
+  }
+  #code-input {
+    display: block; width: 100%; height: 100%; resize: none; border: 0; outline: none; margin: 0;
+    background: var(--slab); color: var(--slab-ink); font-family: var(--f-mono); font-size: 13px; line-height: 1.6;
+    padding: 12px 14px; white-space: pre; overflow: auto; tab-size: 4;
+  }
+  #code-input::placeholder, #spec-input::placeholder { color: var(--slab-dim); opacity: 1; white-space: pre-wrap; }
+  #spec-input::placeholder { color: var(--muted); }
+  .pane.flash { animation: flash .9s ease-out; }
+  @keyframes flash { from { box-shadow: 0 0 0 4px color-mix(in srgb, var(--amber) 70%, transparent); } }
+  .pane.drop { outline: 3px dashed var(--accent); outline-offset: -6px; }
+  .drop-hint {
+    position: absolute; inset: 48px 0 0; display: grid; place-items: center; pointer-events: none;
+    font-weight: 700; font-size: 15px; background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent);
+  }
+  .pane-code .drop-hint { color: var(--slab-ink); background: color-mix(in srgb, var(--accent) 22%, transparent); }
+
+  /* ---------- sample bar ---------- */
+  .samplebar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 14px 0 26px; font-size: 13.5px; }
+  .samplebar .lbl { color: var(--muted); }
+  .chipbtn {
+    cursor: pointer; background: var(--surface); color: var(--ink); border: 1px solid var(--line);
+    border-radius: 999px; padding: 3px 12px; font-size: 13px;
+  }
+  .chipbtn:hover { border-color: var(--accent); color: var(--accent); }
+  .chipbtn[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); color: var(--accent); font-weight: 700; }
+  .samplebar .spacer { flex: 1; }
+  .linkbtn { cursor: pointer; background: none; border: 0; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; font-size: 13px; padding: 2px 4px; }
+  .linkbtn:hover { color: var(--ink); }
+
+  /* ---------- results ---------- */
+  .sheet-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; padding-bottom: 14px; border-bottom: 2px solid var(--ink); }
+  .sheet-head h2 { font-family: var(--f-display); font-size: 22px; margin: 0; letter-spacing: .04em; }
+  .score { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .score-num { font-family: var(--f-display); font-weight: 700; font-size: 40px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .score-num small { font-size: 20px; color: var(--muted); }
+  .score-text { color: var(--muted); font-size: 14px; }
+  .bar { display: flex; height: 10px; border-radius: 3px; overflow: hidden; background: var(--line); margin-top: 8px; width: min(420px, 100%); }
+  .bar span { display: block; height: 100%; }
+  .bar .b-ok { background: var(--green); } .bar .b-warn { background: var(--amber); } .bar .b-err { background: var(--red); } .bar .b-skip { background: var(--line); }
+  .sheet-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; background: var(--surface); }
+  .seg button { cursor: pointer; border: 0; background: transparent; padding: 5px 14px; font-size: 13.5px; }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); font-weight: 700; }
+  .btn { cursor: pointer; border-radius: 7px; padding: 6px 14px; font-size: 13.5px; font-weight: 700; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); }
+  .btn:hover { filter: brightness(1.08); }
+
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 18px; }
+  .filter {
+    cursor: pointer; display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px 5px 6px; border-radius: 7px;
+    border: 1px solid var(--line); background: var(--surface); font-size: 13.5px;
+  }
+  .filter .n { font-family: var(--f-mono); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .filter[aria-pressed="false"] { opacity: .5; }
+  .filter[aria-pressed="false"] .mini { filter: grayscale(1); }
+  .filter:disabled { cursor: default; opacity: .4; }
+
+  .stamp, .mini {
+    flex: none; display: grid; place-items: center; font-family: var(--f-display); font-weight: 700; line-height: 1;
+    border: 2px solid var(--c); color: var(--c); border-radius: 5px; background: var(--surface);
+  }
+  .mini { width: 24px; height: 24px; font-size: 14px; border-width: 1.5px; border-radius: 4px; }
+  .stamp { width: 42px; height: 42px; font-size: 23px; transform: rotate(-6deg); box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--c) 12%, transparent); }
+  .c-mismatch { --c: var(--red); } .c-missing { --c: var(--red); } .c-naming { --c: var(--amber); } .c-extra { --c: var(--slate); }
+  .c-warn { --c: var(--amber); }
+
+  #list { display: grid; gap: 14px; }
+  .find {
+    display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 16px; padding: 16px 18px 16px 14px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); min-width: 0;
+  }
+  .find.hl { animation: flash .9s ease-out; }
+  .find-main { min-width: 0; display: grid; gap: 10px; }
+  .find-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 12.5px; color: var(--muted); }
+  .sev { font-weight: 700; padding: 0 7px; border-radius: 4px; }
+  .sev-error { background: var(--red-bg); color: var(--red); }
+  .sev-warn { background: var(--amber-bg); color: var(--amber); }
+  .sev-info { background: var(--slate-bg); color: var(--slate); }
+  .kind { letter-spacing: .04em; }
+  .find-name { font-family: var(--f-mono); color: var(--ink); font-size: 13px; overflow-wrap: anywhere; }
+  .find-title { font-size: 16.5px; line-height: 1.6; margin: 0; font-weight: 700; text-wrap: pretty; }
+  .find-more { margin: -4px 0 0; padding: 0; list-style: none; display: grid; gap: 2px; font-size: 14px; }
+  .find-more li { padding-left: 1.2em; position: relative; }
+  .find-more li::before { content: "・"; position: absolute; left: 0; color: var(--muted); }
+  .hint { margin: 0; font-size: 13.5px; color: var(--muted); max-width: 62em; }
+
+  .cmp-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; }
+  .cmp { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .cmp th, .cmp td { text-align: left; padding: 6px 10px; vertical-align: top; border-top: 1px solid var(--line); }
+  .cmp thead th { white-space: nowrap; border-top: 0; font-size: 12px; color: var(--muted); font-weight: 700; letter-spacing: .06em; background: color-mix(in srgb, var(--line) 30%, transparent); }
+  .cmp td.lbl { white-space: nowrap; color: var(--muted); font-size: 12.5px; width: 1%; }
+  .cmp td.v { font-family: var(--f-mono); overflow-wrap: anywhere; min-width: 9em; }
+  .cmp td.st { width: 1%; padding-right: 0; font-weight: 700; }
+  .cmp tr.s-bad td.v { background: var(--red-bg); }
+  .cmp tr.s-bad td.v.code { text-decoration: underline wavy var(--red); text-decoration-thickness: 1.5px; text-underline-offset: 4px; }
+  .cmp tr.s-bad td.v.code.none { text-decoration: none; }
+  .cmp tr.s-bad td.st { color: var(--red); }
+  .cmp tr.s-warn td.v { background: var(--amber-bg); }
+  .cmp tr.s-warn td.st { color: var(--amber); }
+  .cmp tr.s-ok td.st { color: var(--green); }
+  .cmp tr.s-na td.v { color: var(--muted); }
+
+  .srcs { display: grid; gap: 4px; }
+  .src {
+    cursor: pointer; display: grid; grid-template-columns: 9.5em minmax(0, 1fr); gap: 10px; align-items: baseline; text-align: left;
+    background: transparent; border: 0; border-radius: 5px; padding: 3px 6px; margin: 0 -6px; font-size: 12.5px;
+  }
+  .src:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  .src-where { color: var(--accent); font-family: var(--f-mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .src code { background: none; padding: 0; color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; }
+  @media (max-width: 560px) { .src { grid-template-columns: minmax(0, 1fr); gap: 0; } .find { grid-template-columns: minmax(0, 1fr); } .stamp { width: 34px; height: 34px; font-size: 19px; } }
+
+  .group-head { display: flex; align-items: center; gap: 10px; margin: 18px 0 2px; font-family: var(--f-display); font-size: 17px; font-weight: 700; }
+  .group-head .n { font-family: var(--f-mono); font-size: 13px; color: var(--muted); font-weight: 400; }
+  .extras { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+  .extra-row { display: grid; grid-template-columns: 5.5em minmax(0, 1fr) auto; gap: 12px; align-items: baseline; padding: 7px 14px; border-top: 1px solid var(--line); font-size: 13.5px; }
+  .extra-row:first-child { border-top: 0; }
+  .extra-row .k { color: var(--slate); font-size: 12px; }
+  .extra-row .nm { font-family: var(--f-mono); overflow-wrap: anywhere; min-width: 0; }
+  .extra-row .nm small { color: var(--muted); margin-left: 8px; }
+  .extra-row .loc { cursor: pointer; border: 0; background: none; color: var(--accent); font-family: var(--f-mono); font-size: 12px; padding: 0; text-align: right; overflow-wrap: anywhere; }
+  @media (max-width: 560px) { .extra-row { grid-template-columns: minmax(0, 1fr); gap: 0; } .extra-row .loc { text-align: left; } }
+
+  .empty { background: var(--surface); border: 1px dashed var(--line); border-radius: var(--r); padding: 22px; color: var(--muted); }
+  .empty strong { color: var(--ink); display: block; font-size: 16px; margin-bottom: 4px; }
+  .allgood { border-style: solid; border-color: transparent; background: var(--green-bg); color: var(--green); }
+  .allgood strong { color: var(--green); }
+
+  .table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); }
+  .checks { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .checks th, .checks td { text-align: left; padding: 7px 12px; border-top: 1px solid var(--line); vertical-align: baseline; }
+  .checks thead th { border-top: 0; font-size: 12px; color: var(--muted); letter-spacing: .06em; }
+  .checks td.num { font-family: var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .checks td.nm { font-family: var(--f-mono); overflow-wrap: anywhere; }
+  .checks tr[data-fid] { cursor: pointer; }
+  .checks tr[data-fid]:hover td { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+  .pill { display: inline-block; font-size: 12px; font-weight: 700; border-radius: 4px; padding: 0 8px; white-space: nowrap; }
+  .p-ok { background: var(--green-bg); color: var(--green); }
+  .p-error { background: var(--red-bg); color: var(--red); }
+  .p-warn { background: var(--amber-bg); color: var(--amber); }
+  .p-info { background: var(--slate-bg); color: var(--slate); }
+  .p-skipped { background: var(--code-bg); color: var(--muted); }
+
+  .copybox { width: 100%; height: 180px; margin-top: 10px; font-family: var(--f-mono); font-size: 12.5px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); padding: 10px; }
+  .toast { font-size: 13px; color: var(--green); font-weight: 700; }
+
+  /* ---------- guide ---------- */
+  .guide { margin-top: 44px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  .guide section { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 18px; min-width: 0; }
+  .guide h2 { font-family: var(--f-display); font-size: 18px; margin: 0 0 8px; }
+  .guide ul { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; font-size: 14px; }
+  .guide pre { margin: 8px 0 0; padding: 10px 12px; background: var(--paper); border: 1px solid var(--line); border-radius: 6px; font-family: var(--f-mono); font-size: 12.5px; line-height: 1.6; overflow-x: auto; }
+  .legend { display: grid; gap: 8px; font-size: 14px; }
+  .legend div { display: flex; align-items: center; gap: 10px; }
+  .foot { margin-top: 20px; font-size: 13px; color: var(--muted); }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @media (prefers-reduced-motion: reduce) { .pane.flash, .find.hl { animation: none; } }
+</style>
+<!-- artifact:end -->
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="mark" aria-hidden="true">違</div>
+      <div>
+        <h1>仕様ズレチェッカー</h1>
+        <p class="tagline">仕様書とソースコードを読み比べて、名前・引数・型・値・API の食い違いに赤字を入れます。</p>
+      </div>
+    </div>
+    <ul class="langs" aria-label="読めるコード">
+      <li>Java</li><li>TypeScript</li><li>JavaScript</li><li>Python</li>
+    </ul>
+  </header>
+
+  <main>
+    <div class="desk">
+      <section class="pane pane-spec" id="spec-pane" aria-labelledby="spec-label">
+        <div class="pane-head">
+          <span class="pane-label" id="spec-label">仕様書</span>
+          <span class="pane-file" id="spec-name"></span>
+          <div class="pane-tools">
+            <button type="button" class="tool" id="spec-open">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 4.5h4l1.5 1.5H14v6.5H2z"/></svg>開く
+            </button>
+            <button type="button" class="tool" id="spec-clear">消す</button>
+          </div>
+          <input type="file" id="spec-file" accept=".md,.markdown,.txt,.adoc,.rst,text/*" hidden>
+        </div>
+        <label class="sr" for="spec-input">仕様書の本文</label>
+        <textarea id="spec-input" spellcheck="false"
+          placeholder="仕様書（Markdown やテキスト）を貼りつけるか、ファイルをここにドロップしてください。&#10;&#10;例:&#10;### calcTotal(price: int, qty: int): int&#10;| 定数名 | 値 |&#10;GET /api/orders/{id}"></textarea>
+        <div class="pane-foot"><span id="spec-pos">1 行目</span><span id="spec-count"></span><span class="sample-flag" id="spec-sample" hidden>例を表示中</span></div>
+      </section>
+
+      <section class="pane pane-code" id="code-pane" aria-labelledby="code-label">
+        <div class="pane-head">
+          <span class="pane-label" id="code-label">ソースコード</span>
+          <div class="pane-tools">
+            <button type="button" class="tool" id="code-open">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 2h5l3 3v9H4z M9 2v3h3"/></svg>ファイル
+            </button>
+            <button type="button" class="tool" id="dir-open">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 4.5h4l1.5 1.5H14v6.5H2z"/></svg>フォルダ
+            </button>
+            <button type="button" class="tool" id="code-clear">すべて消す</button>
+          </div>
+          <input type="file" id="code-file" multiple accept=".java,.ts,.tsx,.mts,.cts,.js,.jsx,.mjs,.cjs,.py,.pyi" hidden>
+          <input type="file" id="dir-file" webkitdirectory multiple hidden>
+        </div>
+        <div id="tabs-box"></div>
+        <div class="editor">
+          <pre class="gutter" id="gutter" aria-hidden="true">1</pre>
+          <label class="sr" for="code-input">選んでいるファイルのコード</label>
+          <textarea id="code-input" spellcheck="false" wrap="off"
+            placeholder="ここにコードを貼りつけるか、ファイル・フォルダをドロップしてください。&#10;Java / TypeScript / JavaScript / Python を読めます。"></textarea>
+        </div>
+        <div class="pane-foot"><span id="code-pos"></span><span id="code-count"></span><span class="sample-flag" id="code-sample" hidden>例を表示中</span></div>
+      </section>
+    </div>
+
+    <div class="samplebar">
+      <span class="lbl">例で試す</span>
+      <span id="samples" style="display:contents"></span>
+      <span class="spacer"></span>
+      <button type="button" class="linkbtn" id="reset-all">両方とも空にする</button>
+    </div>
+
+    <section aria-labelledby="result-title" aria-live="polite" aria-busy="false" id="result-sec">
+      <div class="sheet-head">
+        <div>
+          <h2 id="result-title">照合結果</h2>
+          <div class="score" id="score"></div>
+          <div class="bar" id="bar" aria-hidden="true"></div>
+        </div>
+        <div class="sheet-actions">
+          <div class="seg" role="group" aria-label="表示">
+            <button type="button" id="view-findings" aria-pressed="true">指摘</button>
+            <button type="button" id="view-checks" aria-pressed="false">照合表</button>
+          </div>
+          <button type="button" class="btn" id="copy-md">Markdown でコピー</button>
+          <span class="toast" id="toast" role="status"></span>
+        </div>
+      </div>
+      <div id="copy-fallback"></div>
+      <div class="filters" id="filters" role="group" aria-label="種類で絞りこむ"></div>
+      <div id="list"></div>
+    </section>
+
+    <div class="guide">
+      <section aria-labelledby="g1">
+        <h2 id="g1">仕様書から読む書き方</h2>
+        <ul>
+          <li>見出しや箇条書きのシグネチャ（<code>calcTotal(price: int): int</code>、<code>int calc(int a)</code>、<code>def f(a) -&gt; bool</code>）</li>
+          <li>「引数」「戻り値」「フィールド」「定数」の見出し・ラベル・表</li>
+          <li><code>## Order クラス</code> の下の項目表、<code>OrderStatus 列挙型</code> の値の並び</li>
+          <li><code>GET /api/orders/{id}</code> の形の API、<code>MAX_ITEMS = 100</code> の形の定数</li>
+          <li>仕様書の中の <code>```java</code> などのコードブロック</li>
+          <li>文中の <code>`名前`</code>（コードにあるかだけ確かめます）</li>
+        </ul>
+        <pre>### calcTotal(price: int, qty: int): int
+- 引数
+  - `price` (int, 必須): 単価
+  - `qty` (int): 数量。デフォルト 1
+- 戻り値: int
+
+| メソッド | パス |
+|---|---|
+| GET | /api/orders/{id} |</pre>
+      </section>
+      <section aria-labelledby="g2">
+        <h2 id="g2">コードから読むもの</h2>
+        <ul>
+          <li><b>Java</b>: クラス・interface・enum・record、メソッド、フィールド、<code>static final</code> 定数、Spring の <code>@GetMapping</code> など、JAX-RS</li>
+          <li><b>TypeScript / JavaScript</b>: function・アロー関数・class・interface・type・enum、<code>export const</code> 定数、Express の <code>router.get(...)</code>、NestJS</li>
+          <li><b>Python</b>: def・class・dataclass・Pydantic・Enum、大文字の定数、FastAPI / Flask のルート</li>
+        </ul>
+        <p class="hint" style="margin-top:10px">コンパイラではないので、とても珍しい書き方は読み落とすことがあります。node_modules などのフォルダは自動で飛ばします。</p>
+      </section>
+      <section aria-labelledby="g3">
+        <h2 id="g3">はんこの意味</h2>
+        <div class="legend">
+          <div><span class="mini c-mismatch">違</span><span><b>食い違い</b> 引数・型・値・メソッドなどが、仕様とコードで違う</span></div>
+          <div><span class="mini c-missing">無</span><span><b>見つからない</b> 仕様にあるのに、コードにない</span></div>
+          <div><span class="mini c-naming">揺</span><span><b>名前の揺れ</b> <code>user_id</code> と <code>userId</code> のような書き方の違い</span></div>
+          <div><span class="mini c-extra">外</span><span><b>仕様にない</b> コードにだけある（仕様書が触れている種類だけ調べます）</span></div>
+        </div>
+        <p class="foot">貼りつけた仕様書とコードは、このページの中だけで読みます。どこにも送信しません。</p>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script src="src/common.js"></script>
+<script src="src/code.js"></script>
+<script src="src/spec.js"></script>
+<script src="src/compare.js"></script>
+<script src="src/samples.js"></script>
+<script src="src/app.js"></script>
+</body>
+</html>

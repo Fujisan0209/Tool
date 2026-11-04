@@ -1,5 +1,8 @@
 # Javaエラーやさしく解説
 
+> このリポジトリには、もう1つツールがあります: **[仕様ズレチェッカー](spec-check/README.md)**（仕様書とソースコードの食い違いを見つける）。
+> [`dist/spec-zure-checker.html`](dist/spec-zure-checker.html) をダブルクリックで開くだけで使えます。
+
 Javaを習いはじめた人向けのツールです。`javac` や `java` が出したエラーメッセージを貼りつけると、
 **なにが起きたのか・よくある原因・なおし方・まちがい/正しいコード例** を、やさしい日本語で説明します。
 
@@ -18,7 +21,7 @@ Javaを習いはじめた人向けのツールです。`javac` や `java` が出
 
 リポジトリをまるごとダウンロードした場合は、`index.html` を開いても同じように使えます。
 
-`src/` を書きかえたら、`npm run build` で `dist/java-error-yasashiku.html` を作りなおしてください。
+`src/` を書きかえたら、`npm run build` で `dist/` の HTML を作りなおしてください。
 
 ## 対応しているエラー（50種類）
 
