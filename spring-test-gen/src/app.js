@@ -120,6 +120,7 @@
     const kind = engineKind();
     const claudeRadio = document.querySelector('input[name="engine"][value="claude"]');
     claudeRadio.disabled = !state.sample;
+    document.querySelector('input[name="engine"][value="api"]').disabled = !window.AnthropicSDK;
     $("key-box").hidden = kind !== "api";
     const note = $("engine-note");
     if (kind === "claude") note.textContent = "claude.ai のあなたのアカウントの Claude を使います。API キーはいりません。はじめて使うときに許可を聞かれます。";
