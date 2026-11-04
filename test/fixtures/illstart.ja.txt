@@ -1,0 +1,7 @@
+Main.java:1: エラー: 式の開始が不正です
+public class Main { public static void main(String[] a){ public int x = 5; } }
+                                                         ^
+Main.java:1: エラー: class, interface, enumまたはrecordがありません
+public class Main { public static void main(String[] a){ public int x = 5; } }
+                                                                             ^
+エラー2個

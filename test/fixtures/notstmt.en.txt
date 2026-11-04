@@ -1,0 +1,4 @@
+Main.java:1: error: not a statement
+public class Main { public static void main(String[] a){ int x=1; x + 1; } }
+                                                                    ^
+1 error

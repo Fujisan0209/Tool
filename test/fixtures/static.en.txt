@@ -1,0 +1,4 @@
+Main.java:1: error: non-static method hello() cannot be referenced from a static context
+public class Main { void hello(){} public static void main(String[] a){ hello(); } }
+                                                                        ^
+1 error

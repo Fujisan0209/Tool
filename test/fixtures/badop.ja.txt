@@ -1,0 +1,6 @@
+Main.java:1: エラー: 二項演算子'&&'のオペランド型が不正です
+public class Main { public static void main(String[] a){ int x=1; if (x > 0 && "a") {} } }
+                                                                            ^
+  最初の型: boolean
+  2番目の型: String
+エラー1個

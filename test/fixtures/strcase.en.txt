@@ -1,0 +1,6 @@
+Main.java:1: error: cannot find symbol
+public class Main { public static void main(String[] a){ string s = "x"; } }
+                                                         ^
+  symbol:   class string
+  location: class Main
+1 error

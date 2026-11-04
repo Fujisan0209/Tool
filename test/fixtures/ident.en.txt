@@ -1,0 +1,7 @@
+Main.java:1: error: <identifier> expected
+public class Main { System.out.println("hi"); }
+                                      ^
+Main.java:1: error: illegal start of type
+public class Main { System.out.println("hi"); }
+                                       ^
+2 errors

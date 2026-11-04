@@ -1,0 +1,6 @@
+Main.java:1: error: cannot find symbol
+public class Main { public static void main(String[] a){ int count=1; System.out.println(cont); } }
+                                                                                         ^
+  symbol:   variable cont
+  location: class Main
+1 error

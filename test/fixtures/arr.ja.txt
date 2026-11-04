@@ -1,0 +1,4 @@
+Main.java:1: エラー: 配列が要求されましたが、Stringが見つかりました
+public class Main { public static void main(String[] a){ String s="abc"; char c = s[0]; } }
+                                                                                   ^
+エラー1個

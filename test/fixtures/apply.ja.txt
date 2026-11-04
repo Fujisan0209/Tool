@@ -1,0 +1,7 @@
+Main.java:1: エラー: クラス Mainのメソッド addは指定された型に適用できません。
+public class Main { static int add(int a,int b){return a+b;} public static void main(String[] a){ add(1); } }
+                                                                                                  ^
+  期待値: int,int
+  検出値:    int
+  理由: 実引数リストと仮引数リストの長さが異なります
+エラー1個

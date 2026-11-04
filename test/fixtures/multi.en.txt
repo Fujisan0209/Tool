@@ -1,0 +1,9 @@
+Main.java:1: error: incompatible types: String cannot be converted to int
+public class Main { public static void main(String[] a){ int x = "a"; System.out.println(y); } }
+                                                                 ^
+Main.java:1: error: cannot find symbol
+public class Main { public static void main(String[] a){ int x = "a"; System.out.println(y); } }
+                                                                                         ^
+  symbol:   variable y
+  location: class Main
+2 errors

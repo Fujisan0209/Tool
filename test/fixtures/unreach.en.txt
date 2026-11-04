@@ -1,0 +1,4 @@
+Main.java:1: error: unreachable statement
+public class Main { static int f(){ return 1; System.out.println(); } public static void main(String[] a){ } }
+                                              ^
+1 error

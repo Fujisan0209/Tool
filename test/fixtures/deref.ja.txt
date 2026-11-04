@@ -1,0 +1,4 @@
+Main.java:1: エラー: intは間接参照できません
+public class Main { public static void main(String[] a){ int x=1; x.equals(1); } }
+                                                                   ^
+エラー1個

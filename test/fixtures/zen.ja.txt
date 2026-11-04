@@ -1,0 +1,7 @@
+Main.java:1: エラー: '\u3000'は不正な文字です
+public class Main { public static void main(String[] a){ int　x = 1; } }
+                                                            ^
+Main.java:1: エラー: 文ではありません
+public class Main { public static void main(String[] a){ int　x = 1; } }
+                                                         ^
+エラー2個

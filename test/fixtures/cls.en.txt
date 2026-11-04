@@ -1,0 +1,4 @@
+Main.java:2: error: class, interface, enum, or record expected
+}
+^
+1 error

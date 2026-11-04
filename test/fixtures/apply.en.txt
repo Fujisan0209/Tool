@@ -1,0 +1,7 @@
+Main.java:1: error: method add in class Main cannot be applied to given types;
+public class Main { static int add(int a,int b){return a+b;} public static void main(String[] a){ add(1); } }
+                                                                                                  ^
+  required: int,int
+  found:    int
+  reason: actual and formal argument lists differ in length
+1 error

@@ -1,0 +1,11 @@
+Main.java:1: エラー: シンボルを見つけられません
+public class Main { public static void main(String[] a){ Scanner sc = new Scanner(System.in); } }
+                                                         ^
+  シンボル:   クラス Scanner
+  場所: クラス Main
+Main.java:1: エラー: シンボルを見つけられません
+public class Main { public static void main(String[] a){ Scanner sc = new Scanner(System.in); } }
+                                                                          ^
+  シンボル:   クラス Scanner
+  場所: クラス Main
+エラー2個

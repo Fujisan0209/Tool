@@ -1,0 +1,4 @@
+Main.java:1: エラー: ';'がありません
+public class Main { public static void main(String[] a){ System.out.println("hi") } }
+                                                                                 ^
+エラー1個

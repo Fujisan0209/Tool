@@ -1,0 +1,4 @@
+Main.java:1: error: 'else' without 'if'
+public class Main { public static void main(String[] a){ int x=1; if (x>0); System.out.println(); else System.out.println(); } }
+                                                                                                  ^
+1 error

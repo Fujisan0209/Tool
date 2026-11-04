@@ -1,0 +1,4 @@
+Main.java:1: error: invalid method declaration; return type required
+public class Main { public static hello(){ } }
+                                  ^
+1 error

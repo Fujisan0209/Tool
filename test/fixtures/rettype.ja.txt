@@ -1,0 +1,4 @@
+Main.java:1: エラー: 無効なメソッド宣言です。戻り値の型が必要です。
+public class Main { public static hello(){ } }
+                                  ^
+エラー1個

@@ -1,0 +1,9 @@
+Main.java:1: エラー: 不適合な型: Stringをintに変換できません:
+public class Main { public static void main(String[] a){ int x = "a"; System.out.println(y); } }
+                                                                 ^
+Main.java:1: エラー: シンボルを見つけられません
+public class Main { public static void main(String[] a){ int x = "a"; System.out.println(y); } }
+                                                                                         ^
+  シンボル:   変数 y
+  場所: クラス Main
+エラー2個

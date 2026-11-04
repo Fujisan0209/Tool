@@ -1,0 +1,4 @@
+Main.java:1: エラー: 不適合な型: Stringをintに変換できません:
+public class Main { public static void main(String[] a){ int n = "123"; } }
+                                                                 ^
+エラー1個

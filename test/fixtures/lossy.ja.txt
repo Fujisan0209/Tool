@@ -1,0 +1,4 @@
+Main.java:1: エラー: 不適合な型: 精度が失われる可能性があるdoubleからintへの変換
+public class Main { public static void main(String[] a){ int n = 3.5; } }
+                                                                 ^
+エラー1個

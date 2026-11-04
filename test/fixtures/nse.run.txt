@@ -1,0 +1,4 @@
+Exception in thread "main" java.util.NoSuchElementException
+	at java.base/java.util.Scanner.throwFor(Scanner.java:945)
+	at java.base/java.util.Scanner.next(Scanner.java:1486)
+	at Main.main(Main.java:1)

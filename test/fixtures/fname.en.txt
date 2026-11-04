@@ -1,0 +1,4 @@
+main.java:1: error: class Main is public, should be declared in a file named Main.java
+public class Main { public static void main(String[] a){ } }
+       ^
+1 error

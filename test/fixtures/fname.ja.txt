@@ -1,0 +1,4 @@
+main.java:1: エラー: クラス Mainはpublicであり、ファイルMain.javaで宣言する必要があります
+public class Main { public static void main(String[] a){ } }
+       ^
+エラー1個

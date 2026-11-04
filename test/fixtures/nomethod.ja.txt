@@ -1,0 +1,3 @@
+エラー: メイン・メソッドがクラスMainで見つかりません。次のようにメイン・メソッドを定義してください。
+   public static void main(String[] args)
+またはJavaFXアプリケーション・クラスはjavafx.application.Applicationを拡張する必要があります

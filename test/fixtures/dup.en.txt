@@ -1,0 +1,4 @@
+Main.java:1: error: variable x is already defined in method main(String[])
+public class Main { public static void main(String[] a){ int x=1; int x=2; } }
+                                                                      ^
+1 error

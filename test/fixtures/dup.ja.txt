@@ -1,0 +1,4 @@
+Main.java:1: エラー: 変数 xはすでにメソッド main(String[])で定義されています
+public class Main { public static void main(String[] a){ int x=1; int x=2; } }
+                                                                      ^
+エラー1個

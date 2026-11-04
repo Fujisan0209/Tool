@@ -1,0 +1,7 @@
+Main.java:1: error: illegal start of expression
+public class Main { public static void main(String[] a){ public int x = 5; } }
+                                                         ^
+Main.java:1: error: class, interface, enum, or record expected
+public class Main { public static void main(String[] a){ public int x = 5; } }
+                                                                             ^
+2 errors

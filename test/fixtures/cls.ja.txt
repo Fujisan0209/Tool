@@ -1,0 +1,4 @@
+Main.java:2: エラー: class, interface, enumまたはrecordがありません
+}
+^
+エラー1個

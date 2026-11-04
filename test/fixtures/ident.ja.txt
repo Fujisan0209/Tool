@@ -1,0 +1,7 @@
+Main.java:1: エラー: <identifier>がありません
+public class Main { System.out.println("hi"); }
+                                      ^
+Main.java:1: エラー: 型の開始が不正です
+public class Main { System.out.println("hi"); }
+                                       ^
+エラー2個

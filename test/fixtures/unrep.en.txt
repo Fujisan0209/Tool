@@ -1,0 +1,4 @@
+Main.java:1: error: unreported exception InterruptedException; must be caught or declared to be thrown
+public class Main { public static void main(String[] a){ Thread.sleep(10); } }
+                                                                     ^
+1 error

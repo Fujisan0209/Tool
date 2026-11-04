@@ -1,0 +1,4 @@
+Main.java:1: エラー: 例外InterruptedExceptionは報告されません。スローするには、捕捉または宣言する必要があります
+public class Main { public static void main(String[] a){ Thread.sleep(10); } }
+                                                                     ^
+エラー1個

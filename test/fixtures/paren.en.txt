@@ -1,0 +1,4 @@
+Main.java:1: error: ')' or ',' expected
+public class Main { public static void main(String[] a){ System.out.println("hi"; } }
+                                                                                ^
+1 error

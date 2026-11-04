@@ -1,0 +1,2 @@
+エラー: メイン・クラスFooを検出およびロードできませんでした
+原因: java.lang.ClassNotFoundException: Foo

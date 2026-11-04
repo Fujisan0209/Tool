@@ -1,0 +1,10 @@
+{
+  "name": "java-error-yasashiku",
+  "version": "1.0.0",
+  "description": "Javaのエラーメッセージを、初心者向けのやさしい日本語で説明するツール",
+  "private": true,
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "license": "MIT"
+}

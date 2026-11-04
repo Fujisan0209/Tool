@@ -1,0 +1,4 @@
+Main.java:1: エラー: 構文解析中にファイルの終わりに移りました
+public class Main { public static void main(String[] a){ }
+                                                          ^
+エラー1個

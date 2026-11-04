@@ -1,0 +1,4 @@
+Main.java:1: エラー: staticでないメソッド hello()をstaticコンテキストから参照することはできません
+public class Main { void hello(){} public static void main(String[] a){ hello(); } }
+                                                                        ^
+エラー1個

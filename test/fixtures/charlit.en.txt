@@ -1,0 +1,10 @@
+Main.java:1: error: unclosed character literal
+public class Main { public static void main(String[] a){ String s = 'Hello'; } }
+                                                                    ^
+Main.java:1: error: unclosed character literal
+public class Main { public static void main(String[] a){ String s = 'Hello'; } }
+                                                                          ^
+Main.java:1: error: not a statement
+public class Main { public static void main(String[] a){ String s = 'Hello'; } }
+                                                                      ^
+3 errors

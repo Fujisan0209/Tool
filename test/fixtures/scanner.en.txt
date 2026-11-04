@@ -1,0 +1,11 @@
+Main.java:1: error: cannot find symbol
+public class Main { public static void main(String[] a){ Scanner sc = new Scanner(System.in); } }
+                                                         ^
+  symbol:   class Scanner
+  location: class Main
+Main.java:1: error: cannot find symbol
+public class Main { public static void main(String[] a){ Scanner sc = new Scanner(System.in); } }
+                                                                          ^
+  symbol:   class Scanner
+  location: class Main
+2 errors
