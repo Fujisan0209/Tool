@@ -4,7 +4,8 @@
   "description": "Javaのエラーメッセージを、初心者向けのやさしい日本語で説明するツール",
   "private": true,
   "scripts": {
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "build": "node scripts/build.js"
   },
   "license": "MIT"
 }

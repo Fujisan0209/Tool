@@ -1,0 +1,1827 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- artifact:start -->
+<title>Javaエラーやさしく解説</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  /* Layout: 2 panes — the terminal you paste into (left), the explanation cards (right). Stacks on phones. */
+  :root {
+    --bg: #f3f5f8;          /* page: cool paper */
+    --surface: #ffffff;
+    --ink: #1a2230;
+    --muted: #5b6577;
+    --line: #dde2ea;
+    --accent: #2853c4;      /* cobalt: controls, focus */
+    --accent-ink: #ffffff;
+    --term-bg: #18202c;     /* terminal slab */
+    --term-ink: #d8e0ec;
+    --term-dim: #7f8ba0;
+    --caret: #ffb547;
+    --bad: #c2362f;  --bad-bg: #fcecea;
+    --good: #1f7a4a; --good-bg: #e7f5ec;
+    --run: #b4570b;  --run-bg: #fdf0e2;
+    --env: #3d5a8a;  --env-bg: #e8eef8;
+    --code-bg: #eef1f6;
+
+    --f-display: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif;
+    --f-body: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif;
+    --f-mono: "JetBrains Mono", "Noto Sans Mono CJK JP", "Osaka-Mono", "MS Gothic", ui-monospace, monospace;
+
+    --r: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #10151d; --surface: #171e29; --ink: #e5eaf2; --muted: #98a3b6; --line: #2a3443;
+      --accent: #7c9cf5; --accent-ink: #0d1320;
+      --term-bg: #0a0e14; --term-ink: #d8e0ec; --term-dim: #6f7b90; --caret: #ffc266;
+      --bad: #ff8a80; --bad-bg: #3a1f22; --good: #6fd39b; --good-bg: #16301f;
+      --run: #ffb26b; --run-bg: #3a2a18; --env: #9bb6ea; --env-bg: #1c2840;
+      --code-bg: #222b39;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #10151d; --surface: #171e29; --ink: #e5eaf2; --muted: #98a3b6; --line: #2a3443;
+    --accent: #7c9cf5; --accent-ink: #0d1320;
+    --term-bg: #0a0e14; --term-ink: #d8e0ec; --term-dim: #6f7b90; --caret: #ffc266;
+    --bad: #ff8a80; --bad-bg: #3a1f22; --good: #6fd39b; --good-bg: #16301f;
+    --run: #ffb26b; --run-bg: #3a2a18; --env: #9bb6ea; --env-bg: #1c2840;
+    --code-bg: #222b39;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--f-body);
+    font-size: 16px;
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding-block: 28px 56px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+
+  /* ---------- header ---------- */
+  .masthead { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 24px; margin-bottom: 22px; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo {
+    flex: none; width: 44px; height: 44px; border-radius: 12px;
+    background: var(--term-bg); color: var(--caret);
+    display: grid; place-items: center;
+    font-family: var(--f-mono); font-weight: 600; font-size: 20px; line-height: 1;
+  }
+  h1 { font-family: var(--f-display); font-weight: 700; font-size: clamp(24px, 3.2vw, 32px); line-height: 1.3; margin: 0; text-wrap: balance; }
+  .tagline { margin: 0; color: var(--muted); font-size: 15px; max-width: 40em; }
+
+  /* ---------- grid ---------- */
+  .grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 24px; align-items: start; }
+  @media (max-width: 880px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+
+  /* ---------- terminal input ---------- */
+  .term {
+    position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px);
+    background: var(--term-bg); color: var(--term-ink);
+    border-radius: var(--r); overflow: hidden;
+    box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 10px 30px -18px rgba(10,20,40,.5);
+  }
+  @media (max-width: 880px) { .term { position: static; } }
+  .term-bar { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,.07); font-family: var(--f-mono); font-size: 12px; color: var(--term-dim); }
+  .term-bar .dots { display: flex; gap: 6px; }
+  .term-bar .dots i { width: 10px; height: 10px; border-radius: 50%; background: #3a4557; display: block; }
+  .term-bar label { margin-left: 4px; }
+  textarea {
+    display: block; width: 100%; min-height: 300px; resize: vertical;
+    background: transparent; color: var(--term-ink); border: 0; outline: none;
+    padding: 14px 16px; font-family: var(--f-mono); font-size: 13.5px; line-height: 1.6;
+    white-space: pre; overflow-x: auto; tab-size: 4;
+  }
+  textarea::placeholder { color: var(--term-dim); }
+  .term:focus-within { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 55%, transparent), 0 10px 30px -18px rgba(10,20,40,.5); }
+  .term-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 14px 14px; }
+  .btn {
+    font: inherit; font-size: 15px; font-weight: 700; cursor: pointer;
+    border-radius: 8px; padding: 8px 18px; border: 1px solid transparent;
+  }
+  .btn-primary { background: var(--accent); color: var(--accent-ink); }
+  .btn-primary:hover { filter: brightness(1.08); }
+  .btn-ghost { background: transparent; color: var(--term-ink); border-color: rgba(255,255,255,.18); }
+  .btn-ghost:hover { background: rgba(255,255,255,.06); }
+  .sample-note { margin: 0 0 0 auto; font-size: 12.5px; color: var(--caret); font-family: var(--f-mono); }
+
+  .samples-wrap { margin-top: 16px; }
+  .samples-wrap h2 { font-size: 13px; font-weight: 700; letter-spacing: .06em; color: var(--muted); margin: 0 0 8px; }
+  .samples { display: flex; flex-wrap: wrap; gap: 8px; }
+  .sample-btn {
+    font: inherit; font-size: 13.5px; cursor: pointer;
+    background: var(--surface); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px;
+  }
+  .sample-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  textarea:focus-visible { outline: none; }
+
+  /* ---------- results ---------- */
+  .results-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .summary { border-radius: var(--r); padding: 12px 16px; background: var(--surface); border: 1px solid var(--line); }
+  .summary[data-state="unknown"] { background: var(--run-bg); border-color: transparent; }
+  .summary-text { margin: 0; }
+  .summary strong { color: var(--accent); }
+  #results { display: flex; flex-direction: column; gap: 16px; }
+
+  .card {
+    --k: var(--bad); --k-bg: var(--bad-bg);
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--r);
+    overflow: hidden; min-width: 0;
+  }
+  .card.kind-runtime { --k: var(--run); --k-bg: var(--run-bg); }
+  .card.kind-env { --k: var(--env); --k-bg: var(--env-bg); }
+  .card-head { padding: 16px 18px 6px; }
+  .card-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 13px; }
+  .card-num { font-family: var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .chip { background: var(--k-bg); color: var(--k); font-weight: 700; border-radius: 6px; padding: 1px 8px; letter-spacing: .03em; }
+  .chip-warn { background: var(--run-bg); color: var(--run); }
+  .where { color: var(--muted); font-family: var(--f-mono); font-size: 12.5px; }
+  .card-title { font-family: var(--f-display); font-weight: 700; font-size: 21px; line-height: 1.45; margin: 6px 0 0; text-wrap: balance; }
+
+  .original { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 4px 18px 10px; font-size: 12.5px; color: var(--muted); }
+  .original .label { letter-spacing: .06em; }
+  .original-text { font-family: var(--f-mono); color: var(--muted); overflow-wrap: anywhere; }
+
+  .snippet { margin: 0 18px 4px; background: var(--term-bg); border-radius: 8px; overflow-x: auto; }
+  .snippet pre { margin: 0; padding: 10px 14px; font-family: var(--f-mono); font-size: 13px; line-height: 1.5; color: var(--term-ink); }
+  .snippet .caret { color: var(--caret); font-weight: 600; }
+
+  .card-body { display: grid; gap: 14px; padding: 14px 18px 16px; }
+  .sec h3 { font-size: 13px; letter-spacing: .08em; margin: 0 0 4px; color: var(--muted); font-weight: 700; }
+  .sec p { margin: 0; max-width: 40em; }
+  .sec ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+  .sec li { position: relative; padding-left: 1.4em; max-width: 40em; }
+  .sec-cause li::before { content: "・"; position: absolute; left: .1em; color: var(--muted); }
+  .sec-fix { background: var(--good-bg); border-radius: 8px; padding: 10px 14px 12px; }
+  .sec-fix h3 { color: var(--good); }
+  .sec-fix li::before { content: "✓"; position: absolute; left: .1em; color: var(--good); font-weight: 700; }
+
+  code { font-family: var(--f-mono); font-size: .9em; background: var(--code-bg); border-radius: 4px; padding: .05em .35em; overflow-wrap: anywhere; }
+  pre code, .original-text, .snippet code { background: none; padding: 0; border-radius: 0; overflow-wrap: normal; }
+
+  .example { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); border-top: 1px solid var(--line); }
+  .ex { margin: 0; padding: 10px 18px 14px; min-width: 0; }
+  .ex + .ex { border-left: 1px solid var(--line); }
+  @media (max-width: 560px) { .ex + .ex { border-left: 0; border-top: 1px solid var(--line); } }
+  .ex figcaption { font-size: 13px; font-weight: 700; letter-spacing: .06em; margin-bottom: 4px; }
+  .ex-bad figcaption { color: var(--bad); }
+  .ex-good figcaption { color: var(--good); }
+  .ex-bad figcaption::before { content: "✕ "; }
+  .ex-good figcaption::before { content: "○ "; }
+  .ex pre { margin: 0; padding: 8px 12px; border-radius: 6px; overflow-x: auto; font-family: var(--f-mono); font-size: 13px; line-height: 1.55; }
+  .ex-bad pre { background: var(--bad-bg); }
+  .ex-good pre { background: var(--good-bg); }
+
+  /* ---------- tips ---------- */
+  .tips { margin-top: 36px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px 20px; }
+  .tips h2 { font-family: var(--f-display); font-size: 19px; margin: 0 0 8px; }
+  .tips ol { margin: 0; padding-left: 1.4em; display: grid; gap: 4px; }
+  .tips li { max-width: 46em; }
+  .kinds { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 16px; }
+  .kinds div { border-radius: 8px; padding: 10px 14px; font-size: 14.5px; }
+  .kinds b { display: block; }
+  .k-compile { background: var(--bad-bg); } .k-compile b { color: var(--bad); }
+  .k-runtime { background: var(--run-bg); } .k-runtime b { color: var(--run); }
+  .k-env { background: var(--env-bg); } .k-env b { color: var(--env); }
+  .foot { margin-top: 20px; font-size: 13px; color: var(--muted); }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .card { animation: rise .25s ease-out both; }
+    @keyframes rise { from { transform: translateY(4px); } to { transform: none; } }
+  }
+</style>
+<!-- artifact:end -->
+</head>
+<body>
+<div class="wrap">
+  <header class="masthead">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">{ ;</div>
+      <h1>Javaエラーやさしく解説</h1>
+    </div>
+    <p class="tagline">javac や java が出したエラーを貼りつけると、なにが起きたのか・どう直すのかを、やさしい日本語で説明します。英語のメッセージでも日本語のメッセージでも大丈夫です。</p>
+  </header>
+
+  <main class="grid">
+    <div>
+      <form id="err-form" class="term">
+        <div class="term-bar">
+          <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+          <label for="err-input">エラーをここに貼りつけ</label>
+        </div>
+        <textarea id="err-input" spellcheck="false" autocomplete="off" autocapitalize="off"
+          placeholder="例:&#10;Main.java:5: error: ';' expected&#10;        System.out.println(&quot;hi&quot;)&#10;                                 ^"></textarea>
+        <div class="term-actions">
+          <button type="submit" class="btn btn-primary">説明する</button>
+          <button type="button" id="clear-btn" class="btn btn-ghost">消す</button>
+          <p id="sample-note" class="sample-note" hidden>いま表示しているのは例です</p>
+        </div>
+      </form>
+      <div class="samples-wrap">
+        <h2>よくあるエラーで試す</h2>
+        <div id="samples" class="samples"></div>
+      </div>
+    </div>
+
+    <div class="results-col" aria-live="polite">
+      <div id="summary" class="summary"></div>
+      <div id="results"></div>
+    </div>
+  </main>
+
+  <section class="tips" aria-labelledby="tips-title">
+    <h2 id="tips-title">どのエラーにも使えるコツ</h2>
+    <ol>
+      <li><b>いちばん上のエラーから直す。</b> 1つのまちがいが、そのあとのエラーをたくさん起こしていることがあります。1つ直したら、もう一度コンパイルしましょう。</li>
+      <li><b>行番号を見る。</b> <code>Main.java:5:</code> は「Main.java の 5行目」という意味です。実行時エラーは <code>at Main.main(Main.java:8)</code> の数字を見ます。</li>
+      <li><b><code>^</code> のあたりと、その1つ前の行を見る。</b> 本当のまちがいは、少し前にあることがよくあります。</li>
+      <li><b>全角の文字をうたがう。</b> <code>；</code> <code>（</code> <code>”</code> や全角スペースは、見た目が似ていても使えません。</li>
+      <li><b>直したら、ファイルを保存する。</b> 保存し忘れると、同じエラーが出続けます。</li>
+    </ol>
+    <div class="kinds">
+      <div class="k-compile"><b>コンパイルエラー</b><code>javac</code> のときに出る。書き方のまちがい。直すまで実行できない。</div>
+      <div class="k-runtime"><b>実行時エラー（例外）</b><code>java</code> で動かしている途中に出る。書き方は正しいが、動かしたら問題が起きた。</div>
+      <div class="k-env"><b>準備・コマンドのエラー</b>プログラムではなく、ファイルの場所やコマンドの打ち方、パソコンの設定の問題。</div>
+    </div>
+    <p class="foot">貼りつけたエラーは、このページの中だけで調べます。どこにも送信しません。</p>
+  </section>
+</div>
+
+<script>
+/* src/rules.js */
+/*
+ * Javaのエラーメッセージと「やさしい説明」の対応表。
+ *
+ * 1つのルールは次の形です。
+ *   id      : テストなどで使う名前
+ *   kind    : "compile"（コンパイル時） / "runtime"（実行時） / "env"（環境・コマンド）
+ *   match   : エラーメッセージにマッチする正規表現（英語・日本語の両方）
+ *   build   : (m, ctx) => ({ title, what, causes, fixes, example })
+ *             m   = match の結果
+ *             ctx = { block: エラー全体の文字列 }
+ *
+ * 説明文の中の `...` はコードとして表示されます。
+ * 上から順に調べるので、細かいルールほど上に置いてください。
+ */
+(function (root) {
+  "use strict";
+
+  /** 正規表現の最初に見つかったキャプチャを返す */
+  function pick(m) {
+    for (let i = 1; i < m.length; i++) if (m[i] !== undefined) return m[i];
+    return "";
+  }
+
+  /** ctx.block から、英語/日本語どちらかのラベル付きの行を取り出す */
+  function field(block, labels) {
+    const re = new RegExp("^\\s*(?:" + labels.join("|") + ")\\s*[:：]\\s*(.+)$", "m");
+    const m = block.match(re);
+    return m ? m[1].trim() : "";
+  }
+
+  /** よく import を忘れるクラス */
+  const IMPORTS = {
+    Scanner: "java.util.Scanner",
+    ArrayList: "java.util.ArrayList",
+    List: "java.util.List",
+    HashMap: "java.util.HashMap",
+    Map: "java.util.Map",
+    HashSet: "java.util.HashSet",
+    Set: "java.util.Set",
+    Random: "java.util.Random",
+    Arrays: "java.util.Arrays",
+    Collections: "java.util.Collections",
+    LinkedList: "java.util.LinkedList",
+    LocalDate: "java.time.LocalDate",
+    BufferedReader: "java.io.BufferedReader",
+    InputStreamReader: "java.io.InputStreamReader",
+    IOException: "java.io.IOException",
+    File: "java.io.File",
+    FileReader: "java.io.FileReader",
+    FileWriter: "java.io.FileWriter",
+  };
+
+  /** 大文字・小文字をまちがえやすい名前 */
+  const CASE_MISTAKES = {
+    string: "String",
+    system: "System",
+    scanner: "Scanner",
+    integer: "Integer",
+    math: "Math",
+    Println: "println",
+    PrintLn: "println",
+  };
+
+  const RULES = [];
+  const rule = (r) => RULES.push(r);
+
+  /* ------------------------------------------------------------------ */
+  /* 環境・コマンドのエラー                                              */
+  /* ------------------------------------------------------------------ */
+
+  rule({
+    id: "command-not-found",
+    kind: "env",
+    match: /'(javac?)'\s*は、内部コマンドまたは外部コマンド|'(javac?)' is not recognized|(?:^|\s)(javac?): (?:command not found|コマンドが見つかりません)|command not found: (javac?)/m,
+    build: (m) => {
+      const cmd = pick(m);
+      return {
+        title: `パソコンが「${cmd}」コマンドを知りません`,
+        what: `\`${cmd}\` というコマンドが見つかりませんでした。Javaのプログラムが悪いのではなく、パソコンの準備（設定）の問題です。`,
+        causes: [
+          "JDK（Javaの開発セット）がインストールされていない",
+          "インストールはしたが、PATH（コマンドの場所）の設定をしていない",
+          "設定のあと、ターミナル（コマンドプロンプト）を開き直していない",
+        ],
+        fixes: [
+          "`java -version` と打って、Javaが入っているか確かめる",
+          "入っていなければ JDK をインストールする（Oracle JDK や Eclipse Temurin など）",
+          "環境変数 PATH に JDK の `bin` フォルダを追加し、ターミナルを開き直す",
+        ],
+      };
+    },
+  });
+
+  rule({
+    id: "javac-file-not-found",
+    kind: "env",
+    match: /file not found: (\S+)|ファイルが見つかりません: (\S+)/,
+    build: (m) => {
+      const f = pick(m);
+      return {
+        title: `ファイル「${f}」が見つかりません`,
+        what: `\`javac\` に \`${f}\` をコンパイルするよう頼みましたが、そのファイルが今いるフォルダにありませんでした。`,
+        causes: [
+          "ターミナルで今いるフォルダが、ファイルを保存したフォルダとちがう",
+          "ファイル名のつづりや大文字・小文字がちがう（`main.java` と `Main.java` は別物）",
+          "ファイルの拡張子が `.java.txt` などになっている",
+        ],
+        fixes: [
+          "`cd` コマンドでファイルがあるフォルダへ移動する",
+          "`dir`（Windows）や `ls`（Mac/Linux）でファイル名を確認する",
+          "ファイル名を確かめて、そのとおりに `javac ファイル名.java` と打つ",
+        ],
+      };
+    },
+  });
+
+  rule({
+    id: "main-class-not-found",
+    kind: "env",
+    match: /Could not find or load main class (\S+)|メイン・クラス\s*(\S+?)\s*を検出およびロードできませんでした/,
+    build: (m) => {
+      const cls = pick(m);
+      const withExt = /\.(java|class)$/.test(cls);
+      return {
+        title: `クラス「${cls}」が見つからず、実行できません`,
+        what: `\`java\` コマンドで \`${cls}\` を動かそうとしましたが、そのクラスが見つかりませんでした。`,
+        causes: [
+          withExt
+            ? `\`java ${cls}\` のように拡張子を付けている（\`java\` コマンドにはクラス名だけを書く）`
+            : "先に `javac` でコンパイルしていない（`.class` ファイルがない）",
+          "クラス名の大文字・小文字がちがう",
+          "`.class` ファイルがあるフォルダとちがう場所で実行している",
+          "`package` を書いているのに、パッケージ名を付けずに実行している",
+        ],
+        fixes: [
+          "`javac Main.java` でコンパイルしてから `java Main` で実行する（`.class` は付けない）",
+          "コードの `public class ○○` の名前とまったく同じ名前で実行する",
+          "Java 11 以降なら `java Main.java` で、コンパイルと実行を一度にすることもできる",
+        ],
+        example: {
+          bad: "java Main.class",
+          good: "javac Main.java\njava Main",
+        },
+      };
+    },
+  });
+
+  rule({
+    id: "main-method-not-found",
+    kind: "env",
+    match: /Main method not found in class (\w+)|メイン・メソッドがクラス\s*(\w+)\s*で見つかりません/,
+    build: (m) => {
+      const cls = pick(m);
+      return {
+        title: `クラス「${cls}」に main メソッドがありません`,
+        what: "Javaのプログラムは `main` メソッドからスタートします。そのスタート地点が見つかりませんでした。",
+        causes: [
+          "`main` メソッドを書いていない",
+          "`main` のつづりや形がちがう（`Main`、`static` 忘れ、`String[] args` 忘れなど）",
+        ],
+        fixes: ["次の形を、1文字もまちがえずに書く"],
+        example: {
+          bad: "public void main() {",
+          good: "public static void main(String[] args) {",
+        },
+      };
+    },
+  });
+
+  rule({
+    id: "unsupported-class-version",
+    kind: "env",
+    match: /UnsupportedClassVersionError|has been compiled by a more recent version/,
+    build: () => ({
+      title: "コンパイルしたJavaと、実行するJavaのバージョンがちがいます",
+      what: "新しいバージョンの `javac` で作った `.class` ファイルを、古いバージョンの `java` で動かそうとしました。",
+      causes: [
+        "パソコンに複数のJavaが入っていて、`javac` と `java` で別のものが使われている",
+        "IDE（Eclipse や IntelliJ など）の設定と、ターミナルのJavaがちがう",
+      ],
+      fixes: [
+        "`javac -version` と `java -version` を打って、数字が同じか確かめる",
+        "PATH の設定を直して、同じバージョンのJavaを使う",
+      ],
+    }),
+  });
+
+  /* ------------------------------------------------------------------ */
+  /* コンパイルエラー（細かいものから順に）                              */
+  /* ------------------------------------------------------------------ */
+
+  rule({
+    id: "fullwidth-space",
+    kind: "compile",
+    match: /illegal character: '\\u3000'|'\\u3000'は不正な文字です/,
+    build: () => ({
+      title: "全角スペースがまざっています",
+      what: "コードの中に、日本語入力の全角スペース（`　`）が入っています。Javaは全角スペースを空白として扱えません。",
+      causes: ["日本語入力がオンのままスペースキーを押した", "Webや資料からコードをコピーした"],
+      fixes: [
+        "エラーの行にある空白を全部消して、半角スペースで打ち直す",
+        "エディタの「全角スペースを表示する」設定をオンにすると見つけやすい",
+      ],
+      example: { bad: "int　x = 5;   // ← 全角スペース", good: "int x = 5;" },
+    }),
+  });
+
+  rule({
+    id: "illegal-character",
+    kind: "compile",
+    match: /illegal character: '(.+?)'|'(.+?)'は不正な文字です/,
+    build: (m) => {
+      const ch = pick(m);
+      return {
+        title: "Javaで使えない文字がまざっています",
+        what: `\`${ch}\` という文字はJavaのコードとして使えません。多くの場合、日本語入力の「全角」の記号が原因です。`,
+        causes: [
+          "`；` `（` `）` `｛` `”` など、全角の記号を使っている",
+          "Webや資料からコピーしたときに、見えない文字や特殊な引用符が入った",
+        ],
+        fixes: [
+          "日本語入力をオフにして、エラーの行の記号を半角で打ち直す",
+          "`\"` は半角のダブルクォーテーションを使う（`“ ”` はダメ）",
+        ],
+        example: { bad: "System.out.println（“Hello”）；", good: 'System.out.println("Hello");' },
+      };
+    },
+  });
+
+  rule({
+    id: "unmappable-character",
+    kind: "compile",
+    match: /unmappable character|マップできない文字|マッピングできない文字|マップできません/,
+    build: () => ({
+      title: "ファイルの文字コードが合っていません",
+      what: "ファイルに書かれた日本語を、`javac` が正しく読み取れませんでした。ファイルの保存形式（文字コード）と、`javac` が想定している文字コードがちがいます。",
+      causes: [
+        "ファイルは UTF-8 で保存されているのに、Windows の `javac` が Shift_JIS（MS932）として読んでいる",
+        "またはその逆",
+      ],
+      fixes: [
+        "`javac -encoding UTF-8 Main.java` のように文字コードを指定してコンパイルする",
+        "または、エディタでファイルを開いて、文字コードを選び直して保存する",
+      ],
+    }),
+  });
+
+  rule({
+    id: "unclosed-string",
+    kind: "compile",
+    match: /unclosed string literal|文字列リテラルが閉じられていません/,
+    build: () => ({
+      title: "文字列の「\"」が閉じられていません",
+      what: "文字列は `\"` で始めて `\"` で終わる必要があります。終わりの `\"` が見つかりませんでした。",
+      causes: [
+        "最後の `\"` を書き忘れた",
+        "片方が全角の `”` になっている",
+        "文字列の中で `\"` を使いたいのに `\\\"` と書いていない",
+      ],
+      fixes: ["文字列の最後に半角の `\"` を付ける", "文字列の中の `\"` は `\\\"` と書く"],
+      example: { bad: 'System.out.println("こんにちは);', good: 'System.out.println("こんにちは");' },
+    }),
+  });
+
+  rule({
+    id: "char-literal",
+    kind: "compile",
+    match: /unclosed character literal|empty character literal|文字リテラルが閉じられていません|空の文字リテラルです/,
+    build: () => ({
+      title: "「'」（シングルクォーテーション）の使い方がまちがっています",
+      what: "Javaでは `'` は「1文字だけ」を表すときに使います（`char` 型）。2文字以上の文字列には `\"` を使います。",
+      causes: ["文字列を `'` で囲んでいる", "`''` のように中身が空になっている", "閉じる `'` を忘れた"],
+      fixes: ["文字列なら `\"` で囲む", "1文字なら `'A'` のように1文字だけを入れる"],
+      example: { bad: "String s = 'Hello';", good: 'String s = "Hello";' },
+    }),
+  });
+
+  rule({
+    id: "class-expected",
+    kind: "compile",
+    match: /class, interface\b.*?expected|class, interface\b.*?がありません|クラス、インタフェース.*?がありません/,
+    build: () => ({
+      title: "クラスの外に、よけいなものがあります",
+      what: "Javaのコードは、ほとんど全部をクラスの `{ }` の中に書きます。クラスの外に、メソッドや `}` などが書かれていました。",
+      causes: [
+        "`}` が多すぎて、クラスが途中で閉じてしまった",
+        "メソッドをクラスの `}` の後ろに書いた",
+        "`import` 文をクラスの中や後ろに書いた",
+      ],
+      fixes: [
+        "`{` と `}` の数が同じか数える（エディタで自動整形すると見つけやすい）",
+        "メソッドはクラスの `{ }` の中に移動する",
+      ],
+      example: {
+        bad: "public class Main {\n    public static void main(String[] args) {\n    }\n}\n}   // ← 多い",
+        good: "public class Main {\n    public static void main(String[] args) {\n    }\n}",
+      },
+    }),
+  });
+
+  rule({
+    id: "semicolon-expected",
+    kind: "compile",
+    match: /';'\s*expected|';'がありません/,
+    build: () => ({
+      title: "「;」（セミコロン）が抜けています",
+      what: "Javaでは、1つの命令（文）の終わりに必ず `;` を書きます。`;` がないと、どこで命令が終わるのかわかりません。",
+      causes: [
+        "行の最後に `;` を書き忘れた（いちばん多い！）",
+        "全角の `；` を書いている",
+        "その行の前後で、かっこや `\"` の数が合っていない",
+      ],
+      fixes: [
+        "エラーの行（またはその1つ前の行）の最後に半角の `;` を付ける",
+        "`^` マークの場所の近くを見る",
+      ],
+      example: { bad: 'System.out.println("Hello")', good: 'System.out.println("Hello");' },
+    }),
+  });
+
+  rule({
+    id: "symbol-expected",
+    kind: "compile",
+    match: /<identifier> expected|<(?:identifier|識別子)>がありません/,
+    build: () => ({
+      title: "名前（変数名など）があるべき場所に、ちがうものがあります",
+      what: "Javaが「ここには名前（変数名・メソッド名など）が来るはず」と思った場所に、別のものがありました。",
+      causes: [
+        "`System.out.println(...)` などの命令を、メソッドの外（クラスの中に直接）書いた",
+        "変数の型だけ書いて、名前を書き忘れた",
+        "名前に使えない記号や予約語（`class` `int` など）を使った",
+      ],
+      fixes: ["命令は `main` などのメソッドの `{ }` の中に書く", "変数は「型 名前」の順で書く"],
+      example: {
+        bad: 'public class Main {\n    System.out.println("Hi");\n}',
+        good: 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hi");\n    }\n}',
+      },
+    }),
+  });
+
+  rule({
+    id: "reached-eof",
+    kind: "compile",
+    match: /reached end of file while parsing|構文解析中にファイルの終わりに移りました/,
+    build: () => ({
+      title: "「}」が足りないまま、ファイルが終わっています",
+      what: "`{` に対応する `}` が見つからないまま、ファイルの最後まで来てしまいました。",
+      causes: ["最後の `}` を書き忘れた", "`if` や `for` の `}` をどこかで閉じ忘れた"],
+      fixes: [
+        "`{` と `}` の数を数えて、足りない分の `}` を足す",
+        "インデント（字下げ）をそろえると、閉じ忘れの場所がわかりやすい",
+      ],
+      example: {
+        bad: 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hi");\n    }',
+        good: 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hi");\n    }\n}',
+      },
+    }),
+  });
+
+  rule({
+    id: "cannot-find-symbol",
+    kind: "compile",
+    match: /cannot find symbol|シンボルを見つけられません/,
+    build: (m, ctx) => {
+      const sym = field(ctx.block, ["symbol", "シンボル"]);
+      const loc = field(ctx.block, ["location", "場所"]);
+      // 例: "variable x" / "変数 x" / "method foo(int)" / "class Scanner"
+      const sm = sym.match(/^(variable|method|class|変数|メソッド|クラス)\s+(\S+)/);
+      const kindWord = sm ? sm[1] : "";
+      const name = sm ? sm[2].replace(/\(.*$/, "") : sym;
+      const kind =
+        /variable|変数/.test(kindWord) ? "変数" : /method|メソッド/.test(kindWord) ? "メソッド" : /class|クラス/.test(kindWord) ? "クラス" : "名前";
+
+      const causes = [];
+      const fixes = [];
+      let example;
+
+      if (IMPORTS[name]) {
+        causes.push(`\`${name}\` を使うのに必要な \`import\` を書いていない`);
+        fixes.push(`ファイルのいちばん上（\`public class\` より上）に \`import ${IMPORTS[name]};\` を書く`);
+        example = {
+          bad: "public class Main {\n    public static void main(String[] args) {\n        " + name + " x = ...;",
+          good: `import ${IMPORTS[name]};\n\npublic class Main {\n    public static void main(String[] args) {\n        ${name} x = ...;`,
+        };
+      }
+      if (name && CASE_MISTAKES[name]) {
+        causes.unshift(`大文字・小文字のまちがい。正しくは \`${CASE_MISTAKES[name]}\` です`);
+        fixes.unshift(`\`${name}\` を \`${CASE_MISTAKES[name]}\` に直す`);
+        example = { bad: `${name} ...`, good: `${CASE_MISTAKES[name]} ...` };
+      }
+      if (kind === "変数") {
+        causes.push(
+          "名前のつづりまちがい、または大文字・小文字のまちがい（`count` と `Count` は別物）",
+          "変数を宣言（`int x = 0;` など）する前に使っている",
+          "変数を作った `{ }` の外で使っている（`for` や `if` の中で作った変数は外では使えない）"
+        );
+        fixes.push("宣言した名前と、使っている名前を1文字ずつ見比べる", "使う場所より前で、型を付けて宣言する");
+        if (!example)
+          example = {
+            bad: "for (int i = 0; i < 3; i++) {\n    int sum = i;\n}\nSystem.out.println(sum); // ← {}の外",
+            good: "int sum = 0;\nfor (int i = 0; i < 3; i++) {\n    sum = i;\n}\nSystem.out.println(sum);",
+          };
+      } else if (kind === "メソッド") {
+        causes.push(
+          "メソッド名のつづりまちがい（`printIn` ← 正しくは `println`（小文字のL））",
+          "そのメソッドをまだ作っていない",
+          "引数の数や型が、作ったメソッドと合っていない",
+          "別のクラスのメソッドなのに、クラス名や変数名を付けずに呼んでいる"
+        );
+        fixes.push("メソッドを作ったときの名前と、呼び出している名前を見比べる");
+      } else if (kind === "クラス") {
+        causes.push("クラス名のつづりまちがい（クラス名は大文字で始まる）", "`import` を書き忘れた", "自分で作ったクラスのファイルが同じフォルダにない");
+        fixes.push("クラス名を確認する", "標準ライブラリのクラスなら `import` 文を書く");
+      } else {
+        causes.push("名前のつづりまちがい", "宣言や `import` の書き忘れ");
+        fixes.push("名前のつづりを確かめる");
+      }
+
+      return {
+        title: name ? `${kind}「${name}」が見つかりません` : "名前が見つかりません",
+        what:
+          `Javaは \`${name || "?"}\` という${kind}を知りません。` +
+          (loc ? `（探した場所: \`${loc}\`）` : "") +
+          " 「まだ作っていない」か「名前がちがう」のどちらかがほとんどです。",
+        causes: [...new Set(causes)],
+        fixes: [...new Set(fixes)],
+        example,
+      };
+    },
+  });
+
+  rule({
+    id: "lossy-conversion",
+    kind: "compile",
+    match: /possible lossy conversion from (\w+) to (\w+)|精度が失われる可能性がある(\w+)から(\w+)への変換/,
+    build: (m) => {
+      const from = m[1] || m[3];
+      const to = m[2] || m[4];
+      return {
+        title: `${from} を ${to} に入れると、値の一部が消えるかもしれません`,
+        what: `\`${from}\` は \`${to}\` より大きい（または細かい）値を入れられる型です。そのまま入れると情報が失われるかもしれないので、Javaが止めました。`,
+        causes: [
+          `\`${to}\` 型の変数に \`${from}\` 型の値を入れようとした`,
+          "計算の途中で型が変わった（例: `int` と `double` を計算すると答えは `double`）",
+        ],
+        fixes: [
+          `変数の型を \`${from}\` に変える`,
+          `小数点以下を切り捨ててもよいなら、\`(${to})\` を付けて型を変換（キャスト）する`,
+        ],
+        example: { bad: `${to} x = 3.7;`, good: `${to} x = (${to}) 3.7;   // または  double x = 3.7;` },
+      };
+    },
+  });
+
+  rule({
+    id: "incompatible-types",
+    kind: "compile",
+    match: /incompatible types|不適合な型/,
+    build: (m, ctx) => {
+      const c =
+        ctx.block.match(/(\S+) cannot be converted to (\S+)/) ||
+        ctx.block.match(/([^\s:：]+)を([^\s:：]+)に変換できません/);
+      const from = c ? c[1] : "";
+      const to = c ? c[2] : "";
+      const causes = [];
+      const fixes = [];
+      let example;
+      if (/^String$/.test(from) && /^(int|double|long)$/.test(to)) {
+        const fn = to === "int" ? "Integer.parseInt" : to === "double" ? "Double.parseDouble" : "Long.parseLong";
+        causes.push(`文字列（\`String\`）は、見た目が数字でもそのまま \`${to}\` にはなりません`);
+        fixes.push(`\`${fn}(文字列)\` で数字に変換する`);
+        example = { bad: `${to} n = "123";`, good: `${to} n = ${fn}("123");` };
+      } else if (/^(int|double|long|char|boolean)$/.test(from) && to === "String") {
+        causes.push("数字はそのまま `String` 型の変数に入れられません");
+        fixes.push("`String.valueOf(数字)` を使う", '`"" + 数字` のように文字列とつなげる');
+        example = { bad: "String s = 10;", good: "String s = String.valueOf(10);" };
+      } else if (to === "boolean") {
+        causes.push("`if` や `while` の `( )` の中で、`==`（比べる）ではなく `=`（入れる）を使っている");
+        fixes.push("比べるときは `==` を使う");
+        example = { bad: "if (x = 5) {", good: "if (x == 5) {" };
+      } else {
+        causes.push("変数の型と、入れようとしている値の型がちがう", "メソッドの戻り値の型と、`return` している値の型がちがう");
+        fixes.push("変数の型を、入れたい値に合わせる", "値の方を変数の型に合わせて変換する");
+      }
+      return {
+        title: from && to ? `${from} 型は ${to} 型に入れられません` : "型が合っていません",
+        what:
+          (from && to ? `\`${from}\` 型の値を、\`${to}\` 型の場所に入れようとしました。` : "") +
+          "Javaでは、変数に決めた型と、入れる値の型が合っていないといけません。",
+        causes,
+        fixes,
+        example,
+      };
+    },
+  });
+
+  rule({
+    id: "public-class-filename",
+    kind: "compile",
+    match: /class (\w+) is public, should be declared in a file named (\S+)|クラス\s*(\w+)\s*はpublicであり、ファイル\s*(\S+?)\s*で宣言する必要があります/,
+    build: (m) => {
+      const cls = m[1] || m[3];
+      const file = m[2] || m[4];
+      return {
+        title: "クラス名とファイル名が合っていません",
+        what: `\`public class ${cls}\` は、\`${file}\` という名前のファイルに書く決まりです。今のファイル名がちがいます。`,
+        causes: ["ファイル名とクラス名の大文字・小文字がちがう", "クラス名を変えたのに、ファイル名を変えていない"],
+        fixes: [`ファイル名を \`${file}\` に変える`, "または、コードのクラス名をファイル名に合わせる"],
+        example: { bad: `ファイル名: main.java\npublic class ${cls} {`, good: `ファイル名: ${file}\npublic class ${cls} {` },
+      };
+    },
+  });
+
+  rule({
+    id: "missing-return",
+    kind: "compile",
+    match: /missing return statement|return文が指定されていません/,
+    build: () => ({
+      title: "return（答えを返す）が足りません",
+      what: "このメソッドは値を返すと決めた（`void` 以外の型を書いた）のに、`return` せずに終わってしまう道があります。",
+      causes: [
+        "`return` を書き忘れた",
+        "`if` の中にしか `return` がなく、条件に合わないときに何も返さない",
+      ],
+      fixes: ["メソッドのいちばん最後にも `return` を書く", "値を返さないメソッドなら、戻り値の型を `void` にする"],
+      example: {
+        bad: "static int check(int x) {\n    if (x > 0) {\n        return 1;\n    }\n}",
+        good: "static int check(int x) {\n    if (x > 0) {\n        return 1;\n    }\n    return 0;\n}",
+      },
+    }),
+  });
+
+  rule({
+    id: "not-initialized",
+    kind: "compile",
+    match: /variable (\w+) might not have been initialized|変数\s*(\w+)\s*は初期化されていない可能性があります/,
+    build: (m) => {
+      const v = pick(m);
+      return {
+        title: `変数「${v}」にまだ値が入っていません`,
+        what: `\`${v}\` を使おうとしましたが、まだ一度も値を入れていない（または入れない場合がある）ので、中身がわかりません。`,
+        causes: ["変数を宣言しただけで、値を入れていない", "`if` の中だけで値を入れていて、入らない場合がある"],
+        fixes: ["宣言するときに最初の値（`0` や `\"\"` など）を入れておく"],
+        example: { bad: `int ${v};\nSystem.out.println(${v});`, good: `int ${v} = 0;\nSystem.out.println(${v});` },
+      };
+    },
+  });
+
+  rule({
+    id: "unreachable",
+    kind: "compile",
+    match: /unreachable statement|この文に制御が移ることはありません/,
+    build: () => ({
+      title: "絶対に実行されない行があります",
+      what: "`return` や `break` のあとに書いた行は、そこでメソッドやループが終わるので、絶対に実行されません。Javaはこれをエラーにします。",
+      causes: ["`return` / `break` / `continue` のあとに処理を書いた", "終わらない無限ループ（`while (true)`）のあとに処理を書いた"],
+      fixes: ["その行を `return` などより前に移す", "いらない行なら消す"],
+      example: {
+        bad: 'return x;\nSystem.out.println("おわり");',
+        good: 'System.out.println("おわり");\nreturn x;',
+      },
+    }),
+  });
+
+  rule({
+    id: "not-a-statement",
+    kind: "compile",
+    match: /not a statement|文ではありません/,
+    build: () => ({
+      title: "命令になっていない行があります",
+      what: "その行は、計算や値だけが書かれていて「何をするか」がわかりません。",
+      causes: ["`x + 1;` のように、計算結果をどこにも入れていない", "`;` の位置がおかしい", "`==` と `=` をまちがえた"],
+      fixes: ["計算結果を変数に入れる（`x = x + 1;`）", "表示したいなら `System.out.println(...)` で囲む"],
+      example: { bad: "x + 1;", good: "x = x + 1;" },
+    }),
+  });
+
+  rule({
+    id: "illegal-start",
+    kind: "compile",
+    match: /illegal start of (expression|type)|(式|型)の開始が不正です/,
+    build: () => ({
+      title: "書いてはいけない場所に、書いてはいけないものがあります",
+      what: "Javaが文の始まりとして読めないものがありました。多くの場合、その少し前で、かっこの閉じ忘れなどのまちがいが起きています。",
+      causes: [
+        "メソッドの中に、別のメソッドを書いた（`}` の閉じ忘れが原因のことが多い）",
+        "メソッドの中の変数に `public` や `static` を付けた",
+        "`(` や `{` の閉じ忘れ",
+      ],
+      fixes: [
+        "エラーの行より上の `{` と `}`、`(` と `)` の数を確かめる",
+        "メソッドの中の変数からは `public` / `static` を外す",
+      ],
+      example: {
+        bad: "public static void main(String[] args) {\n    public int x = 5;",
+        good: "public static void main(String[] args) {\n    int x = 5;",
+      },
+    }),
+  });
+
+  rule({
+    id: "static-context",
+    kind: "compile",
+    match: /non-static (variable|method) (\S+) cannot be referenced from a static context|staticでない(変数|メソッド)\s*(\S+?)\s*をstaticコンテキストから参照することはできません/,
+    build: (m) => {
+      const kind = /variable|変数/.test(m[1] || m[3]) ? "変数" : "メソッド";
+      const name = (m[2] || m[4]).replace(/\(.*$/, "");
+      return {
+        title: `static ではない${kind}「${name}」を main から直接使っています`,
+        what: `\`main\` は \`static\` なメソッドです。\`static\` なメソッドからは、\`static\` が付いていない${kind}を直接使えません。`,
+        causes: [`\`${name}\` を作るときに \`static\` を付け忘れた`],
+        fixes: [
+          `いちばん簡単: \`${name}\` の宣言に \`static\` を付ける`,
+          "または、`new` でクラスのオブジェクトを作ってから、それを通して使う",
+        ],
+        example:
+          kind === "メソッド"
+            ? { bad: `void ${name}() {`, good: `static void ${name}() {` }
+            : { bad: `int ${name} = 0;`, good: `static int ${name} = 0;` },
+      };
+    },
+  });
+
+  rule({
+    id: "already-defined",
+    kind: "compile",
+    match: /variable (\w+) is already defined|変数\s*(\w+)\s*はすでに.*?で定義されています/,
+    build: (m) => {
+      const v = pick(m);
+      return {
+        title: `変数「${v}」を2回作っています`,
+        what: `同じ場所で \`${v}\` という名前の変数を2回宣言しました。同じ名前の変数は1つしか作れません。`,
+        causes: [`2回目なのに \`int ${v} = ...\` のように型を付けて書いた`],
+        fixes: ["2回目以降は型を付けずに `" + v + " = ...;` と書く（値を入れなおすだけ）", "または、別の名前にする"],
+        example: { bad: `int ${v} = 1;\nint ${v} = 2;`, good: `int ${v} = 1;\n${v} = 2;` },
+      };
+    },
+  });
+
+  rule({
+    id: "unreported-exception",
+    kind: "compile",
+    match: /unreported exception (\S+?);|例外\s*(\S+?)\s*は報告されません/,
+    build: (m) => {
+      const ex = pick(m);
+      const short = ex.split(".").pop();
+      return {
+        title: `「${short}」が起きたときの対策が書かれていません`,
+        what: `使っている命令は \`${short}\`（エラーの一種）を起こすことがあります。Javaは、そのときどうするかを決めておくよう求めています。`,
+        causes: ["ファイルの読み書きや `Thread.sleep` など、失敗する可能性がある命令を使った"],
+        fixes: [
+          "`try { ... } catch (" + short + " e) { ... }` で囲む",
+          "または、メソッドの宣言に `throws " + short + "` を付ける（練習ではこちらが簡単）",
+        ],
+        example: {
+          bad: "public static void main(String[] args) {",
+          good: `public static void main(String[] args) throws ${short} {`,
+        },
+      };
+    },
+  });
+
+  rule({
+    id: "cannot-be-applied",
+    kind: "compile",
+    match: /(method|constructor) (\w+) in (?:class|enum|interface) (\w+) cannot be applied to given types|(?:クラス|列挙型|インタフェース)\s*(\w+)\s*の(メソッド|コンストラクタ)\s*(\w+)\s*は指定された型に適用できません/,
+    build: (m, ctx) => {
+      const isCtor = /constructor|コンストラクタ/.test(m[1] || m[5]);
+      const name = m[2] || m[6];
+      const required = field(ctx.block, ["required", "期待値"]);
+      const found = field(ctx.block, ["found", "検出値"]);
+      const what =
+        `\`${name}\` に渡した引数（かっこの中身）の数や型が、作ったときの決まりと合っていません。` +
+        (required || found ? `\n必要なもの: \`${required || "?"}\`　渡したもの: \`${found || "?"}\`` : "");
+      return {
+        title: `${isCtor ? "コンストラクタ" : "メソッド"}「${name}」に渡したものが合っていません`,
+        what: what.replace(/no arguments|引数がありません/g, "なし"),
+        causes: ["引数の数が多すぎる・少なすぎる", "引数の順番や型がちがう（`int` が必要なところに `String` など）"],
+        fixes: [`\`${name}\` を作ったところを見て、引数の数・型・順番をそろえる`],
+        example: {
+          bad: "static int add(int a, int b) { ... }\nadd(1);",
+          good: "static int add(int a, int b) { ... }\nadd(1, 2);",
+        },
+      };
+    },
+  });
+
+  rule({
+    id: "bad-operand",
+    kind: "compile",
+    match: /bad operand types? for (?:binary|unary) operator '(.+?)'|(?:二項|単項)演算子\s*'(.+?)'\s*のオペランド型が不正です/,
+    build: (m, ctx) => {
+      const op = pick(m);
+      const first = field(ctx.block, ["first type", "最初の型"]);
+      const second = field(ctx.block, ["second type", "2番目の型"]);
+      const causes = ["その型どうしでは使えない記号を使った"];
+      let example;
+      if (op === "&&" || op === "||") {
+        causes.unshift("`&&` の左右が、両方とも条件（`true` か `false`）になっていない");
+        example = { bad: "if (x > 0 && < 10) {", good: "if (x > 0 && x < 10) {" };
+      } else if (/[-*/%]/.test(op) && (first === "String" || second === "String")) {
+        causes.unshift("文字列（`String`）で引き算・かけ算・割り算をしようとした");
+        example = { bad: 'String s = "10";\nint n = s - 1;', good: 'String s = "10";\nint n = Integer.parseInt(s) - 1;' };
+      }
+      return {
+        title: `「${op}」をこの型には使えません`,
+        what:
+          `記号 \`${op}\` は、使える型が決まっています。` +
+          (first ? `今は \`${first}\`${second ? ` と \`${second}\`` : ""} に使おうとしています。` : ""),
+        causes,
+        fixes: ["左右の型を確かめる", "文字列を数字にしたいときは `Integer.parseInt(...)` を使う"],
+        example,
+      };
+    },
+  });
+
+  rule({
+    id: "return-type-required",
+    kind: "compile",
+    match: /invalid method declaration; return type required|無効なメソッド宣言です。戻り値の型が必要です/,
+    build: () => ({
+      title: "メソッドの戻り値の型が書かれていません",
+      what: "メソッドを作るときは、名前の前に「何を返すか」の型を書きます。何も返さないなら `void` と書きます。",
+      causes: ["`void` などの型を書き忘れた", "コンストラクタのつもりで書いたが、名前がクラス名とちがう"],
+      fixes: ["メソッド名の前に `void`（または `int` など）を書く", "コンストラクタなら、名前をクラス名とまったく同じにする"],
+      example: { bad: "public static hello() {", good: "public static void hello() {" },
+    }),
+  });
+
+  rule({
+    id: "else-without-if",
+    kind: "compile",
+    match: /'else' without 'if'|'else'への'if'がありません/,
+    build: () => ({
+      title: "else に対応する if がありません",
+      what: "`else` は `if` のすぐ後ろでしか使えません。その間に何か別のものが入っています。",
+      causes: [
+        "`if (...)` のすぐ後ろに `;` を付けてしまった",
+        "`if` の中が2行以上あるのに `{ }` で囲んでいない",
+        "`}` の位置がずれている",
+      ],
+      fixes: ["`if (...)` の後ろの `;` を消す", "`if` と `else` の中身は必ず `{ }` で囲む"],
+      example: {
+        bad: 'if (x > 0);\n    System.out.println("正");\nelse\n    System.out.println("負");',
+        good: 'if (x > 0) {\n    System.out.println("正");\n} else {\n    System.out.println("負");\n}',
+      },
+    }),
+  });
+
+  rule({
+    id: "final-assign",
+    kind: "compile",
+    match: /cannot assign a value to final variable (\w+)|final変数\s*(\w+)\s*に値を代入することはできません/,
+    build: (m) => {
+      const v = pick(m);
+      return {
+        title: `「${v}」は final なので、あとから変えられません`,
+        what: `\`final\` が付いた変数は、最初に1回だけ値を入れられます。\`${v}\` に2回目の値を入れようとしました。`,
+        causes: ["定数（変えない値）として作った変数を変えようとした"],
+        fixes: ["値を変えたいなら、宣言から `final` を外す", "変えないつもりなら、値を入れなおしている行を消す"],
+      };
+    },
+  });
+
+  rule({
+    id: "cannot-dereference",
+    kind: "compile",
+    match: /(\w+) cannot be dereferenced|(\w+)は間接参照できません/,
+    build: (m) => {
+      const t = pick(m);
+      return {
+        title: `${t} 型には「.」でメソッドを使えません`,
+        what: `\`${t}\` は基本の型（プリミティブ型）なので、\`.length()\` や \`.equals()\` のように \`.\` を付けてメソッドを呼べません。`,
+        causes: [
+          "`int` などの変数に `.equals()` や `.length()` を使った",
+          "`String` だと思っていた変数が、じつは `int` や `char` だった",
+        ],
+        fixes: ["数字どうしを比べるなら `==` を使う", "文字列に変換したいなら `String.valueOf(...)` を使う"],
+        example: { bad: "int a = 5;\nif (a.equals(5)) {", good: "int a = 5;\nif (a == 5) {" },
+      };
+    },
+  });
+
+  rule({
+    id: "missing-method-body",
+    kind: "compile",
+    match: /missing method body, or declare abstract|メソッド本体がないか、abstractとして宣言されています/,
+    build: () => ({
+      title: "メソッドの中身 { } がありません",
+      what: "メソッドの宣言のすぐ後ろに `;` があり、中身の `{ }` がありません。",
+      causes: ["メソッドの `( )` の後ろに `;` を付けてしまった"],
+      fixes: ["`( )` の後ろの `;` を消して、`{ }` で中身を書く"],
+      example: {
+        bad: "public static void hello();\n{\n    ...\n}",
+        good: "public static void hello() {\n    ...\n}",
+      },
+    }),
+  });
+
+  rule({
+    id: "abstract-not-overridden",
+    kind: "compile",
+    match: /is not abstract and does not override abstract method (\w+)|abstractでなく、.*?abstractメソッド\s*(\w+)/,
+    build: (m) => {
+      const meth = pick(m);
+      return {
+        title: `メソッド「${meth}」を作り忘れています`,
+        what: `\`implements\` したインタフェース（または \`extends\` した抽象クラス）が「必ず作ってね」と決めている \`${meth}\` を、まだ書いていません。`,
+        causes: ["メソッドを書き忘れた", "メソッド名や引数の型が少しちがう"],
+        fixes: [`\`${meth}\` メソッドを、決められたとおりの名前・引数で書く`, "メソッドの上に `@Override` を付けると、まちがいに気づきやすい"],
+      };
+    },
+  });
+
+  rule({
+    id: "break-outside",
+    kind: "compile",
+    match: /break outside switch or loop|breakがswitch文またはループの外にあります/,
+    build: () => ({
+      title: "break を、ループや switch の外で使っています",
+      what: "`break` は「ループや `switch` から抜ける」命令なので、その中でしか使えません。",
+      causes: ["`if` から抜けるつもりで `break` を書いた", "`}` の位置がずれて、ループの外に出てしまった"],
+      fixes: ["メソッドを終わりたいなら `return;` を使う", "`{ }` の位置を確かめる"],
+    }),
+  });
+
+  rule({
+    id: "array-required",
+    kind: "compile",
+    match: /array required, but (\S+) found|配列が要求されましたが、(\S+?)が見つかりました/,
+    build: (m) => {
+      const t = pick(m);
+      return {
+        title: `${t} は配列ではないので [ ] は使えません`,
+        what: `\`[0]\` のような書き方は配列にしか使えません。\`${t}\` 型の変数に使おうとしました。`,
+        causes: ["配列ではない変数に `[ ]` を付けた", "文字列の1文字を取りたかった"],
+        fixes: ["文字列の1文字なら `s.charAt(0)` を使う", "ArrayList なら `list.get(0)` を使う"],
+        example: { bad: 'String s = "abc";\nchar c = s[0];', good: 'String s = "abc";\nchar c = s.charAt(0);' },
+      };
+    },
+  });
+
+  // 「○○がありません」はいろいろなメッセージに含まれるので、いちばん最後に調べる
+  rule({
+    id: "token-expected",
+    kind: "compile",
+    match: /'([^']+)'(?:\s*or\s*'[^']+')*\s*expected|'([^']+)'(?:または'[^']+')*がありません/,
+    build: (m) => {
+      const t = pick(m);
+      const names = { ")": "閉じかっこ「)」", "(": "かっこ「(」", "}": "「}」", "{": "「{」", "]": "「]」", "=": "「=」", ".": "「.」" };
+      const name = names[t] || `「${t}」`;
+      const fixes = [`エラーの行の \`^\` マークのあたりに \`${t}\` を足す`];
+      let example;
+      if (t === ")") {
+        fixes.push("`(` と `)` の数が同じか数える");
+        example = { bad: 'System.out.println("Hello";', good: 'System.out.println("Hello");' };
+      } else if (t === "(") {
+        example = { bad: "if x > 0 {", good: "if (x > 0) {" };
+      }
+      return {
+        title: `${name} が足りません`,
+        what: `Javaは、この場所に \`${t}\` があるはずだと思っています。何かを書き忘れたか、書き方の順番がちがいます。`,
+        causes: [
+          `\`${t}\` を書き忘れた`,
+          "かっこの数が合っていない",
+          "全角の記号を使っている",
+          "1つ前の行にまちがいがある（エラーの場所が少しずれることがある）",
+        ],
+        fixes,
+        example,
+      };
+    },
+  });
+
+  /* ------------------------------------------------------------------ */
+  /* 実行時エラー（例外）                                                */
+  /* ------------------------------------------------------------------ */
+
+  rule({
+    id: "null-pointer",
+    kind: "runtime",
+    match: /NullPointerException/,
+    build: (m, ctx) => {
+      const why = ctx.block.match(/because "(.+?)" is null/);
+      const name = why ? why[1].replace(/^<local\d+>$/, "（ある変数）") : "";
+      return {
+        title: name ? `「${name}」が空っぽ（null）なのに使おうとしました` : "空っぽ（null）のものを使おうとしました",
+        what:
+          "`null` は「何も入っていない」という意味です。中身がないものに対して、`.` でメソッドを呼んだり、要素を取り出したりしました。",
+        causes: [
+          "変数を作っただけで `new` していない",
+          "配列を作ったが、中の一つひとつに値を入れていない（`String[]` の中身は最初 `null`）",
+          "メソッドが `null` を返したのに、そのまま使った",
+        ],
+        fixes: [
+          "エラーの行で `.` の左側にある変数に、ちゃんと値が入っているか確かめる",
+          "使う前に `new` したり、値を入れたりする",
+          "心配なら `if (x != null)` で確かめてから使う",
+        ],
+        example: { bad: "String s = null;\nSystem.out.println(s.length());", good: 'String s = "abc";\nSystem.out.println(s.length());' },
+      };
+    },
+  });
+
+  rule({
+    id: "array-index",
+    kind: "runtime",
+    match: /ArrayIndexOutOfBoundsException(?::\s*(?:Index (-?\d+) out of bounds for length (\d+)|(-?\d+)))?/,
+    build: (m) => {
+      const idx = m[1] || m[3];
+      const len = m[2];
+      return {
+        title: idx !== undefined ? `配列の ${idx} 番目はありません` : "配列の範囲の外を使おうとしました",
+        what:
+          (len !== undefined
+            ? `この配列の長さは ${len} なので、使える番号は \`0\` 〜 \`${len - 1}\` です。\`${idx}\` 番目を使おうとしました。`
+            : "配列の番号（インデックス）が、ある範囲の外でした。") +
+          " 配列の番号は `0` から始まるので、最後の番号は「長さ − 1」です。",
+        causes: [
+          "`for` の条件を `i <= 配列.length` にしている（正しくは `<`）",
+          "番号が `1` から始まると思っていた",
+          "マイナスの番号を使った",
+        ],
+        fixes: ["`for` の条件を `i < 配列.length` にする", "番号を数えなおす"],
+        example: {
+          bad: "int[] a = new int[3];\nfor (int i = 0; i <= a.length; i++) {",
+          good: "int[] a = new int[3];\nfor (int i = 0; i < a.length; i++) {",
+        },
+      };
+    },
+  });
+
+  rule({
+    id: "string-index",
+    kind: "runtime",
+    match: /StringIndexOutOfBoundsException/,
+    build: (m, ctx) => {
+      const r =
+        ctx.block.match(/[Ii]ndex:? (-?\d+),? (?:out of bounds for )?length:? (\d+)/) ||
+        ctx.block.match(/begin (-?\d+), end (-?\d+), length (\d+)/);
+      let detail = "";
+      if (r && r.length === 3) detail = `この文字列は ${r[2]} 文字なので、使える番号は \`0\` 〜 \`${r[2] - 1}\` です。\`${r[1]}\` 番目を使おうとしました。`;
+      else if (r && r.length === 4) detail = `この文字列は ${r[3]} 文字ですが、\`${r[1]}\` 〜 \`${r[2]}\` を取り出そうとしました。`;
+      return {
+        title: "文字列の範囲の外を使おうとしました",
+        what: detail + " 文字列の番号は `0` から始まり、最後は「文字数 − 1」です。",
+        causes: ["`charAt` や `substring` に、文字数より大きい番号を渡した", "空の文字列 `\"\"` に `charAt(0)` を使った"],
+        fixes: ["`s.length()` で文字数を確かめてから使う", "`for` の条件を `i < s.length()` にする"],
+        example: { bad: 'String s = "abc";\nchar c = s.charAt(3);', good: 'String s = "abc";\nchar c = s.charAt(2);' },
+      };
+    },
+  });
+
+  rule({
+    id: "list-index",
+    kind: "runtime",
+    match: /\bIndexOutOfBoundsException(?::\s*Index:? (-?\d+),? (?:out of bounds for length|Size:) (\d+))?/,
+    build: (m) => {
+      const idx = m[1];
+      const len = m[2];
+      return {
+        title: "リスト（ArrayList など）の範囲の外を使おうとしました",
+        what:
+          (len !== undefined ? `このリストには ${len} 個しか入っていません。\`${idx}\` 番目を使おうとしました。` : "") +
+          " リストの番号は `0` から始まり、最後は「`size()` − 1」です。",
+        causes: ["`for` の条件が `i <= list.size()` になっている", "まだ何も `add` していないリストから `get` した"],
+        fixes: ["`for` の条件を `i < list.size()` にする", "`list.size()` で中身の数を確かめる"],
+      };
+    },
+  });
+
+  rule({
+    id: "divide-by-zero",
+    kind: "runtime",
+    match: /ArithmeticException: (?:\/ by zero|ゼロ)/,
+    build: () => ({
+      title: "0 で割り算をしました",
+      what: "整数（`int` など）は 0 で割ることができません。割る数が 0 になっていました。",
+      causes: ["割る数の変数が 0 のままだった", "`%`（あまり）でも 0 で割るとエラーになる"],
+      fixes: ["割る前に `if (b != 0)` で確かめる", "割る数がなぜ 0 になったのか、値を表示して確かめる"],
+      example: { bad: "int avg = sum / count;", good: "if (count != 0) {\n    int avg = sum / count;\n}" },
+    }),
+  });
+
+  rule({
+    id: "number-format",
+    kind: "runtime",
+    match: /NumberFormatException(?:: For input string: "(.*?)")?/,
+    build: (m) => {
+      const s = m[1];
+      return {
+        title: s !== undefined ? `「${s}」は数字に変換できません` : "数字ではない文字を、数字に変換しようとしました",
+        what: "`Integer.parseInt` などは、数字だけでできた文字列しか変換できません。",
+        causes: [
+          "数字以外の文字（ひらがな、アルファベット）が入っていた",
+          "前後に空白が入っていた",
+          "全角の数字（`１２３`）を使っていた",
+          "小数（`3.5`）を `Integer.parseInt` で変換しようとした（`Double.parseDouble` を使う）",
+          "空の文字列 `\"\"` を変換しようとした",
+        ],
+        fixes: ["入力する値を確かめる", "`.trim()` で前後の空白を取ってから変換する"],
+        example: { bad: 'int n = Integer.parseInt(" 12 ");', good: 'int n = Integer.parseInt(" 12 ".trim());' },
+      };
+    },
+  });
+
+  rule({
+    id: "input-mismatch",
+    kind: "runtime",
+    match: /InputMismatchException/,
+    build: () => ({
+      title: "入力した値の種類が、読みこむ型と合っていません",
+      what: "`Scanner` の `nextInt()` で数字を読もうとしましたが、入力されたのは数字ではありませんでした。",
+      causes: ["数字を入力するところで文字を入力した", "小数を `nextInt()` で読もうとした（`nextDouble()` を使う）", "全角の数字を入力した"],
+      fixes: ["半角の数字を入力する", "読みこむメソッド（`nextInt` / `nextDouble` / `next`）を入力に合わせる"],
+    }),
+  });
+
+  rule({
+    id: "no-such-element",
+    kind: "runtime",
+    match: /NoSuchElementException/,
+    build: () => ({
+      title: "読みこむものが、もうありません",
+      what: "`Scanner` で入力を読もうとしましたが、入力がもう残っていませんでした。",
+      causes: [
+        "入力する前にプログラムが終わった（オンライン実行環境で入力欄が空など）",
+        "`Scanner` を `close()` したあとで、また読もうとした",
+        "`next()` を呼ぶ回数が、入力の数より多い",
+      ],
+      fixes: ["実行するときに入力を用意する", "`Scanner` は1つだけ作って使い回し、最後に1回だけ `close()` する"],
+    }),
+  });
+
+  rule({
+    id: "class-cast",
+    kind: "runtime",
+    match: /ClassCastException(?::\s*class (\S+) cannot be cast to class (\S+))?/,
+    build: (m) => {
+      const a = m[1] ? m[1].split(".").pop() : "";
+      const b = m[2] ? m[2].split(".").pop() : "";
+      return {
+        title: a ? `${a} を ${b} に変換（キャスト）できません` : "型の変換（キャスト）に失敗しました",
+        what: "`(型名)` で型を変えようとしましたが、中身が本当はちがう型だったので変換できませんでした。",
+        causes: ["`Object` 型などに入っていたものを、ちがう型だと思ってキャストした"],
+        fixes: ["`instanceof` で型を確かめてからキャストする", "最初から正しい型で変数やリストを作る（`ArrayList<String>` など）"],
+      };
+    },
+  });
+
+  rule({
+    id: "stack-overflow",
+    kind: "runtime",
+    match: /StackOverflowError/,
+    build: () => ({
+      title: "メソッドが自分自身を呼び続けて止まりません",
+      what: "メソッドが自分を呼ぶ（再帰）ときに、終わりがなくて無限に呼び続け、メモリがあふれました。",
+      causes: ["再帰の「終わる条件」を書いていない", "終わる条件に、いつまでもたどり着かない"],
+      fixes: ["`if (n == 0) return ...;` のような終わる条件を、いちばん最初に書く", "呼ぶたびに値が終わりに近づいているか確かめる"],
+      example: {
+        bad: "static int f(int n) {\n    return n * f(n - 1);\n}",
+        good: "static int f(int n) {\n    if (n <= 1) return 1;\n    return n * f(n - 1);\n}",
+      },
+    }),
+  });
+
+  rule({
+    id: "out-of-memory",
+    kind: "runtime",
+    match: /OutOfMemoryError/,
+    build: () => ({
+      title: "メモリが足りなくなりました",
+      what: "プログラムがメモリをたくさん使いすぎて、足りなくなりました。",
+      causes: ["終わらないループの中で、リストに `add` し続けている", "とても大きい配列を作った"],
+      fixes: ["ループがちゃんと終わるか確かめる", "配列の大きさを確かめる"],
+    }),
+  });
+
+  rule({
+    id: "concurrent-modification",
+    kind: "runtime",
+    match: /ConcurrentModificationException/,
+    build: () => ({
+      title: "ループで回している途中に、リストを変えました",
+      what: "拡張 `for` 文（`for (String s : list)`）で回している最中に、そのリストに `add` や `remove` をしました。",
+      causes: ["ループの中で `list.remove(...)` や `list.add(...)` をした"],
+      fixes: ["`list.removeIf(...)` を使う", "`Iterator` の `remove()` を使う", "消したいものを別のリストに集めて、ループのあとで消す"],
+      example: {
+        bad: 'for (String s : list) {\n    if (s.isEmpty()) list.remove(s);\n}',
+        good: "list.removeIf(s -> s.isEmpty());",
+      },
+    }),
+  });
+
+  rule({
+    id: "file-not-found-runtime",
+    kind: "runtime",
+    match: /FileNotFoundException(?::\s*(\S+))?/,
+    build: (m) => ({
+      title: m[1] ? `ファイル「${m[1]}」が開けません` : "ファイルが開けません",
+      what: "プログラムが読もうとしたファイルが見つかりませんでした（または開く権限がありませんでした）。",
+      causes: ["ファイル名のつづりがちがう", "ファイルが、プログラムを実行したフォルダにない", "ファイルが他のアプリで開かれていてロックされている"],
+      fixes: ["ファイルの場所を確かめる", "ファイルのパスを、フォルダ名も含めて正しく書く"],
+    }),
+  });
+
+  const api = { RULES, IMPORTS };
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  else root.JavaErrorRules = api;
+})(typeof globalThis !== "undefined" ? globalThis : this);
+
+</script>
+<script>
+/* src/analyzer.js */
+/*
+ * 貼りつけられたエラー出力を、1つずつのエラーに分けて、
+ * rules.js のルールで説明を作ります。DOM は使いません（Node でもテストできます）。
+ */
+(function (root) {
+  "use strict";
+
+  const { RULES } =
+    typeof module !== "undefined" && module.exports ? require("./rules.js") : root.JavaErrorRules;
+
+  // Main.java:5: error: ';' expected  /  Main.java:5: エラー: ';'がありません
+  const COMPILE_HEADER = /^(.*?([^\\/\s]+\.java)):(\d+):\s*(error|エラー|warning|警告):\s*(.*)$/;
+  // Exception in thread "main" java.lang.NullPointerException: ...
+  const RUNTIME_HEADER = /^(?:Exception in thread "[^"]*"\s+|スレッド"[^"]*"で例外が発生しました\s*)?((?:[\w$]+\.)+[\w$]*(?:Exception|Error))(?::\s*(.*))?$/;
+  // at Main.main(Main.java:10)
+  const STACK_FRAME = /^\s*at\s+([\w$.<>]+)\(([^:()]+\.java):(\d+)\)/;
+  // 「2 errors」「エラー2個」などのまとめ行
+  const SUMMARY = /^\s*(?:\d+\s+(?:errors?|warnings?)|(?:エラー|警告)\s*\d+\s*個)\s*$/;
+
+  const KIND_LABEL = {
+    compile: "コンパイルエラー",
+    runtime: "実行時エラー",
+    env: "準備・コマンドのエラー",
+  };
+
+  /** 1つのエラーのかたまりに、最初に合うルールを探す */
+  function findRule(headline, block) {
+    for (const r of RULES) {
+      const m = headline.match(r.match);
+      if (m) return { rule: r, m };
+    }
+    if (headline !== block) {
+      for (const r of RULES) {
+        const m = block.match(r.match);
+        if (m) return { rule: r, m };
+      }
+    }
+    return null;
+  }
+
+  /** 実行時エラーのスタックトレースから、自分のコードの場所を探す */
+  function userFrame(lines) {
+    const frames = [];
+    for (const l of lines) {
+      const f = l.match(STACK_FRAME);
+      if (f) frames.push({ method: f[1], file: f[2], line: Number(f[3]) });
+    }
+    const mine = frames.find((f) => !/^(java|javax|jdk|sun|com\.sun)\./.test(f.method));
+    return mine || frames[0] || null;
+  }
+
+  /** テキストを、エラーのかたまり（block）の配列に分ける */
+  function split(text) {
+    const lines = text.replace(/\r\n?/g, "\n").split("\n");
+    const blocks = [];
+    let cur = null;
+
+    const push = () => {
+      if (cur) blocks.push(cur);
+      cur = null;
+    };
+
+    for (const line of lines) {
+      const c = line.match(COMPILE_HEADER);
+      if (c) {
+        push();
+        cur = {
+          type: "compile",
+          file: c[2],
+          line: Number(c[3]),
+          severity: /warning|警告/.test(c[4]) ? "warning" : "error",
+          headline: c[5].trim(),
+          lines: [line],
+        };
+        continue;
+      }
+      const r = line.match(RUNTIME_HEADER);
+      if (r && !/^\s*(Caused by|at)\b/.test(line) && (!cur || cur.type !== "runtime")) {
+        push();
+        cur = { type: "runtime", headline: line.trim(), lines: [line] };
+        continue;
+      }
+      if (SUMMARY.test(line)) {
+        push();
+        continue;
+      }
+      if (cur) cur.lines.push(line);
+    }
+    push();
+    return blocks;
+  }
+
+  /** compile エラーの下にある「コードの行」と「^ の行」を取り出す */
+  function codeSnippet(block) {
+    const rest = block.lines.slice(1);
+    const caretIdx = rest.findIndex((l) => /^\s*\^\s*$/.test(l));
+    if (caretIdx > 0) return { code: rest[caretIdx - 1], caret: rest[caretIdx] };
+    return null;
+  }
+
+  function explainBlock(headline, blockText) {
+    const found = findRule(headline, blockText);
+    if (!found) return null;
+    const info = found.rule.build(found.m, { block: blockText });
+    return { id: found.rule.id, kind: found.rule.kind, kindLabel: KIND_LABEL[found.rule.kind], ...info };
+  }
+
+  /**
+   * メインの関数。
+   * 戻り値: { items: [...], unknown: boolean }
+   *   item = { id, kind, kindLabel, title, what, causes, fixes, example,
+   *            original, location: {file,line,method}|null, snippet }
+   */
+  function analyze(text) {
+    const src = String(text || "")
+      .split(/\r\n?|\n/)
+      .filter((l) => !/^Picked up (?:JAVA_TOOL_OPTIONS|_JAVA_OPTIONS|JDK_JAVA_OPTIONS)/.test(l))
+      .join("\n")
+      .trim();
+    if (!src) return { items: [], unknown: false };
+
+    const blocks = split(src);
+    const items = [];
+
+    for (const b of blocks) {
+      const blockText = b.lines.join("\n");
+      const info = explainBlock(b.headline, blockText);
+      let location = null;
+      if (b.type === "compile") location = { file: b.file, line: b.line };
+      else if (b.type === "runtime") location = userFrame(b.lines);
+
+      items.push({
+        ...(info || {
+          id: "unknown",
+          kind: b.type,
+          kindLabel: KIND_LABEL[b.type],
+          title: "このエラーはまだ説明を用意していません",
+          what: "下の「どのエラーにも使えるコツ」を試してみてください。",
+          causes: [],
+          fixes: [],
+        }),
+        severity: b.severity || "error",
+        original: b.headline,
+        location,
+        snippet: b.type === "compile" ? codeSnippet(b) : null,
+      });
+    }
+
+    // ヘッダーの形をしていない（環境のエラーなど）ときは、全体で探す
+    if (items.length === 0) {
+      const info = explainBlock(src, src);
+      if (info) {
+        const firstLine = src.split("\n").find((l) => l.trim()) || src;
+        items.push({ ...info, severity: "error", original: firstLine.trim(), location: null, snippet: null });
+      }
+    }
+
+    return { items, unknown: items.length === 0 || items.every((i) => i.id === "unknown") };
+  }
+
+  const api = { analyze, split };
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  else root.JavaErrorAnalyzer = api;
+})(typeof globalThis !== "undefined" ? globalThis : this);
+
+</script>
+<script>
+/* src/app.js */
+/* 画面の動き。analyzer.js と rules.js を先に読みこんでください。 */
+(function () {
+  "use strict";
+  const { analyze } = window.JavaErrorAnalyzer;
+
+  const SAMPLES = [
+    {
+      label: "セミコロン忘れ",
+      text: `Main.java:3: エラー: ';'がありません
+        System.out.println("こんにちは")
+                                        ^
+エラー1個`,
+    },
+    {
+      label: "変数が見つからない",
+      text: `Main.java:5: error: cannot find symbol
+        System.out.println(cont);
+                           ^
+  symbol:   variable cont
+  location: class Main
+1 error`,
+    },
+    {
+      label: "Scanner の import 忘れ",
+      text: `Main.java:3: エラー: シンボルを見つけられません
+        Scanner sc = new Scanner(System.in);
+        ^
+  シンボル:   クラス Scanner
+  場所: クラス Main
+エラー1個`,
+    },
+    {
+      label: "型が合わない",
+      text: `Main.java:4: エラー: 不適合な型: Stringをintに変換できません:
+        int age = "20";
+                  ^
+エラー1個`,
+    },
+    {
+      label: "全角スペース",
+      text: `Main.java:3: エラー: '\\u3000'は不正な文字です
+        int　x = 1;
+           ^
+エラー1個`,
+    },
+    {
+      label: "NullPointerException",
+      text: `Exception in thread "main" java.lang.NullPointerException: Cannot invoke "String.length()" because "name" is null
+	at Main.main(Main.java:6)`,
+    },
+    {
+      label: "配列の範囲外",
+      text: `Exception in thread "main" java.lang.ArrayIndexOutOfBoundsException: Index 3 out of bounds for length 3
+	at Main.main(Main.java:8)`,
+    },
+    {
+      label: "メインクラスがない",
+      text: `エラー: メイン・クラスMain.classを検出およびロードできませんでした
+原因: java.lang.ClassNotFoundException: Main.class`,
+    },
+  ];
+
+  const FIRST_SAMPLE = `Main.java:4: エラー: 不適合な型: Stringをintに変換できません:
+        int age = "20";
+                  ^
+Main.java:5: エラー: シンボルを見つけられません
+        System.out.println(agee);
+                           ^
+  シンボル:   変数 agee
+  場所: クラス Main
+エラー2個`;
+
+  const $ = (id) => document.getElementById(id);
+  const input = $("err-input");
+  const results = $("results");
+  const summary = $("summary");
+  const sampleNote = $("sample-note");
+  const samplesBox = $("samples");
+
+  /** `code` を <code> にして、文字列を安全に要素へ入れる */
+  function rich(el, text) {
+    const parts = String(text).split(/`([^`]+)`/);
+    parts.forEach((p, i) => {
+      if (i % 2) {
+        const c = document.createElement("code");
+        c.textContent = p;
+        el.appendChild(c);
+      } else if (p) {
+        p.split("\n").forEach((line, j) => {
+          if (j) el.appendChild(document.createElement("br"));
+          el.appendChild(document.createTextNode(line));
+        });
+      }
+    });
+    return el;
+  }
+
+  function h(tag, cls, text) {
+    const el = document.createElement(tag);
+    if (cls) el.className = cls;
+    if (text !== undefined) rich(el, text);
+    return el;
+  }
+
+  function locationText(loc) {
+    if (!loc) return "";
+    return `${loc.file} の ${loc.line} 行目` + (loc.method ? `（${loc.method.split(".").pop()} メソッドの中）` : "");
+  }
+
+  function renderItem(item, index, total) {
+    const card = h("article", `card kind-${item.kind}`);
+    card.setAttribute("aria-labelledby", `card-title-${index}`);
+
+    const head = h("header", "card-head");
+    const meta = h("div", "card-meta");
+    if (total > 1) meta.appendChild(h("span", "card-num", `${index + 1} / ${total}`));
+    meta.appendChild(h("span", "chip", item.kindLabel || "エラー"));
+    if (item.severity === "warning") meta.appendChild(h("span", "chip chip-warn", "警告（動きはする）"));
+    if (item.location) meta.appendChild(h("span", "where", locationText(item.location)));
+    head.appendChild(meta);
+    const title = h("h2", "card-title", item.title);
+    title.id = `card-title-${index}`;
+    head.appendChild(title);
+    card.appendChild(head);
+
+    if (item.original) {
+      const orig = h("div", "original");
+      orig.appendChild(h("span", "label", "元のメッセージ"));
+      const pre = h("code", "original-text");
+      pre.textContent = item.original;
+      orig.appendChild(pre);
+      card.appendChild(orig);
+    }
+
+    if (item.snippet) {
+      const sn = h("div", "snippet");
+      sn.setAttribute("aria-label", "エラーが起きたコード");
+      const pre = document.createElement("pre");
+      const code = document.createElement("code");
+      // コードの行と ^ の行から、共通の先頭スペースを取りのぞく（^ の位置はずれない）
+      const lead = (s) => s.match(/^ */)[0].length;
+      const cut = Math.min(lead(item.snippet.code), lead(item.snippet.caret));
+      code.textContent = item.snippet.code.slice(cut).replace(/\s+$/, "");
+      pre.appendChild(code);
+      pre.appendChild(document.createTextNode("\n"));
+      const caret = h("span", "caret");
+      caret.textContent = item.snippet.caret.slice(cut).replace(/\s+$/, "") + " ここ";
+      pre.appendChild(caret);
+      sn.appendChild(pre);
+      card.appendChild(sn);
+    }
+
+    const body = h("div", "card-body");
+    const what = h("section", "sec sec-what");
+    what.appendChild(h("h3", "", "なにが起きた？"));
+    what.appendChild(h("p", "", item.what));
+    body.appendChild(what);
+
+    if (item.causes && item.causes.length) {
+      const s = h("section", "sec sec-cause");
+      s.appendChild(h("h3", "", "よくある原因"));
+      const ul = h("ul");
+      item.causes.forEach((c) => ul.appendChild(h("li", "", c)));
+      s.appendChild(ul);
+      body.appendChild(s);
+    }
+
+    if (item.fixes && item.fixes.length) {
+      const s = h("section", "sec sec-fix");
+      s.appendChild(h("h3", "", "なおし方"));
+      const ul = h("ul");
+      item.fixes.forEach((c) => ul.appendChild(h("li", "", c)));
+      s.appendChild(ul);
+      body.appendChild(s);
+    }
+    card.appendChild(body);
+
+    if (item.example) {
+      const ex = h("div", "example");
+      [
+        ["bad", "まちがい", item.example.bad],
+        ["good", "正しい", item.example.good],
+      ].forEach(([cls, label, src]) => {
+        const box = h("figure", `ex ex-${cls}`);
+        box.appendChild(h("figcaption", "", label));
+        const pre = document.createElement("pre");
+        const code = document.createElement("code");
+        code.textContent = src;
+        pre.appendChild(code);
+        box.appendChild(pre);
+        ex.appendChild(box);
+      });
+      card.appendChild(ex);
+    }
+    return card;
+  }
+
+  function render() {
+    const { items, unknown } = analyze(input.value);
+    results.replaceChildren();
+
+    if (!input.value.trim()) {
+      summary.replaceChildren(rich(h("p", "summary-text"), "左の欄に、`javac` や `java` が出したエラーをそのまま貼りつけてください。"));
+      summary.dataset.state = "empty";
+      return;
+    }
+    if (!items.length) {
+      summary.replaceChildren(
+        rich(
+          h("p", "summary-text"),
+          "エラーの形が読み取れませんでした。`Main.java:5: error:` や `Exception in thread \"main\"` で始まる行を含めて、まるごと貼りつけてみてください。"
+        )
+      );
+      summary.dataset.state = "unknown";
+      return;
+    }
+
+    const errors = items.filter((i) => i.severity !== "warning").length;
+    let msg = `${items.length} 個のエラーが見つかりました。`;
+    if (items.length > 1)
+      msg += " まずは **1つ目** から直しましょう。1つのまちがいが、後ろのエラーを次々と起こしていることがよくあります。";
+    else msg += " 下の説明を読んで直したら、保存してもう一度実行してみましょう。";
+    if (!errors) msg = "警告だけです。プログラムは動きますが、直しておくと安心です。";
+    const p = h("p", "summary-text");
+    msg.split(/\*\*(.+?)\*\*/).forEach((part, i) => {
+      if (i % 2) p.appendChild(h("strong", "", part));
+      else rich(p, part);
+    });
+    summary.replaceChildren(p);
+    summary.dataset.state = unknown ? "unknown" : "ok";
+
+    items.forEach((it, i) => results.appendChild(renderItem(it, i, items.length)));
+  }
+
+  let timer = 0;
+  input.addEventListener("input", () => {
+    sampleNote.hidden = true;
+    clearTimeout(timer);
+    timer = setTimeout(render, 200);
+  });
+
+  $("err-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    render();
+  });
+
+  $("clear-btn").addEventListener("click", () => {
+    input.value = "";
+    sampleNote.hidden = true;
+    render();
+    input.focus();
+  });
+
+  SAMPLES.forEach((s) => {
+    const b = h("button", "sample-btn", s.label);
+    b.type = "button";
+    b.addEventListener("click", () => {
+      input.value = s.text;
+      sampleNote.hidden = false;
+      render();
+    });
+    samplesBox.appendChild(b);
+  });
+
+  // 最初は例を表示しておく（何をするツールか、すぐわかるように）
+  if (!input.value.trim()) {
+    input.value = FIRST_SAMPLE;
+    sampleNote.hidden = false;
+  }
+  render();
+})();
+
+</script>
+</body>
+</html>
