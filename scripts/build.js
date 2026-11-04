@@ -8,6 +8,7 @@ const root = path.join(__dirname, "..");
 const TOOLS = [
   { dir: ".", out: "java-error-yasashiku.html" },
   { dir: "game-lab", out: "game-lab.html" },
+  { dir: "test-dojo", out: "test-dojo.html" },
 ];
 
 fs.mkdirSync(path.join(root, "dist"), { recursive: true });

@@ -1,0 +1,1361 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- artifact:start -->
+<title>テスト書き方道場</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Yusei+Magic&family=M+PLUS+2:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  /* Layout: 答案用紙 — 上に問題の番号札、左に「問題文」、右に「答案（エディタ）」と赤ペンの「採点」。スマホでは縦に積む。 */
+  :root {
+    --bg: #f3f5f8;          /* 試験用紙の白に近い、少し青みのある紙 */
+    --surface: #ffffff;
+    --ink: #1a2233;
+    --muted: #5b6477;
+    --line: #dce1e9;
+    --soft: #eaeef4;
+    --navy: #233f78;        /* 操作・フォーカス */
+    --navy-ink: #ffffff;
+    --pen: #d1323a;         /* 赤ペン: 点数と丸だけに使う */
+    --good: #1d7a49; --good-bg: #e3f3ea;
+    --miss: #a45200; --miss-bg: #fcefdc;
+    --bad: #b42a2f;  --bad-bg: #fbe8e8;
+
+    /* エディタは昼も夜も暗い黒板 */
+    --ed-bg: #19202d; --ed-gutter: #131926; --ed-ink: #dde4ef; --ed-dim: #6f7c93; --ed-sel: #2d3a55;
+    --hl-str: #f0b47a; --hl-com: #7d8aa3; --hl-num: #c9a2f2; --hl-kw: #7fb2ff; --hl-api: #6fd6b8; --hl-match: #ffd479;
+
+    --f-mark: "Yusei Magic", "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif;
+    --f-body: "M PLUS 2", "Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif;
+    --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, "Noto Sans Mono CJK JP", monospace;
+    --r: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f131b; --surface: #171d28; --ink: #e5e9f1; --muted: #9aa3b5; --line: #2a3242; --soft: #1e2532;
+      --navy: #8eaaf0; --navy-ink: #0c1424; --pen: #ff6b6b;
+      --good: #6fd39b; --good-bg: #15301f; --miss: #f2b260; --miss-bg: #3a2914; --bad: #ff8a85; --bad-bg: #3a1c1e;
+      --ed-bg: #0c1019; --ed-gutter: #090c13;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f131b; --surface: #171d28; --ink: #e5e9f1; --muted: #9aa3b5; --line: #2a3242; --soft: #1e2532;
+    --navy: #8eaaf0; --navy-ink: #0c1424; --pen: #ff6b6b;
+    --good: #6fd39b; --good-bg: #15301f; --miss: #f2b260; --miss-bg: #3a2914; --bad: #ff8a85; --bad-bg: #3a1c1e;
+    --ed-bg: #0c1019; --ed-gutter: #090c13;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.75; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1280px; margin: 0 auto; padding-block: 24px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  :focus-visible { outline: 3px solid var(--navy); outline-offset: 2px; }
+  code, pre, .mono { font-family: var(--f-mono); }
+  code { font-size: .9em; background: var(--soft); border-radius: 4px; padding: 0 .3em; }
+
+  /* ---------- header ---------- */
+  .masthead { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin-bottom: 16px; }
+  .seal { flex: none; width: 48px; height: 48px; }
+  h1 { font-family: var(--f-mark); font-weight: 400; font-size: clamp(24px, 3.4vw, 32px); line-height: 1.25; margin: 0; text-wrap: balance; }
+  .tagline { margin: 0; color: var(--muted); font-size: 14px; max-width: 52em; }
+
+  /* ---------- exercise strip ---------- */
+  .strip { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; margin: 0 0 18px; padding: 0; list-style: none; }
+  @media (max-width: 980px) { .strip { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  @media (max-width: 560px) { .strip { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .strip button { width: 100%; font: inherit; text-align: left; cursor: pointer; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px 7px; display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 8px; align-items: center; }
+  .strip button:hover { border-color: var(--navy); }
+  .strip button[aria-current="true"] { border-color: var(--navy); box-shadow: inset 0 0 0 1px var(--navy); }
+  .strip .no { grid-row: span 2; font-family: var(--f-mark); font-size: 22px; line-height: 1; color: var(--muted); width: 1.1em; text-align: center; }
+  .strip button[aria-current="true"] .no { color: var(--navy); }
+  .strip .t { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .strip .best { font-size: 11.5px; color: var(--muted); font-family: var(--f-mono); }
+  .strip .best.full { color: var(--pen); font-weight: 600; }
+
+  /* ---------- main grid ---------- */
+  .grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 20px; align-items: start; }
+  @media (max-width: 960px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+  .col { display: grid; gap: 14px; min-width: 0; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 18px; min-width: 0; }
+  .eyebrow { font-size: 12px; letter-spacing: .1em; color: var(--muted); font-weight: 700; margin: 0; }
+  .q-title { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 2px 0 10px; }
+  .q-title h2 { margin: 0; font-size: 22px; line-height: 1.35; text-wrap: balance; }
+  .level { font-size: 12px; color: var(--muted); }
+  .level i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--line); margin-left: 2px; }
+  .level i.on { background: var(--navy); }
+  .spec { margin: 0 0 12px; padding-left: 1.25em; display: grid; gap: 4px; }
+  .sig { display: block; background: var(--soft); border-radius: 6px; padding: 6px 10px; font-size: 13.5px; overflow-x: auto; white-space: pre; }
+  .lesson { margin: 12px 0 0; padding: 10px 12px; border-radius: 8px; background: var(--soft); font-size: 14px; line-height: 1.7; }
+  .lesson b { color: var(--navy); }
+  details { border-top: 1px solid var(--line); padding-top: 10px; margin-top: 12px; }
+  details > summary { cursor: pointer; font-weight: 700; font-size: 14px; list-style: none; display: flex; align-items: center; gap: 6px; }
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary::before { content: "▸"; color: var(--muted); transition: transform .15s; }
+  details[open] > summary::before { transform: rotate(90deg); }
+  pre.code { margin: 8px 0 0; background: var(--ed-bg); color: var(--ed-ink); border-radius: 8px; padding: 10px 12px; font-size: 13px; line-height: 1.6; overflow-x: auto; }
+  .cheat { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 12px; margin: 8px 0 0; font-size: 13px; }
+  .cheat dt { font-family: var(--f-mono); font-size: 12.5px; white-space: nowrap; }
+  .cheat dd { margin: 0; color: var(--muted); }
+  @media (max-width: 480px) { .cheat { grid-template-columns: minmax(0, 1fr); } .cheat dd { margin-bottom: 6px; } }
+
+  /* ---------- editor ---------- */
+  .editor-card { background: var(--ed-bg); border-radius: var(--r); overflow: hidden; color: var(--ed-ink); box-shadow: 0 12px 30px -20px rgba(10,20,40,.6); }
+  .ed-bar { display: flex; align-items: center; gap: 10px; padding: 8px 12px; font-family: var(--f-mono); font-size: 12px; color: var(--ed-dim); border-bottom: 1px solid rgba(255,255,255,.06); }
+  .ed-bar .file { color: var(--ed-ink); }
+  .ed-bar .state { margin-left: auto; }
+  .ed { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); height: 440px; overflow: hidden; }
+  @media (max-width: 560px) { .ed { height: 340px; } }
+  .gutter { background: var(--ed-gutter); color: var(--ed-dim); text-align: right; padding: 12px 8px 12px 12px; font-family: var(--f-mono); font-size: 13.5px; line-height: 1.65; user-select: none; overflow: hidden; white-space: pre; }
+  .ed-area { position: relative; min-width: 0; min-height: 0; overflow: hidden; }
+  .ed-area pre, .ed-area textarea {
+    margin: 0; padding: 12px 14px; border: 0; font-family: var(--f-mono); font-size: 13.5px; line-height: 1.65; tab-size: 2;
+    white-space: pre; overflow-wrap: normal; word-break: normal; letter-spacing: 0;
+  }
+  .ed-area pre { position: absolute; inset: 0; pointer-events: none; color: var(--ed-ink); overflow: hidden; }
+  .ed-area textarea { position: relative; display: block; width: 100%; height: 100%; resize: none; background: transparent; color: transparent; caret-color: #ffd479; outline: none; overflow: auto; }
+  .ed-area textarea::selection { background: var(--ed-sel); color: transparent; }
+  .editor-card:focus-within { box-shadow: 0 0 0 3px color-mix(in srgb, var(--navy) 60%, transparent), 0 12px 30px -20px rgba(10,20,40,.6); }
+  .tk-str { color: var(--hl-str); } .tk-com { color: var(--hl-com); font-style: italic; } .tk-num { color: var(--hl-num); }
+  .tk-kw { color: var(--hl-kw); } .tk-api { color: var(--hl-api); font-weight: 600; } .tk-match { color: var(--hl-match); }
+  .ed-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 12px 12px; border-top: 1px solid rgba(255,255,255,.06); }
+  .btn { font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; border-radius: 8px; padding: 7px 16px; border: 1px solid transparent; }
+  .btn-run { background: var(--pen); color: #fff; }
+  .btn-run:hover { filter: brightness(1.08); }
+  .btn-ghost { background: transparent; color: var(--ed-ink); border-color: rgba(255,255,255,.2); }
+  .btn-ghost:hover { background: rgba(255,255,255,.07); }
+  .btn-ghost.confirm { border-color: #ffd479; color: #ffd479; }
+  .kbd { margin-left: auto; font-family: var(--f-mono); font-size: 12px; color: var(--ed-dim); }
+
+  /* ---------- results ---------- */
+  .results { display: grid; gap: 14px; transition: opacity .15s; }
+  .results.stale { opacity: .55; }
+  .score-card { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 18px; align-items: center; }
+  @media (max-width: 520px) { .score-card { grid-template-columns: minmax(0, 1fr); justify-items: start; } }
+  .mark { position: relative; width: 150px; height: 130px; flex: none; }
+  .mark svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .mark .pts { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--f-mark); color: var(--pen); line-height: 1; text-align: center; }
+  .mark .pts b { font-size: 52px; font-weight: 400; display: block; }
+  .mark .pts small { font-size: 15px; display: block; margin-top: 2px; }
+  .rank-label { font-family: var(--f-mark); color: var(--pen); font-size: 20px; margin: 0 0 6px; }
+  .breakdown { display: grid; gap: 7px; margin: 0; }
+  .bd-row { display: grid; grid-template-columns: 7.5em minmax(0, 1fr) 4.5em; gap: 10px; align-items: center; font-size: 13.5px; }
+  .bd-row dt { color: var(--muted); }
+  .bd-row dd { margin: 0; }
+  .bd-row .v { font-family: var(--f-mono); text-align: right; font-weight: 600; }
+  .meter { height: 8px; border-radius: 4px; background: var(--soft); overflow: hidden; }
+  .meter i { display: block; height: 100%; background: var(--navy); border-radius: 4px; }
+  .bd-sub { font-size: 12px; color: var(--muted); grid-column: 2 / -1; margin-top: -4px; }
+  .notes { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 13.5px; }
+  .notes li { padding-left: 1.2em; position: relative; }
+  .notes li::before { content: "※"; position: absolute; left: 0; color: var(--pen); }
+  .err { background: var(--bad-bg); color: var(--bad); border-radius: 8px; padding: 10px 12px; font-size: 13.5px; white-space: pre-wrap; margin: 0; font-family: var(--f-mono); }
+
+  .sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+  .sec-head h3 { margin: 0; font-size: 16px; }
+  .sec-head span { font-size: 13px; color: var(--muted); }
+  .mutants, .tests { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+  .mut { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; row-gap: 2px; align-items: start; }
+  .status { font-size: 12px; font-weight: 700; padding: 1px 8px; border-radius: 999px; white-space: nowrap; margin-top: 2px; }
+  .status.killed { background: var(--good-bg); color: var(--good); }
+  .status.missed { background: var(--miss-bg); color: var(--miss); }
+  .mut .body { font-size: 14px; min-width: 0; }
+  .mut .kind { font-size: 11.5px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0 7px; margin-right: 6px; white-space: nowrap; }
+  .mut details { grid-column: 2; border: 0; padding: 0; margin: 4px 0 0; }
+  .mut details > summary { font-size: 12.5px; font-weight: 500; color: var(--navy); }
+  .diff { margin: 6px 0 0; border-radius: 6px; overflow-x: auto; font-size: 12.5px; line-height: 1.6; background: var(--ed-bg); color: var(--ed-ink); padding: 6px 0; }
+  .diff div { padding: 0 10px; white-space: pre; }
+  .diff .del { background: rgba(255, 107, 107, .16); }
+  .diff .add { background: rgba(111, 211, 155, .16); }
+  .diff .ln { color: var(--ed-dim); }
+  .t-item { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; font-size: 14px; align-items: start; }
+  .t-item .ic { font-weight: 700; width: 1.2em; text-align: center; }
+  .t-item.ok .ic { color: var(--good); }
+  .t-item.ng .ic { color: var(--bad); }
+  .t-item .meta { font-size: 12px; color: var(--muted); margin-left: 6px; }
+  .t-item pre { grid-column: 2; margin: 2px 0 4px; white-space: pre-wrap; font-size: 12.5px; background: var(--bad-bg); color: var(--bad); border-radius: 6px; padding: 6px 10px; }
+  .t-item.ok pre { display: none; }
+  #solution-box { border-top: 0; margin-top: 0; padding-top: 0; }
+  .solution-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .btn-line { background: var(--surface); color: var(--navy); border-color: var(--navy); }
+  .btn-line.confirm { background: var(--navy); color: var(--navy-ink); }
+  .how { color: var(--muted); font-size: 13.5px; margin: 0; }
+  .how b { color: var(--ink); }
+  .foot { margin-top: 28px; color: var(--muted); font-size: 12.5px; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+  @keyframes draw { from { stroke-dashoffset: 520; } to { stroke-dashoffset: 0; } }
+  .mark .ring { stroke-dasharray: 520; animation: draw .6s ease-out both; }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <svg class="seal" viewBox="0 0 48 48" aria-hidden="true">
+      <rect x="2" y="2" width="44" height="44" rx="10" style="fill:var(--navy)"/>
+      <path d="M13 25l7 7 15-16" fill="none" style="stroke:var(--navy-ink)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="24" cy="24" r="16.5" fill="none" style="stroke:var(--pen)" stroke-width="2.5" stroke-dasharray="90 14" transform="rotate(-30 24 24)"/>
+    </svg>
+    <div>
+      <h1>テスト書き方道場</h1>
+      <p class="tagline">仕様を読んでテストを書くと、こっそりバグを仕込んだコードをいくつ見破れたかで採点します（ミューテーションテスト）。正しいコードでは通り、バグ入りのコードでは落ちるテストが良いテストです。</p>
+    </div>
+  </header>
+
+  <ol class="strip" id="strip" aria-label="問題を選ぶ（だんだん難しくなります）"></ol>
+
+  <div class="grid">
+    <div class="col">
+      <section class="card" aria-labelledby="q-name">
+        <p class="eyebrow" id="q-no"></p>
+        <div class="q-title"><h2 id="q-name"></h2><span class="level" id="q-level"></span></div>
+        <ul class="spec" id="q-spec"></ul>
+        <p class="eyebrow">テストする関数</p>
+        <code class="sig" id="q-sig"></code>
+        <p class="lesson" id="q-lesson"></p>
+        <details>
+          <summary>正しい実装を見る</summary>
+          <p class="how">本当のテストは仕様だけを見て書くのが基本です。どうしても困ったときに。</p>
+          <pre class="code" id="q-code"></pre>
+        </details>
+        <details id="cheat-box">
+          <summary>使える書き方</summary>
+          <dl class="cheat">
+            <dt>test("名前", () =&gt; { … })</dt><dd>テストを1つ作る（<code>it</code> も同じ）</dd>
+            <dt>describe("名前", () =&gt; { … })</dt><dd>テストをまとめる</dd>
+            <dt>expect(x).toBe(y)</dt><dd>x と y が同じ（数・文字列・true/false）</dd>
+            <dt>expect(x).toEqual(y)</dt><dd>配列やオブジェクトの中身が同じ</dd>
+            <dt>expect(x).toBeCloseTo(y)</dt><dd>小数がほぼ同じ（小数第2位まで）</dd>
+            <dt>expect(() =&gt; f()).toThrow()</dt><dd>エラーが起きる。<code>toThrow(RangeError)</code>、<code>toThrow("文字")</code> でしぼれる</dd>
+            <dt>expect(x).toBeUndefined()</dt><dd>undefined である（<code>toBeNull</code>・<code>toBeDefined</code> も）</dd>
+            <dt>expect(x).toBeTruthy()</dt><dd>true 扱い（<code>toBeFalsy</code> は false 扱い）</dd>
+            <dt>expect(a).toContain(x)</dt><dd>配列・文字列に x がふくまれる</dd>
+            <dt>expect(a).toHaveLength(n)</dt><dd>長さが n</dd>
+            <dt>expect(x).toBeGreaterThan(y)</dt><dd>x &gt; y（<code>toBeLessThan</code>・<code>…OrEqual</code> も）</dd>
+            <dt>expect(x).not.toBe(y)</dt><dd><code>.not</code> で逆の意味</dd>
+          </dl>
+        </details>
+      </section>
+      <section class="card" aria-labelledby="how-title">
+        <p class="eyebrow" id="how-title">採点のしかた（100点）</p>
+        <p class="how"><b>バグ発見 80点</b> … 仕込まれたバグ入り版のうち、テストが1つでも落ちたものの割合。<br><b>読みやすさ 20点</b> … 中身がわかるテスト名（8）、どのテストにも expect がある（6）、1つのテストの expect は4つまで（6）。<br><b>減点</b> … 正しいコードで失敗するテストは、テスト側のまちがい。1つにつき −10点で、バグ発見にも数えません。</p>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="editor-card" aria-label="テストを書くエディタ">
+        <div class="ed-bar"><span class="file" id="ed-file">test.js</span><span>JavaScript（Jest と同じ書き方）</span><span class="state" id="ed-state"></span></div>
+        <div class="ed">
+          <div class="gutter" id="gutter" aria-hidden="true">1</div>
+          <div class="ed-area">
+            <pre id="hl" aria-hidden="true"></pre>
+            <textarea id="editor" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="テストのコード" wrap="off"></textarea>
+          </div>
+        </div>
+        <div class="ed-actions">
+          <button type="button" class="btn btn-run" id="run">採点する</button>
+          <button type="button" class="btn btn-ghost" id="reset">最初に戻す</button>
+          <span class="kbd">Ctrl / ⌘ + Enter でも採点</span>
+        </div>
+      </section>
+
+      <div class="results" id="results" aria-live="polite">
+        <section class="card score-card" id="score-card">
+          <div class="mark" id="mark"></div>
+          <div>
+            <p class="rank-label" id="rank-label"></p>
+            <dl class="breakdown" id="breakdown"></dl>
+            <ul class="notes" id="notes"></ul>
+          </div>
+        </section>
+        <p class="err" id="run-error" hidden></p>
+        <section class="card">
+          <div class="sec-head"><h3>仕込まれたバグ</h3><span id="mut-summary"></span></div>
+          <ul class="mutants" id="mutants"></ul>
+        </section>
+        <section class="card">
+          <div class="sec-head"><h3>正しいコードでの結果</h3><span id="test-summary"></span></div>
+          <ul class="tests" id="tests"></ul>
+        </section>
+        <section class="card">
+          <details id="solution-box">
+            <summary>模範解答を見る</summary>
+            <p class="how">すべてのバグを見つけられるテストの一例です。名前のつけ方や、境界の選び方を参考にしてください。</p>
+            <pre class="code" id="solution"></pre>
+            <div class="solution-actions"><button type="button" class="btn btn-line" id="use-solution">エディタに入れる</button></div>
+          </details>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <p class="foot">テストはブラウザの中だけで実行します（書いたコードはどこにも送りません）。書きかけのテストと最高点は、このブラウザに保存されます。</p>
+</div>
+<!-- artifact:end -->
+
+<script>
+/* test-dojo/src/exercises.js */
+// テスト書き方道場: 問題集
+// code     … 正しい実装
+// mutants  … 正しい実装の一部を書きかえた「バグ入り版」。from を to に置きかえる（from はコードの中に1回だけ出てくること）
+// starter  … 最初にエディタに入っているテスト
+// solution … 模範解答（すべてのバグを見つけられるテスト）
+(function (root) {
+  "use strict";
+
+  const EXERCISES = [
+    {
+      id: "fizzbuzz",
+      title: "FizzBuzz",
+      level: 1,
+      names: ["fizzBuzz"],
+      signature: "fizzBuzz(n: number): string",
+      spec: [
+        "3 の倍数なら `\"Fizz\"` を返す",
+        "5 の倍数なら `\"Buzz\"` を返す",
+        "3 と 5 両方の倍数なら `\"FizzBuzz\"` を返す",
+        "それ以外は、その数を **文字列** にして返す（`7` なら `\"7\"`）",
+      ],
+      lesson: "1つの例だけでは、たまたま合っているだけかもしれません。同じルールに当てはまる例を2つ以上ためしましょう。",
+      code: `function fizzBuzz(n) {
+  if (n % 15 === 0) return "FizzBuzz";
+  if (n % 3 === 0) return "Fizz";
+  if (n % 5 === 0) return "Buzz";
+  return String(n);
+}`,
+      mutants: [
+        { from: `  if (n % 15 === 0) return "FizzBuzz";\n`, to: ``, kind: "正常系", hint: "3 と 5 の両方の倍数（15 や 30）のときを確かめていますか？" },
+        { from: `n % 3 === 0`, to: `n / 3 === 1`, kind: "正常系", hint: "3 以外の 3 の倍数（6 や 9）でも Fizz になりますか？" },
+        { from: `n % 5 === 0`, to: `n === 5`, kind: "正常系", hint: "5 以外の 5 の倍数（10 や 20）でも Buzz になりますか？" },
+        { from: `return "Buzz"`, to: `return "buzz"`, kind: "正常系", hint: "5 の倍数の結果を、大文字・小文字までぴったり確かめていますか？" },
+        { from: `return String(n);`, to: `return n;`, kind: "型", hint: "それ以外の数のとき、数値ではなく「文字列」が返ることを確かめていますか？ toBe は型までくらべます。" },
+      ],
+      starter: `test("3 の倍数なら Fizz", () => {
+  expect(fizzBuzz(3)).toBe("Fizz");
+});
+
+// ↓ ここにテストを足していきましょう
+`,
+      solution: `test("3 の倍数なら Fizz", () => {
+  expect(fizzBuzz(3)).toBe("Fizz");
+  expect(fizzBuzz(9)).toBe("Fizz");
+});
+
+test("5 の倍数なら Buzz", () => {
+  expect(fizzBuzz(5)).toBe("Buzz");
+  expect(fizzBuzz(10)).toBe("Buzz");
+});
+
+test("3 と 5 両方の倍数なら FizzBuzz", () => {
+  expect(fizzBuzz(15)).toBe("FizzBuzz");
+  expect(fizzBuzz(30)).toBe("FizzBuzz");
+});
+
+test("それ以外は数字の文字列", () => {
+  expect(fizzBuzz(7)).toBe("7");
+});
+`,
+    },
+
+    {
+      id: "leap",
+      title: "うるう年",
+      level: 1,
+      names: ["isLeapYear"],
+      signature: "isLeapYear(year: number): boolean",
+      spec: [
+        "4 で割り切れる年はうるう年（`true`）",
+        "ただし 100 で割り切れる年はうるう年ではない（`false`）",
+        "ただし 400 で割り切れる年はうるう年",
+        "それ以外は `false`",
+      ],
+      lesson: "「ただし」が出てくる仕様は、ルールごとに1つずつ例を用意するのが基本です。例: 2024・1900・2000・2023。",
+      code: `function isLeapYear(year) {
+  if (year % 400 === 0) return true;
+  if (year % 100 === 0) return false;
+  return year % 4 === 0;
+}`,
+      mutants: [
+        { from: `  if (year % 400 === 0) return true;\n`, to: ``, kind: "例外ルール", hint: "400 で割り切れる年（2000 年など）を確かめていますか？" },
+        { from: `  if (year % 100 === 0) return false;\n`, to: ``, kind: "例外ルール", hint: "100 で割り切れるが 400 では割り切れない年（1900 年など）を確かめていますか？" },
+        { from: `year % 4 === 0;`, to: `year % 2 === 0;`, kind: "正常系", hint: "4 では割り切れない偶数の年（2022 年など）は false になりますか？" },
+        { from: `year % 4 === 0;`, to: `year % 4 !== 1;`, kind: "正常系", hint: "うるう年でない年を、1つだけでなくいくつか（2021・2022・2023）ためしましたか？" },
+      ],
+      starter: `test("4 で割り切れる年はうるう年", () => {
+  expect(isLeapYear(2024)).toBe(true);
+});
+
+// ↓ ここにテストを足していきましょう
+`,
+      solution: `test("4 で割り切れる年はうるう年", () => {
+  expect(isLeapYear(2024)).toBe(true);
+});
+
+test("4 で割り切れない年はうるう年ではない", () => {
+  expect(isLeapYear(2021)).toBe(false);
+  expect(isLeapYear(2022)).toBe(false);
+  expect(isLeapYear(2023)).toBe(false);
+});
+
+test("100 で割り切れる年はうるう年ではない", () => {
+  expect(isLeapYear(1900)).toBe(false);
+});
+
+test("400 で割り切れる年はうるう年", () => {
+  expect(isLeapYear(2000)).toBe(true);
+});
+`,
+    },
+
+    {
+      id: "grade",
+      title: "成績のランク",
+      level: 2,
+      names: ["grade"],
+      signature: "grade(score: number): string",
+      spec: [
+        "80 点以上は `\"A\"`、60 点以上は `\"B\"`、40 点以上は `\"C\"`、それより下は `\"D\"`",
+        "`score` が 0〜100 の **整数** でないときは `RangeError` を投げる",
+      ],
+      lesson: "バグは「境目」にかくれます。80 と 79、60 と 59、40 と 39、0 と -1、100 と 101 のように、境界の両側をためしましょう（境界値分析）。",
+      code: `function grade(score) {
+  if (!Number.isInteger(score) || score < 0 || score > 100) {
+    throw new RangeError("score は 0〜100 の整数です");
+  }
+  if (score >= 80) return "A";
+  if (score >= 60) return "B";
+  if (score >= 40) return "C";
+  return "D";
+}`,
+      mutants: [
+        { from: `score >= 80`, to: `score > 80`, kind: "境界値", hint: "ちょうど 80 点のときを確かめていますか？" },
+        { from: `score >= 60`, to: `score > 60`, kind: "境界値", hint: "ちょうど 60 点のときを確かめていますか？" },
+        { from: `score >= 40`, to: `score >= 39`, kind: "境界値", hint: "39 点（C になる一歩手前）のときを確かめていますか？" },
+        { from: `return "D";`, to: `return "F";`, kind: "正常系", hint: "いちばん下のランクの結果を確かめていますか？" },
+        { from: ` || score > 100`, to: ``, kind: "異常系", hint: "100 点をこえる点数（101 など）でエラーになりますか？" },
+        { from: ` || score < 0`, to: ``, kind: "異常系", hint: "マイナスの点数でエラーになりますか？" },
+        { from: `!Number.isInteger(score) || `, to: ``, kind: "異常系", hint: "小数（79.5 など）を渡したときエラーになりますか？" },
+      ],
+      starter: `test("90 点は A", () => {
+  expect(grade(90)).toBe("A");
+});
+
+test("100 点をこえるとエラー", () => {
+  // エラーを確かめるときは、関数で包んで toThrow を使う
+  expect(() => grade(150)).toThrow(RangeError);
+});
+
+// ↓ ここにテストを足していきましょう
+`,
+      solution: `test("80 点以上は A（境界: 80 / 79）", () => {
+  expect(grade(80)).toBe("A");
+  expect(grade(79)).toBe("B");
+});
+
+test("60 点以上は B（境界: 60 / 59）", () => {
+  expect(grade(60)).toBe("B");
+  expect(grade(59)).toBe("C");
+});
+
+test("40 点以上は C（境界: 40 / 39）", () => {
+  expect(grade(40)).toBe("C");
+  expect(grade(39)).toBe("D");
+});
+
+test("0 点と 100 点は有効", () => {
+  expect(grade(0)).toBe("D");
+  expect(grade(100)).toBe("A");
+});
+
+test("範囲外はエラー", () => {
+  expect(() => grade(-1)).toThrow(RangeError);
+  expect(() => grade(101)).toThrow(RangeError);
+});
+
+test("整数でなければエラー", () => {
+  expect(() => grade(79.5)).toThrow(RangeError);
+});
+`,
+    },
+
+    {
+      id: "sum",
+      title: "配列の合計",
+      level: 2,
+      names: ["sum"],
+      signature: "sum(numbers: number[]): number",
+      spec: [
+        "配列の数をすべて足した値を返す",
+        "空の配列なら `0` を返す",
+        "マイナスの数や小数が入っていてもよい",
+      ],
+      lesson: "配列を扱う関数は「空」「1個」「たくさん」の3つに分けて考えると、ループの書きまちがいを見つけやすくなります。",
+      code: `function sum(numbers) {
+  let total = 0;
+  for (let i = 0; i < numbers.length; i++) {
+    total += numbers[i];
+  }
+  return total;
+}`,
+      mutants: [
+        { from: `let i = 0`, to: `let i = 1`, kind: "端", hint: "配列の最初の要素が足されていることを確かめていますか？（最初の要素だけ大きくしてみる）" },
+        { from: `i < numbers.length`, to: `i < numbers.length - 1`, kind: "端", hint: "配列の最後の要素が足されていることを確かめていますか？" },
+        { from: `return total;`, to: `return numbers.length ? total : null;`, kind: "空", hint: "空の配列 [] のときを確かめていますか？" },
+        { from: `total += numbers[i];`, to: `total += Math.abs(numbers[i]);`, kind: "正常系", hint: "マイナスの数が入った配列を確かめていますか？" },
+        { from: `total += numbers[i];`, to: `total += Math.floor(numbers[i]);`, kind: "正常系", hint: "小数が入った配列を確かめていますか？" },
+      ],
+      starter: `test("1, 2, 3 の合計は 6", () => {
+  expect(sum([1, 2, 3])).toBe(6);
+});
+
+// ↓ ここにテストを足していきましょう
+`,
+      solution: `test("いくつかの数の合計", () => {
+  expect(sum([10, 2, 3])).toBe(15);
+  expect(sum([1, 2, 30])).toBe(33);
+});
+
+test("空の配列は 0", () => {
+  expect(sum([])).toBe(0);
+});
+
+test("1個だけなら、その数", () => {
+  expect(sum([7])).toBe(7);
+});
+
+test("マイナスの数も足せる", () => {
+  expect(sum([5, -3])).toBe(2);
+});
+
+test("小数も足せる", () => {
+  expect(sum([0.5, 0.25])).toBe(0.75);
+});
+`,
+    },
+
+    {
+      id: "average",
+      title: "平均",
+      level: 3,
+      names: ["average"],
+      signature: "average(numbers: number[]): number",
+      spec: [
+        "配列の数の平均を返す",
+        "割り切れないときは小数で返す（四捨五入しない）",
+        "空の配列のときは `Error` を投げる",
+      ],
+      lesson: "小数は計算誤差が出ます（0.1 + 0.2 は 0.30000000000000004）。小数の結果は toBe ではなく toBeCloseTo でくらべましょう。",
+      code: `function average(numbers) {
+  if (numbers.length === 0) {
+    throw new Error("空の配列の平均は計算できません");
+  }
+  let total = 0;
+  for (const n of numbers) total += n;
+  return total / numbers.length;
+}`,
+      mutants: [
+        { from: `throw new Error("空の配列の平均は計算できません");`, to: `return 0;`, kind: "異常系", hint: "空の配列でエラーになることを確かめていますか？" },
+        { from: `numbers.length === 0`, to: `numbers.length <= 1`, kind: "端", hint: "要素が1個だけの配列を確かめていますか？" },
+        { from: `return total / numbers.length;`, to: `return Math.round(total / numbers.length);`, kind: "正常系", hint: "割り切れない平均（[1, 2] → 1.5 など）を確かめていますか？" },
+        { from: `return total / numbers.length;`, to: `return total / (numbers.length + 1);`, kind: "正常系", hint: "答えが分かりやすい例で、平均の値そのものを確かめていますか？" },
+        { from: `total += n;`, to: `total += n > 0 ? n : 0;`, kind: "正常系", hint: "マイナスの数が入った配列を確かめていますか？" },
+      ],
+      starter: `test("2 と 4 の平均は 3", () => {
+  expect(average([2, 4])).toBe(3);
+});
+
+// ↓ ここにテストを足していきましょう
+`,
+      solution: `test("割り切れる平均", () => {
+  expect(average([2, 4])).toBe(3);
+});
+
+test("割り切れない平均は小数", () => {
+  expect(average([1, 2])).toBeCloseTo(1.5);
+  expect(average([0.1, 0.2])).toBeCloseTo(0.15);
+});
+
+test("1個だけなら、その数", () => {
+  expect(average([5])).toBe(5);
+});
+
+test("マイナスの数も平均できる", () => {
+  expect(average([-2, 4])).toBe(1);
+});
+
+test("空の配列はエラー", () => {
+  expect(() => average([])).toThrow();
+});
+`,
+    },
+
+    {
+      id: "price",
+      title: "クーポンの値引き",
+      level: 3,
+      names: ["calcPrice"],
+      signature: "calcPrice(price: number, coupon?: string): number",
+      spec: [
+        "クーポンなし（省略）なら、`price` をそのまま返す",
+        "`\"SALE10\"` は 10% 引き。1 円未満は **切り捨て**",
+        "`\"OFF500\"` は 500 円引き。ただし 0 円より安くはならない",
+        "知らないクーポンは `Error`、`price` がマイナスなら `RangeError` を投げる（0 円はOK）",
+      ],
+      lesson: "「切り捨て」「0 円より下にならない」のような細かいルールは、それが効いてくる値（端数が .5 以上になる値、500 円より安い値）を選んでためします。",
+      code: `function calcPrice(price, coupon) {
+  if (price < 0) throw new RangeError("price は 0 以上です");
+  let result = price;
+  if (coupon === "SALE10") {
+    result = price * 0.9;
+  } else if (coupon === "OFF500") {
+    result = price - 500;
+  } else if (coupon !== undefined) {
+    throw new Error("使えないクーポンです: " + coupon);
+  }
+  return Math.max(0, Math.floor(result));
+}`,
+      mutants: [
+        { from: `price * 0.9`, to: `price * 0.1`, kind: "正常系", hint: "SALE10 を使ったときの金額を確かめていますか？" },
+        { from: `Math.floor(result)`, to: `Math.round(result)`, kind: "端数", hint: "端数が .5 以上になる金額（995 円の 10% 引き = 895.5 など）で、切り捨てになっていますか？" },
+        { from: `Math.max(0, `, to: `Math.max(-Infinity, `, kind: "境界値", hint: "500 円より安い商品に OFF500 を使ったとき、0 円になりますか？" },
+        { from: `throw new Error("使えないクーポンです: " + coupon);`, to: `result = price;`, kind: "異常系", hint: "知らないクーポンを渡したとき、エラーになりますか？" },
+        { from: `price < 0`, to: `price <= 0`, kind: "境界値", hint: "ちょうど 0 円のときはエラーにならず 0 が返りますか？" },
+        { from: `  if (price < 0) throw new RangeError("price は 0 以上です");\n`, to: ``, kind: "異常系", hint: "マイナスの金額でエラーになりますか？" },
+      ],
+      starter: `test("クーポンなしなら、そのままの値段", () => {
+  expect(calcPrice(1000)).toBe(1000);
+});
+
+// ↓ ここにテストを足していきましょう
+`,
+      solution: `test("クーポンなしなら、そのままの値段", () => {
+  expect(calcPrice(1000)).toBe(1000);
+});
+
+test("SALE10 は 10% 引き", () => {
+  expect(calcPrice(1000, "SALE10")).toBe(900);
+});
+
+test("SALE10 の 1 円未満は切り捨て", () => {
+  expect(calcPrice(995, "SALE10")).toBe(895);
+});
+
+test("OFF500 は 500 円引き", () => {
+  expect(calcPrice(1200, "OFF500")).toBe(700);
+});
+
+test("OFF500 でも 0 円より安くならない", () => {
+  expect(calcPrice(300, "OFF500")).toBe(0);
+});
+
+test("0 円の商品は 0 円", () => {
+  expect(calcPrice(0)).toBe(0);
+});
+
+test("知らないクーポンはエラー", () => {
+  expect(() => calcPrice(1000, "FREE")).toThrow("使えないクーポン");
+});
+
+test("マイナスの金額はエラー", () => {
+  expect(() => calcPrice(-1)).toThrow(RangeError);
+});
+`,
+    },
+
+    {
+      id: "password",
+      title: "パスワードの点検",
+      level: 4,
+      names: ["checkPassword"],
+      signature: "checkPassword(pw: string): string[]",
+      spec: [
+        "問題点のメッセージを配列で返す。問題がなければ空の配列 `[]`",
+        "8 文字より短い → `\"8文字以上にしてください\"`",
+        "数字（0〜9）がない → `\"数字を入れてください\"`",
+        "大文字（A〜Z）がない → `\"大文字を入れてください\"`",
+        "問題が複数あるときは、上の順番ですべて返す",
+      ],
+      lesson: "配列やオブジェクトの中身をくらべるときは toBe ではなく toEqual を使います。条件が3つあるなら「1つだけ満たさない」例を3つ作ると、どの条件が壊れたかすぐ分かります。",
+      code: `function checkPassword(pw) {
+  const problems = [];
+  if (pw.length < 8) problems.push("8文字以上にしてください");
+  if (!/[0-9]/.test(pw)) problems.push("数字を入れてください");
+  if (!/[A-Z]/.test(pw)) problems.push("大文字を入れてください");
+  return problems;
+}`,
+      mutants: [
+        { from: `pw.length < 8`, to: `pw.length <= 8`, kind: "境界値", hint: "ちょうど 8 文字のパスワードは OK になりますか？" },
+        { from: `pw.length < 8`, to: `pw.length < 7`, kind: "境界値", hint: "7 文字のパスワードは「短い」と言われますか？" },
+        { from: `/[0-9]/`, to: `/[1-9]/`, kind: "端", hint: "数字が 0 だけのパスワード（\"Password0\" など）は OK になりますか？" },
+        { from: `/[A-Z]/`, to: `/[A-Za-z]/`, kind: "正常系", hint: "小文字しかないパスワードで「大文字を入れてください」と言われますか？" },
+        { from: `return problems;`, to: `return problems.slice(0, 1);`, kind: "組み合わせ", hint: "問題が2つ以上あるとき、すべてのメッセージが返りますか？（toEqual で配列ごとくらべる）" },
+      ],
+      starter: `test("条件をすべて満たせば問題なし", () => {
+  expect(checkPassword("Secret123")).toEqual([]);
+});
+
+// ↓ ここにテストを足していきましょう
+`,
+      solution: `test("条件をすべて満たせば問題なし", () => {
+  expect(checkPassword("Secret123")).toEqual([]);
+});
+
+test("ちょうど 8 文字は OK、7 文字は短い", () => {
+  expect(checkPassword("Abcdef12")).toEqual([]);
+  expect(checkPassword("Abcde12")).toEqual(["8文字以上にしてください"]);
+});
+
+test("数字がない", () => {
+  expect(checkPassword("Password")).toEqual(["数字を入れてください"]);
+});
+
+test("数字が 0 だけでも OK", () => {
+  expect(checkPassword("Password0")).toEqual([]);
+});
+
+test("大文字がない", () => {
+  expect(checkPassword("password1")).toEqual(["大文字を入れてください"]);
+});
+
+test("問題が複数あれば、すべて順番に返す", () => {
+  expect(checkPassword("abc")).toEqual([
+    "8文字以上にしてください",
+    "数字を入れてください",
+    "大文字を入れてください",
+  ]);
+});
+`,
+    },
+
+    {
+      id: "stack",
+      title: "スタック",
+      level: 4,
+      names: ["Stack"],
+      signature: "new Stack() / push(x) / pop() / peek() / size",
+      spec: [
+        "`push(x)` で上に積む。同じ値を何度積んでもよい",
+        "`pop()` は **いちばん最後に積んだ** 値を取り出して返す。空なら `Error` を投げる",
+        "`peek()` はいちばん上の値を **取り出さずに** 返す。空なら `undefined`",
+        "`size` は積んである数",
+      ],
+      lesson: "状態を持つクラスは「操作の順番」でテストします。準備（Arrange）→ 操作（Act）→ 確認（Assert）の3段に分けて書くと読みやすくなります。",
+      code: `class Stack {
+  constructor() {
+    this.items = [];
+  }
+  push(x) {
+    this.items.push(x);
+  }
+  pop() {
+    if (this.items.length === 0) throw new Error("スタックが空です");
+    return this.items.pop();
+  }
+  peek() {
+    if (this.items.length === 0) return undefined;
+    return this.items[this.items.length - 1];
+  }
+  get size() {
+    return this.items.length;
+  }
+}`,
+      mutants: [
+        { from: `return this.items.pop();`, to: `return this.items.shift();`, kind: "順番", hint: "2つ以上積んだあと pop すると、最後に積んだほうが出てきますか？" },
+        { from: `return this.items[this.items.length - 1];`, to: `return this.items.pop();`, kind: "副作用", hint: "peek したあとも値が残っている（size が減らない）ことを確かめていますか？" },
+        { from: `return this.items[this.items.length - 1];`, to: `return this.items[0];`, kind: "順番", hint: "2つ以上積んだとき、peek はいちばん上の値を返しますか？" },
+        { from: `    if (this.items.length === 0) throw new Error("スタックが空です");\n`, to: ``, kind: "異常系", hint: "空のスタックで pop するとエラーになりますか？" },
+        { from: `if (this.items.length === 0) return undefined;`, to: `if (this.items.length === 0) throw new Error("スタックが空です");`, kind: "異常系", hint: "空のスタックで peek すると、エラーではなく undefined が返りますか？" },
+        { from: `    this.items.push(x);\n`, to: `    if (!this.items.includes(x)) this.items.push(x);\n`, kind: "正常系", hint: "同じ値を2回積んだとき、size が 2 になりますか？" },
+      ],
+      starter: `test("push すると size が増える", () => {
+  const s = new Stack();
+  s.push(10);
+  expect(s.size).toBe(1);
+});
+
+// ↓ ここにテストを足していきましょう
+`,
+      solution: `test("新しいスタックは空", () => {
+  const s = new Stack();
+  expect(s.size).toBe(0);
+  expect(s.peek()).toBeUndefined();
+});
+
+test("pop は最後に積んだ値を返す", () => {
+  const s = new Stack();
+  s.push(1);
+  s.push(2);
+  expect(s.pop()).toBe(2);
+  expect(s.size).toBe(1);
+});
+
+test("peek は上の値を取り出さずに返す", () => {
+  const s = new Stack();
+  s.push(1);
+  s.push(2);
+  expect(s.peek()).toBe(2);
+  expect(s.size).toBe(2);
+});
+
+test("同じ値を何度も積める", () => {
+  const s = new Stack();
+  s.push("a");
+  s.push("a");
+  expect(s.size).toBe(2);
+});
+
+test("空のスタックで pop するとエラー", () => {
+  expect(() => new Stack().pop()).toThrow();
+});
+`,
+    },
+  ];
+
+  // バグ入り版のコードを作る
+  function mutantCode(ex, i) {
+    const m = ex.mutants[i];
+    const at = ex.code.indexOf(m.from);
+    if (at < 0 || ex.code.indexOf(m.from, at + 1) >= 0) throw new Error(`${ex.id} の mutant ${i} の from がちょうど1回見つかりません`);
+    return ex.code.slice(0, at) + m.to + ex.code.slice(at + m.from.length);
+  }
+
+  // 何行目が変わったか（答え合わせの表示用）
+  function mutantDiff(ex, i) {
+    const a = ex.code.split("\n"), b = mutantCode(ex, i).split("\n");
+    let s = 0;
+    while (s < a.length && s < b.length && a[s] === b[s]) s++;
+    let ea = a.length - 1, eb = b.length - 1;
+    while (ea >= s && eb >= s && a[ea] === b[eb]) { ea--; eb--; }
+    return { line: s + 1, before: a.slice(s, ea + 1), after: b.slice(s, eb + 1) };
+  }
+
+  const api = { EXERCISES, mutantCode, mutantDiff };
+  root.DojoExercises = api;
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+})(typeof window !== "undefined" ? window : globalThis);
+
+</script>
+<script>
+/* test-dojo/src/runner.js */
+// テスト書き方道場: テストの実行と採点
+// core() は外の変数を一切使わない関数です。画面ではこの関数の文字列から Web Worker を作り、
+// 無限ループなどで画面が固まらないようにして実行します。
+(function (root) {
+  "use strict";
+
+  function core() {
+    "use strict";
+    class AssertionError extends Error {
+      constructor(m) { super(m); this.name = "AssertionError"; }
+    }
+
+    function show(v, depth) {
+      depth = depth || 0;
+      if (typeof v === "string") return JSON.stringify(v);
+      if (typeof v === "number") return Object.is(v, -0) ? "-0" : String(v);
+      if (typeof v === "bigint") return v + "n";
+      if (v === undefined) return "undefined";
+      if (v === null) return "null";
+      if (typeof v === "function") return v.name ? "[関数 " + v.name + "]" : "[関数]";
+      if (v instanceof Error) return v.name + '("' + v.message + '")';
+      if (depth > 2) return Array.isArray(v) ? "[…]" : "{…}";
+      if (Array.isArray(v)) return "[" + v.slice(0, 10).map((x) => show(x, depth + 1)).join(", ") + (v.length > 10 ? ", …" : "") + "]";
+      if (typeof v === "object") {
+        const ks = Object.keys(v);
+        const name = v.constructor && v.constructor !== Object ? v.constructor.name + " " : "";
+        return name + "{" + ks.slice(0, 8).map((k) => k + ": " + show(v[k], depth + 1)).join(", ") + (ks.length > 8 ? ", …" : "") + "}";
+      }
+      return String(v);
+    }
+    const typeName = (v) => (v === null ? "null" : Array.isArray(v) ? "配列" : typeof v);
+
+    function deepEqual(a, b) {
+      if (Object.is(a, b)) return true;
+      if (typeof a !== "object" || typeof b !== "object" || !a || !b) return false;
+      if (Array.isArray(a) !== Array.isArray(b)) return false;
+      if (Object.getPrototypeOf(a) !== Object.getPrototypeOf(b)) return false;
+      const ka = Object.keys(a), kb = Object.keys(b);
+      if (ka.length !== kb.length) return false;
+      for (const k of ka) if (!Object.prototype.hasOwnProperty.call(b, k) || !deepEqual(a[k], b[k])) return false;
+      return true;
+    }
+
+    // 各マッチャーは [合格したか, 失敗したときの説明] を返す。neg は .not のとき true
+    const MATCHERS = {
+      toBe(a, neg, e) {
+        const ok = Object.is(a, e);
+        if (neg) return [ok, "期待: " + show(e) + " ではないこと\n実際: " + show(a)];
+        let msg = "期待: " + show(e) + "\n実際: " + show(a);
+        if (typeof a !== typeof e) msg += "\nヒント: 型がちがいます（期待は " + typeName(e) + "、実際は " + typeName(a) + "）。";
+        else if (typeof a === "object" && deepEqual(a, e)) msg += "\nヒント: 中身は同じですが別の物です。配列やオブジェクトの中身をくらべるときは toEqual を使います。";
+        else if (typeof a === "number" && Math.abs(a - e) < 1e-9) msg += "\nヒント: 小数の計算誤差です。toBeCloseTo を使いましょう。";
+        return [ok, msg];
+      },
+      toEqual(a, neg, e) {
+        return [deepEqual(a, e), neg ? "期待: " + show(e) + " と等しくないこと\n実際: " + show(a) : "期待: " + show(e) + "\n実際: " + show(a)];
+      },
+      toBeCloseTo(a, neg, e, digits) {
+        if (typeof a !== "number") return [false, "toBeCloseTo は数をくらべます。実際: " + show(a)];
+        const d = digits === undefined ? 2 : digits;
+        const ok = Math.abs(a - e) < Math.pow(10, -d) / 2;
+        return [ok, "期待: " + show(e) + " にほぼ等しい" + (neg ? "ではないこと" : "") + "（小数第" + d + "位まで）\n実際: " + show(a)];
+      },
+      toBeTruthy(a, neg) { return [!!a, "期待: " + (neg ? "false 扱いの値" : "true 扱いの値") + "\n実際: " + show(a)]; },
+      toBeFalsy(a, neg) { return [!a, "期待: " + (neg ? "true 扱いの値" : "false 扱いの値") + "\n実際: " + show(a)]; },
+      toBeNull(a, neg) { return [a === null, "期待: " + (neg ? "null 以外" : "null") + "\n実際: " + show(a)]; },
+      toBeUndefined(a, neg) { return [a === undefined, "期待: " + (neg ? "undefined 以外" : "undefined") + "\n実際: " + show(a)]; },
+      toBeDefined(a, neg) { return [a !== undefined, "期待: " + (neg ? "undefined" : "undefined 以外") + "\n実際: " + show(a)]; },
+      toBeNaN(a, neg) { return [Number.isNaN(a), "期待: " + (neg ? "NaN 以外" : "NaN") + "\n実際: " + show(a)]; },
+      toBeGreaterThan(a, neg, e) { return [a > e, "期待: " + show(e) + " より大きい" + (neg ? "ではない" : "") + "\n実際: " + show(a)]; },
+      toBeGreaterThanOrEqual(a, neg, e) { return [a >= e, "期待: " + show(e) + " 以上" + (neg ? "ではない" : "") + "\n実際: " + show(a)]; },
+      toBeLessThan(a, neg, e) { return [a < e, "期待: " + show(e) + " より小さい" + (neg ? "ではない" : "") + "\n実際: " + show(a)]; },
+      toBeLessThanOrEqual(a, neg, e) { return [a <= e, "期待: " + show(e) + " 以下" + (neg ? "ではない" : "") + "\n実際: " + show(a)]; },
+      toContain(a, neg, e) {
+        const ok = (typeof a === "string" || Array.isArray(a)) && a.includes(e);
+        return [ok, "期待: " + show(e) + " を" + (neg ? "ふくまない" : "ふくむ") + "\n実際: " + show(a)];
+      },
+      toHaveLength(a, neg, n) {
+        const len = a == null ? undefined : a.length;
+        return [len === n, "期待: 長さ " + n + (neg ? " ではない" : "") + "\n実際: 長さ " + show(len) + "（" + show(a) + "）"];
+      },
+      toThrow(a, neg, expected) {
+        if (typeof a !== "function") {
+          throw new AssertionError("toThrow には「関数」を渡します。\n書き方: expect(() => 関数(引数)).toThrow()\n（expect(関数(引数)) だと、expect に届く前にエラーが起きてしまいます）");
+        }
+        let err = null, threw = false;
+        try { a(); } catch (e) { threw = true; err = e; }
+        let ok = threw, want = "エラーが起きること";
+        if (threw && expected !== undefined) {
+          if (typeof expected === "function") { ok = err instanceof expected; want = expected.name + " が起きること"; }
+          else if (expected instanceof RegExp) { ok = expected.test(String(err && err.message)); want = "メッセージが " + expected + " に合うエラー"; }
+          else { ok = String(err && err.message).includes(String(expected)); want = "メッセージに " + show(String(expected)) + " をふくむエラー"; }
+        }
+        const got = threw ? show(err) + " が起きた" : "エラーは起きなかった";
+        return [ok, "期待: " + want + (neg ? "がない" : "") + "\n実際: " + got];
+      },
+    };
+
+    function makeExpect(counter) {
+      return function expect(actual) {
+        counter.n++;
+        const build = (neg) => {
+          const o = {};
+          for (const name of Object.keys(MATCHERS)) {
+            o[name] = function () {
+              const args = [actual, neg].concat(Array.from(arguments));
+              const r = MATCHERS[name].apply(null, args);
+              if (r[0] === neg) throw new AssertionError((neg ? "not." : "") + name + " が合いません\n" + r[1]);
+            };
+          }
+          return o;
+        };
+        const m = build(false);
+        m.not = build(true);
+        return new Proxy(m, {
+          get(t, k) {
+            if (k in t || typeof k !== "string") return t[k];
+            throw new AssertionError("expect(...)." + k + " という書き方はありません。使える書き方は左の「使える書き方」を見てください。");
+          },
+        });
+      };
+    }
+
+    function errText(e) {
+      if (e && e.name === "AssertionError") return e.message;
+      if (e instanceof Error) return e.name + ": " + e.message;
+      return "throw された値: " + show(e);
+    }
+
+    // implCode を読みこみ、testCode のテストを実行する
+    function runSuite(implCode, names, testCode, opts) {
+      opts = opts || {};
+      let exp;
+      try {
+        exp = new Function('"use strict";\n' + implCode + "\nreturn {" + names.join(", ") + "};")();
+      } catch (e) {
+        return { error: { phase: "impl", message: errText(e) } };
+      }
+      const tests = [], prefix = [];
+      const test = function (name, fn) {
+        if (typeof fn !== "function") throw new Error("test(名前, () => { ... }) のように、2つ目には関数を渡します");
+        tests.push({ name: prefix.concat([String(name)]).join(" › "), fn });
+      };
+      const describe = function (name, fn) {
+        prefix.push(String(name));
+        try { fn(); } finally { prefix.pop(); }
+      };
+      const counter = { n: 0 };
+      const expect = makeExpect(counter);
+      try {
+        const f = new Function("test", "it", "describe", "expect", ...names, '"use strict";\n' + testCode);
+        f(test, test, describe, expect, ...names.map((n) => exp[n]));
+      } catch (e) {
+        const msg = e instanceof SyntaxError
+          ? "書き方のまちがい（SyntaxError）: " + e.message + "\nかっこ ( ) { }・カンマ・引用符の閉じ忘れがないか確かめてください。"
+          : "テストの外側でエラーが起きました: " + errText(e) + "\nexpect(...) は test(...) の中に書きます。";
+        return { error: { phase: "tests", message: msg } };
+      }
+      const only = opts.only ? new Set(opts.only) : null;
+      const results = [];
+      for (let i = 0; i < tests.length; i++) {
+        if (only && !only.has(i)) continue;
+        const t = tests[i];
+        counter.n = 0;
+        let pass = true, message = "";
+        try {
+          const r = t.fn();
+          if (r && typeof r.then === "function") { pass = false; message = "このツールでは async / Promise を返すテストは使えません。"; }
+        } catch (e) {
+          pass = false;
+          message = errText(e);
+          if (!(e && e.name === "AssertionError")) {
+            message = "テストの中でエラーが起きました: " + message;
+            if (e instanceof Error && /Error$/.test(e.name)) message += "\nヒント: エラーが起きることを確かめたいときは expect(() => ...).toThrow() のように関数で包みます。";
+          }
+        }
+        results.push({ index: i, name: t.name, pass, message, expects: counter.n });
+        if (!pass && opts.stopAtFirstFail) break;
+      }
+      return { tests: results, count: tests.length };
+    }
+
+    // 正しいコードで実行 → 通ったテストだけで、バグ入り版を1つずつ実行
+    function evaluate(job) {
+      const correct = runSuite(job.code, job.names, job.tests);
+      if (correct.error) return { error: correct.error };
+      const valid = correct.tests.filter((t) => t.pass).map((t) => t.index);
+      const mutants = job.mutants.map((code) => {
+        if (!valid.length) return { killed: false, by: null };
+        const r = runSuite(code, job.names, job.tests, { only: valid, stopAtFirstFail: true });
+        if (r.error) return { killed: true, by: null, message: r.error.message };
+        const f = r.tests.find((t) => !t.pass);
+        return f ? { killed: true, by: f.name, message: f.message } : { killed: false, by: null };
+      });
+      return { correct: correct.tests, mutants };
+    }
+
+    return { runSuite, evaluate, deepEqual, show };
+  }
+
+  // ---------------- 採点（画面と Node の両方で使う） ----------------
+  const MAX = { detect: 80, names: 8, asserts: 6, focus: 6 };
+
+  function isGoodName(name, all) {
+    const n = String(name).trim();
+    if ([...n].length < 4) return false;
+    if (/^(test|テスト|it)\s*\d*$/i.test(n)) return false;
+    return all.filter((x) => x === name).length === 1;
+  }
+
+  function score(ex, ev) {
+    const out = { total: 0, detect: 0, quality: 0, penalty: 0, notes: [], killed: 0, mutants: ex.mutants.length, tests: 0, invalid: 0 };
+    if (ev.error) {
+      out.notes.push(ev.error.phase === "impl" ? "対象コードの読みこみに失敗しました。" : "テストを実行できませんでした。");
+      return out;
+    }
+    const tests = ev.correct;
+    out.tests = tests.length;
+    if (!tests.length) { out.notes.push("test(...) が1つもありません。"); return out; }
+    const valid = tests.filter((t) => t.pass);
+    out.invalid = tests.length - valid.length;
+    out.killed = ev.mutants.filter((m) => m.killed).length;
+    out.detect = Math.round((MAX.detect * out.killed) / ex.mutants.length);
+
+    const names = tests.map((t) => t.name);
+    const fNames = tests.filter((t) => isGoodName(t.name, names)).length / tests.length;
+    const fAsserts = tests.filter((t) => t.expects >= 1).length / tests.length;
+    const fFocus = tests.filter((t) => t.expects <= 4).length / tests.length;
+    out.parts = {
+      names: Math.round(MAX.names * fNames),
+      asserts: Math.round(MAX.asserts * fAsserts),
+      focus: Math.round(MAX.focus * fFocus),
+    };
+    out.quality = valid.length ? out.parts.names + out.parts.asserts + out.parts.focus : 0;
+    out.penalty = Math.min(30, out.invalid * 10);
+    out.total = Math.max(0, Math.min(100, out.detect + out.quality - out.penalty));
+
+    if (out.invalid) out.notes.push(`正しいコードで失敗するテストが ${out.invalid} 個あります（1つにつき −10 点）。テストのほうがまちがっています。`);
+    if (fNames < 1) out.notes.push("中身がわかるテスト名をつけましょう（「test1」や同じ名前のくり返しは減点）。");
+    if (fAsserts < 1) out.notes.push("expect が1つもないテストがあります。確かめていないテストは、いつでも通ってしまいます。");
+    if (fFocus < 1) out.notes.push("expect が5つ以上あるテストがあります。1つのテストでは1つの観点を確かめると、失敗したとき原因が分かりやすくなります。");
+    return out;
+  }
+
+  function rank(total) {
+    if (total >= 100) return { mark: "花丸", label: "満点！すべてのバグを見つけました" };
+    if (total >= 90) return { mark: "秀", label: "あと少しで満点" };
+    if (total >= 70) return { mark: "優", label: "よく見つけています" };
+    if (total >= 50) return { mark: "良", label: "見逃しのヒントを見てみましょう" };
+    return { mark: "可", label: "まずは仕様の1行ごとにテストを1つ" };
+  }
+
+  const api = { core, score, rank, isGoodName, MAX };
+  Object.assign(api, core());
+  root.DojoRunner = api;
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+})(typeof window !== "undefined" ? window : globalThis);
+
+</script>
+<script>
+/* test-dojo/src/app.js */
+// テスト書き方道場: 画面の動き
+(function () {
+  "use strict";
+  const { EXERCISES, mutantCode, mutantDiff } = window.DojoExercises;
+  const Runner = window.DojoRunner;
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const TIMEOUT_MS = 3000;
+
+  // ---------- 保存（使えないブラウザでも動くように） ----------
+  const store = {
+    get(k) { try { return localStorage.getItem("dojo:" + k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem("dojo:" + k, v); } catch (e) { /* 保存できなくても続ける */ } },
+    del(k) { try { localStorage.removeItem("dojo:" + k); } catch (e) { /* noop */ } },
+  };
+
+  // 仕様の中の `code` と **太字** だけを整形する
+  const inline = (s) => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
+
+  // ---------- シンタックスハイライト ----------
+  const TOKEN = /(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:\\.|[^"\\\n])*"?|'(?:\\.|[^'\\\n])*'?|`(?:\\.|[^`\\])*`?)|\b(\d+(?:\.\d+)?)\b|\b(const|let|var|new|return|function|class|if|else|throw|true|false|null|undefined|of|for|while|typeof)\b|\b(test|it|describe|expect)\b|(\.(?:not|to[A-Z]\w*)\b)/g;
+  function highlight(src) {
+    let out = "", last = 0;
+    src.replace(TOKEN, (m, com, str, num, kw, api, match, at) => {
+      out += esc(src.slice(last, at));
+      const cls = com ? "com" : str ? "str" : num ? "num" : kw ? "kw" : api ? "api" : "match";
+      out += `<span class="tk-${cls}">${esc(m)}</span>`;
+      last = at + m.length;
+      return m;
+    });
+    return out + esc(src.slice(last)) + "\n";
+  }
+
+  const ed = $("editor"), hl = $("hl"), gutter = $("gutter");
+  function paint() {
+    hl.innerHTML = highlight(ed.value);
+    const n = ed.value.split("\n").length;
+    let g = "";
+    for (let i = 1; i <= n; i++) g += i + "\n";
+    gutter.textContent = g;
+    syncScroll();
+  }
+  function syncScroll() {
+    hl.scrollTop = ed.scrollTop; hl.scrollLeft = ed.scrollLeft;
+    gutter.scrollTop = ed.scrollTop;
+  }
+  ed.addEventListener("scroll", syncScroll);
+  ed.addEventListener("input", () => {
+    paint();
+    store.set("draft:" + cur().id, ed.value);
+    markStale(true);
+  });
+  ed.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); grade(); return; }
+    if (e.key === "Tab" && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault();
+      insert("  ");
+    } else if (e.key === "Enter" && !e.isComposing) {
+      // 前の行と同じだけ字下げ。{ の後ならもう一段
+      const s = ed.selectionStart, line = ed.value.slice(0, s).split("\n").pop();
+      let ind = (line.match(/^\s*/) || [""])[0];
+      if (/[{([]\s*$/.test(line)) ind += "  ";
+      e.preventDefault();
+      insert("\n" + ind);
+    }
+  });
+  function insert(text) {
+    const s = ed.selectionStart, en = ed.selectionEnd;
+    // execCommand なら「元に戻す」が効く。使えなければ直接書きかえる
+    if (!document.execCommand || !document.execCommand("insertText", false, text)) {
+      ed.setRangeText(text, s, en, "end");
+      ed.dispatchEvent(new Event("input"));
+    }
+  }
+
+  // ---------- 問題の切りかえ ----------
+  let index = 0;
+  const cur = () => EXERCISES[index];
+
+  function renderStrip() {
+    $("strip").innerHTML = EXERCISES.map((ex, i) => {
+      const best = store.get("best:" + ex.id);
+      const b = best === null ? "未挑戦" : best + "点";
+      return `<li><button type="button" data-i="${i}" aria-current="${i === index}"><span class="no">${i + 1}</span><span class="t">${esc(ex.title)}</span><span class="best${best === "100" ? " full" : ""}">${b}</span></button></li>`;
+    }).join("");
+  }
+  $("strip").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-i]");
+    if (b) select(+b.dataset.i);
+  });
+
+  function select(i) {
+    index = i;
+    const ex = cur();
+    store.set("current", ex.id);
+    if (location.hash.slice(1) !== ex.id) history.replaceState(null, "", "#" + ex.id);
+    renderStrip();
+    $("q-no").textContent = `問題 ${i + 1} / ${EXERCISES.length}`;
+    $("q-name").textContent = ex.title;
+    $("q-level").innerHTML = "むずかしさ " + [1, 2, 3, 4].map((n) => `<i class="${n <= ex.level ? "on" : ""}"></i>`).join("");
+    $("q-spec").innerHTML = ex.spec.map((s) => `<li>${inline(s)}</li>`).join("");
+    $("q-sig").textContent = ex.signature;
+    $("q-lesson").innerHTML = "<b>ポイント</b>　" + inline(ex.lesson);
+    $("q-code").innerHTML = highlight(ex.code);
+    $("solution").innerHTML = highlight(ex.solution);
+    $("solution-box").open = false;
+    $("ed-file").textContent = ex.id + ".test.js";
+    ed.value = store.get("draft:" + ex.id) ?? ex.starter;
+    ed.scrollTop = 0;
+    paint();
+    grade();
+  }
+  window.addEventListener("hashchange", () => {
+    const i = EXERCISES.findIndex((e) => e.id === location.hash.slice(1));
+    if (i >= 0 && i !== index) select(i);
+  });
+
+  // 2回押して確定するボタン（confirm() はこの画面では使えないため）
+  function twoStep(btn, label, confirmLabel, action) {
+    let timer = null;
+    btn.addEventListener("click", () => {
+      if (btn.classList.contains("confirm")) {
+        clearTimeout(timer);
+        btn.classList.remove("confirm");
+        btn.textContent = label;
+        action();
+        return;
+      }
+      btn.classList.add("confirm");
+      btn.textContent = confirmLabel;
+      timer = setTimeout(() => { btn.classList.remove("confirm"); btn.textContent = label; }, 3000);
+    });
+  }
+  twoStep($("reset"), "最初に戻す", "もう一度押すと消えます", () => {
+    ed.value = cur().starter;
+    store.del("draft:" + cur().id);
+    paint();
+    grade();
+  });
+  twoStep($("use-solution"), "エディタに入れる", "今のテストを上書きします。もう一度押す", () => {
+    ed.value = cur().solution;
+    store.set("draft:" + cur().id, ed.value);
+    paint();
+    grade();
+    ed.focus();
+  });
+  $("run").addEventListener("click", () => grade());
+
+  // ---------- 実行（Web Worker。固まったら打ち切る） ----------
+  let workerUrl = null;
+  function makeWorker() {
+    if (!workerUrl) {
+      const src = "var C = (" + Runner.core.toString() + ")();\n" +
+        "self.onmessage = function (e) { var r; try { r = C.evaluate(e.data); } catch (err) { r = { error: { phase: 'tests', message: String(err && err.message || err) } }; } self.postMessage(r); };";
+      workerUrl = URL.createObjectURL(new Blob([src], { type: "text/javascript" }));
+    }
+    return new Worker(workerUrl);
+  }
+  let running = null;
+  function evaluateAsync(job) {
+    return new Promise((resolve) => {
+      let w;
+      try { w = makeWorker(); } catch (e) {
+        // Worker が使えない環境では、そのまま実行する（無限ループの保護はなし）
+        resolve(Runner.evaluate(job));
+        return;
+      }
+      if (running) running.cancel();
+      let done = false;
+      const finish = (r) => { if (done) return; done = true; clearTimeout(t); w.terminate(); running = null; resolve(r); };
+      const t = setTimeout(() => finish({ error: { phase: "tests", message: `時間切れ: ${TIMEOUT_MS / 1000} 秒たっても終わりませんでした。\nテストの中で無限ループになっていませんか？（while や for の終わりの条件を確かめてください）` } }), TIMEOUT_MS);
+      w.onmessage = (e) => finish(e.data);
+      w.onerror = (e) => { e.preventDefault(); finish({ error: { phase: "tests", message: "実行中にエラーが起きました: " + (e.message || "不明なエラー") } }); };
+      running = { cancel: () => { done = true; clearTimeout(t); w.terminate(); } };
+      w.postMessage(job);
+    });
+  }
+
+  let gradeSeq = 0;
+  async function grade() {
+    const ex = cur(), tests = ed.value, seq = ++gradeSeq;
+    $("ed-state").textContent = "採点中…";
+    const ev = await evaluateAsync({ code: ex.code, names: ex.names, tests, mutants: ex.mutants.map((_, i) => mutantCode(ex, i)) });
+    if (seq !== gradeSeq || ex !== cur()) return; // 古い結果は捨てる
+    const sc = Runner.score(ex, ev);
+    const prev = +(store.get("best:" + ex.id) ?? -1);
+    if (sc.total > prev) { store.set("best:" + ex.id, String(sc.total)); renderStrip(); }
+    renderResult(ex, ev, sc);
+    markStale(false);
+    $("ed-state").textContent = "採点済み";
+  }
+  function markStale(on) {
+    $("results").classList.toggle("stale", on);
+    if (on) $("ed-state").textContent = "変更あり（未採点）";
+  }
+
+  // ---------- 結果の表示 ----------
+  function renderResult(ex, ev, sc) {
+    const rk = Runner.rank(sc.total);
+    const full = sc.total >= 100;
+    // 赤ペンの丸（満点は二重丸＋花びら）
+    let svg = `<svg viewBox="0 0 150 130" aria-hidden="true"><path class="ring" d="M20 70 C 16 30, 60 10, 92 16 C 130 24, 142 62, 126 92 C 110 120, 54 124, 30 104 C 18 94, 14 80, 22 62" fill="none" style="stroke:var(--pen)" stroke-width="4" stroke-linecap="round"/>`;
+    if (full) {
+      svg += `<path class="ring" d="M34 70 C 32 42, 64 28, 88 32 C 116 38, 124 66, 112 88 C 100 108, 60 110, 44 96" fill="none" style="stroke:var(--pen)" stroke-width="3" stroke-linecap="round"/>`;
+      for (let k = 0; k < 10; k++) {
+        const a = (k / 10) * Math.PI * 2, x = 75 + Math.cos(a) * 70, y = 66 + Math.sin(a) * 60;
+        svg += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="9" fill="none" style="stroke:var(--pen)" stroke-width="2.5"/>`;
+      }
+    }
+    svg += `</svg>`;
+    $("mark").innerHTML = svg + `<div class="pts"><div><b>${sc.total}</b><small>${esc(rk.mark)}</small></div></div>`;
+    $("mark").setAttribute("aria-label", `${sc.total} 点（${rk.mark}）`);
+    $("mark").setAttribute("role", "img");
+    $("rank-label").textContent = rk.label;
+
+    const row = (label, v, max, sub, neg) => `<div class="bd-row"><dt>${label}</dt><dd class="meter"><i style="width:${max ? Math.round((v / max) * 100) : 0}%;${neg ? "background:var(--pen)" : ""}"></i></dd><dd class="v">${neg ? "−" + v : v + " / " + max}</dd>${sub ? `<dd class="bd-sub">${sub}</dd>` : ""}</div>`;
+    const p = sc.parts || { names: 0, asserts: 0, focus: 0 };
+    $("breakdown").innerHTML =
+      row("バグ発見", sc.detect, 80, `${sc.mutants} 個中 ${sc.killed} 個を発見`) +
+      row("読みやすさ", sc.quality, 20, `名前 ${p.names}/8 ・ expect あり ${p.asserts}/6 ・ 1テスト1観点 ${p.focus}/6`) +
+      (sc.penalty ? row("減点", sc.penalty, 30, "正しいコードで失敗するテスト", true) : "");
+    $("notes").replaceChildren(...sc.notes.map((n) => { const li = document.createElement("li"); li.textContent = n; return li; }));
+
+    const err = $("run-error");
+    err.hidden = !ev.error;
+    if (ev.error) err.textContent = ev.error.message;
+
+    // バグ入り版
+    const muts = ev.mutants || ex.mutants.map(() => ({ killed: false }));
+    $("mut-summary").textContent = ev.error ? "テストを直すと表示されます" : `${muts.filter((m) => m.killed).length} / ${muts.length} 個を発見`;
+    $("mutants").innerHTML = ex.mutants.map((m, i) => {
+      const r = muts[i];
+      const d = mutantDiff(ex, i);
+      const diff = d.before.map((l, k) => `<div class="del"><span class="ln">${String(d.line + k).padStart(2)} −</span> ${esc(l)}</div>`).join("") +
+        d.after.map((l, k) => `<div class="add"><span class="ln">${String(d.line + k).padStart(2)} +</span> ${esc(l)}</div>`).join("") ||
+        `<div class="del"><span class="ln">${String(d.line).padStart(2)} −</span> （1行消えた）</div>`;
+      const body = r.killed
+        ? `<span class="kind">${esc(m.kind)}</span>${r.by ? `「${esc(r.by)}」で発見` : "発見"}`
+        : `<span class="kind">${esc(m.kind)}</span>${esc(m.hint)}`;
+      return `<li class="mut"><span class="status ${r.killed ? "killed" : "missed"}">${r.killed ? "✓ 発見" : "! 見逃し"}</span><div class="body">${body}</div>
+        <details><summary>${r.killed ? "どんなバグだった？" : "答えを見る（どこを書きかえたか）"}</summary><div class="diff">${diff}</div></details></li>`;
+    }).join("");
+
+    // 正しいコードでの結果
+    const tests = ev.correct || [];
+    $("test-summary").textContent = ev.error ? "" : `${tests.length} 個中 ${tests.filter((t) => t.pass).length} 個が成功`;
+    $("tests").innerHTML = tests.length ? tests.map((t) => `<li class="t-item ${t.pass ? "ok" : "ng"}"><span class="ic">${t.pass ? "✓" : "✗"}</span><span>${esc(t.name)}<span class="meta">expect ${t.expects} 個</span></span>${t.pass ? "" : `<pre>${esc(t.message)}</pre>`}</li>`).join("")
+      : `<li class="how">${ev.error ? "上のエラーを直すと、ここにテストごとの結果が出ます。" : "test(\"名前\", () => { expect(...).toBe(...); }); の形でテストを書きましょう。"}</li>`;
+  }
+
+  // ---------- 起動 ----------
+  const fromHash = EXERCISES.findIndex((e) => e.id === location.hash.slice(1));
+  const saved = EXERCISES.findIndex((e) => e.id === store.get("current"));
+  select(fromHash >= 0 ? fromHash : saved >= 0 ? saved : 0);
+})();
+
+</script>
+</html>
