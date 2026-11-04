@@ -1,0 +1,640 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- artifact:start -->
+<title>満足化×ゲーム理論ラボ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@700;800&family=BIZ+UDPGothic:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: a lab bench — tabbed experiments; each is a sticky control rail (left) beside the readout: one-line finding, results, charts. Stacks on phones. */
+  :root {
+    --bg: #edf0ec;          /* graph-paper green-grey */
+    --surface: #fbfcfa;
+    --sunken: #f2f5f1;
+    --ink: #142019;
+    --ink-2: #3c4842;
+    --muted: #66716b;
+    --line: #d4dad5;
+    --grid: #e3e8e3;
+    --axis: #b5beb8;
+    --accent: #1e5d54;      /* deep verdigris: controls & focus only */
+    --accent-ink: #ffffff;
+    --accent-soft: #dbeae5;
+    --good: #0d7a3b; --good-bg: #e2f3e8;
+    --warn: #8f5a00; --warn-bg: #fbf0d9;
+    /* categorical series, fixed order (validated palette) */
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
+    --s5: #e87ba4; --s6: #008300; --s7: #6250d6; --s8: #e34948;
+    /* sequential (heatmap) ends */
+    --seq-lo: #eaf2fc; --seq-hi: #104281; --seq-mid-ink: #ffffff;
+
+    --f-display: "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", serif;
+    --f-body: "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif;
+    --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+    --r: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e1311; --surface: #151b18; --sunken: #1a221f; --ink: #e5ebe7; --ink-2: #bec8c2; --muted: #8b968f;
+      --line: #29322e; --grid: #212925; --axis: #3b4641;
+      --accent: #6cc2b2; --accent-ink: #072019; --accent-soft: #1b3430;
+      --good: #4fd08a; --good-bg: #163023; --warn: #f0b54a; --warn-bg: #33270f;
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+      --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+      --seq-lo: #1b2633; --seq-hi: #9ec5f4; --seq-mid-ink: #0b1420;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e1311; --surface: #151b18; --sunken: #1a221f; --ink: #e5ebe7; --ink-2: #bec8c2; --muted: #8b968f;
+    --line: #29322e; --grid: #212925; --axis: #3b4641;
+    --accent: #6cc2b2; --accent-ink: #072019; --accent-soft: #1b3430;
+    --good: #4fd08a; --good-bg: #163023; --warn: #f0b54a; --warn-bg: #33270f;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+    --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+    --seq-lo: #1b2633; --seq-hi: #9ec5f4; --seq-mid-ink: #0b1420;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--f-body); font-size: 15px; line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 1280px; margin: 0 auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .num, output { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+
+  /* ---------- masthead ---------- */
+  .mast { background: var(--surface); border-bottom: 1px solid var(--line); }
+  .mast-inner { padding-block: 22px 0; display: grid; gap: 14px; }
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .logo { flex: none; width: 46px; height: 46px; }
+  .logo rect { fill: var(--accent-soft); }
+  .logo .c { fill: var(--accent); }
+  .logo .l { stroke: var(--accent); }
+  h1 { font-family: var(--f-display); font-weight: 800; font-size: clamp(23px, 3.2vw, 31px); line-height: 1.25; margin: 0; letter-spacing: .02em; text-wrap: balance; }
+  .tagline { margin: 2px 0 0; color: var(--muted); font-size: 14px; }
+
+  .tabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; margin-bottom: -1px; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    flex: none; font: inherit; cursor: pointer; background: transparent; color: var(--ink-2);
+    border: 1px solid transparent; border-bottom: 0; border-radius: 8px 8px 0 0;
+    padding: 8px 14px 9px; text-align: left; line-height: 1.3;
+  }
+  .tab b { display: block; font-size: 15px; }
+  .tab small { display: block; font-size: 11.5px; color: var(--muted); letter-spacing: .04em; }
+  .tab:hover { color: var(--accent); }
+  .tab[aria-selected="true"] { background: var(--bg); border-color: var(--line); color: var(--ink); }
+  .tab[aria-selected="true"] b { color: var(--accent); }
+
+  main { padding-block: 22px 60px; }
+
+  /* ---------- lab layout ---------- */
+  .lab { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 22px; align-items: start; }
+  @media (max-width: 900px) { .lab { grid-template-columns: minmax(0, 1fr); } }
+  .controls {
+    position: sticky; top: calc(env(safe-area-inset-top, 0px) + 14px);
+    max-height: calc(100vh - 28px); overflow-y: auto;
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--r);
+    padding: 6px 16px 16px;
+  }
+  @media (max-width: 900px) { .controls { position: static; max-height: none; } }
+  .group { border: 0; margin: 0; padding: 12px 0 4px; border-top: 1px solid var(--line); display: grid; gap: 12px; min-width: 0; }
+  .group:first-child { border-top: 0; }
+  .group > legend { padding: 0; font-size: 11.5px; font-weight: 700; letter-spacing: .12em; color: var(--muted); float: left; width: 100%; margin-bottom: 2px; }
+  .ctl { display: grid; gap: 2px; min-width: 0; }
+  .ctl > label, .ctl > .lbl { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 14px; font-weight: 700; }
+  .ctl output { font-size: 13px; font-weight: 500; color: var(--accent); }
+  .hint { margin: 0; font-size: 12.5px; color: var(--muted); line-height: 1.55; }
+  input[type="range"] { width: 100%; accent-color: var(--accent); margin: 4px 0 2px; }
+  select, input[type="number"] {
+    font: inherit; font-size: 14px; color: var(--ink); background: var(--sunken);
+    border: 1px solid var(--line); border-radius: 7px; padding: 5px 8px; width: 100%;
+  }
+  .check { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; cursor: pointer; }
+  .check input { accent-color: var(--accent); width: 16px; height: 16px; margin: 3px 0 0; flex: none; }
+  .seg { display: flex; flex-wrap: wrap; gap: 4px; background: var(--sunken); border: 1px solid var(--line); border-radius: 8px; padding: 3px; }
+  .seg label { flex: 1 1 auto; text-align: center; cursor: pointer; font-size: 13px; padding: 5px 8px; border-radius: 6px; color: var(--ink-2); }
+  .seg input { position: absolute; opacity: 0; pointer-events: none; }
+  .seg input:checked + span { color: var(--accent-ink); }
+  .seg label:has(input:checked) { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+  .seg label:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: 1px; }
+  .btn-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .btn {
+    font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; border-radius: 7px;
+    padding: 6px 14px; border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .btn-primary:hover { color: var(--accent-ink); filter: brightness(1.08); }
+  .strat-list { display: grid; gap: 6px; }
+  .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; flex: none; }
+
+  /* ---------- output column ---------- */
+  .out { display: grid; gap: 18px; min-width: 0; }
+  .finding {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--r);
+    padding: 14px 18px;
+  }
+  .finding h2 { font-family: var(--f-display); font-weight: 700; font-size: clamp(18px, 2.2vw, 22px); line-height: 1.5; margin: 0; text-wrap: balance; }
+  .finding p { margin: 6px 0 0; color: var(--ink-2); max-width: 46em; }
+  .finding strong { color: var(--accent); font-family: var(--f-mono); font-weight: 500; }
+  .fig { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px 12px; min-width: 0; }
+  .fig-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 12px; margin-bottom: 6px; }
+  .fig h3 { font-size: 15px; margin: 0; }
+  .fig .sub { font-size: 12.5px; color: var(--muted); margin: 0; }
+  .chart { position: relative; width: 100%; min-width: 0; }
+  .chart canvas { display: block; touch-action: pan-y; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 8px 0 0; padding: 0; list-style: none; font-size: 12.5px; color: var(--ink-2); }
+  .legend li { display: flex; align-items: center; gap: 6px; }
+  .legend .ln { width: 16px; height: 0; border-top: 2px solid; }
+  .legend .ln.dash { border-top-style: dashed; }
+  .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+  .two > * { min-width: 0; }
+
+  .tip {
+    position: absolute; z-index: 5; pointer-events: none; min-width: 150px;
+    background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 8px;
+    box-shadow: 0 8px 24px -12px rgba(0,0,0,.35); padding: 8px 10px; font-size: 12.5px; line-height: 1.5;
+  }
+  .tip-head { font-weight: 700; margin-bottom: 4px; color: var(--ink-2); }
+  .tip-row { display: grid; grid-template-columns: 10px 1fr auto; align-items: center; gap: 6px; }
+  .tip-row i { width: 10px; height: 10px; border-radius: 3px; }
+  .tip-row b { font-family: var(--f-mono); font-weight: 500; }
+
+  /* results table */
+  .tbl-wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { padding: 7px 10px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  thead th { font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: .04em; }
+  td.num { font-family: var(--f-mono); }
+  tr.best td { background: var(--accent-soft); }
+  .name { display: flex; align-items: center; gap: 8px; }
+  .pill { display: inline-block; font-size: 11px; font-weight: 700; padding: 0 7px; border-radius: 999px; background: var(--good-bg); color: var(--good); letter-spacing: .04em; margin-left: 6px; }
+  .bar-cell { width: 34%; min-width: 120px; }
+  .bar { height: 10px; border-radius: 0 4px 4px 0; background: var(--axis); }
+
+  details.about { background: transparent; border-top: 1px solid var(--line); padding: 10px 2px 0; }
+  details.about summary { cursor: pointer; font-weight: 700; color: var(--ink-2); }
+  details.about p, details.about li { color: var(--ink-2); max-width: 46em; font-size: 14px; }
+  details.about ul { padding-left: 1.2em; }
+
+  /* ---------- 2x2 matrix ---------- */
+  .matrix-wrap { overflow-x: auto; }
+  .matrix { border-collapse: separate; border-spacing: 6px; width: auto; margin: 0 auto; }
+  .matrix th, .matrix td { border: 0; padding: 0; text-align: center; white-space: normal; }
+  .matrix .colh { font-size: 13px; font-weight: 700; padding: 0 4px 2px; color: var(--ink-2); }
+  .matrix .rowh { font-size: 13px; font-weight: 700; padding-right: 6px; text-align: right; color: var(--ink-2); }
+  .matrix .who { font-size: 11.5px; color: var(--muted); font-weight: 400; display: block; letter-spacing: .06em; }
+  .cell {
+    position: relative; width: 168px; min-height: 92px; border-radius: 9px; border: 1px solid var(--line); background: var(--sunken);
+    padding: 22px 10px 10px; display: flex; justify-content: center; align-items: center; gap: 8px;
+  }
+  .cell.ne { border: 2px solid var(--accent); background: var(--accent-soft); }
+  .cell input { width: 56px; text-align: center; font-family: var(--f-mono); font-size: 16px; padding: 4px 2px; background: var(--surface); }
+  .cell input.br { font-weight: 500; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+  .cell .pa { border-color: color-mix(in srgb, var(--s1) 60%, var(--line)); color: var(--s1); }
+  .cell .pb { border-color: color-mix(in srgb, var(--s2) 60%, var(--line)); color: var(--s2); }
+  .cell .comma { color: var(--muted); }
+  .badges { position: absolute; top: 4px; left: 6px; right: 6px; display: flex; gap: 4px; justify-content: flex-start; }
+  .badge { font-size: 10.5px; font-weight: 700; letter-spacing: .04em; border-radius: 4px; padding: 0 5px; line-height: 16px; }
+  .badge.ne { background: var(--accent); color: var(--accent-ink); }
+  .badge.po { background: var(--surface); color: var(--ink-2); border: 1px solid var(--line); }
+  .badge.fr { background: var(--surface); color: var(--muted); border: 1px solid var(--line); margin-left: auto; font-family: var(--f-mono); font-weight: 500; }
+  @media (max-width: 520px) { .cell { width: 128px; } .cell input { width: 46px; font-size: 15px; } }
+  .key { display: flex; flex-wrap: wrap; gap: 4px 14px; justify-content: center; font-size: 12.5px; color: var(--muted); margin: 8px 0 0; }
+  .key span { display: inline-flex; align-items: center; gap: 5px; }
+
+  .plane-box { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; }
+  .plane { position: relative; width: 100%; max-width: 440px; }
+  .plane canvas { display: block; cursor: crosshair; touch-action: none; }
+
+  /* ---------- spatial ---------- */
+  .grid-box { display: grid; justify-items: center; gap: 8px; }
+  #sp-canvas { width: 100%; max-width: 560px; aspect-ratio: 1; height: auto; image-rendering: pixelated; border-radius: 6px; cursor: cell; touch-action: none; display: block; }
+  .stat-row { display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 13.5px; color: var(--ink-2); }
+  .stat-row b { font-family: var(--f-mono); font-weight: 500; color: var(--ink); font-size: 16px; }
+
+  .warnline { margin: 0; font-size: 12.5px; color: var(--warn); background: var(--warn-bg); border-radius: 6px; padding: 4px 8px; }
+  .heat td.hv { font-family: var(--f-mono); text-align: center; min-width: 46px; border: 2px solid var(--surface); }
+  .heat th.rot { font-size: 11.5px; font-weight: 700; text-align: center; white-space: normal; min-width: 46px; line-height: 1.3; vertical-align: bottom; color: var(--ink-2); }
+
+  @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
+</style>
+<!-- artifact:end -->
+</head>
+<body>
+<header class="mast">
+  <div class="wrap mast-inner">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 46 46" aria-hidden="true">
+        <rect width="46" height="46" rx="11"></rect>
+        <path class="l" d="M10 34 C 18 33, 22 14, 36 12" fill="none" stroke-width="2.4" stroke-linecap="round"></path>
+        <line class="l" x1="10" y1="22" x2="36" y2="22" stroke-width="1.6" stroke-dasharray="3 3"></line>
+        <circle class="c" cx="25.5" cy="22" r="4"></circle>
+      </svg>
+      <div>
+        <h1>満足化×ゲーム理論ラボ</h1>
+        <p class="tagline">条件を動かしながら、「ほどほどで決める」と「相手を読んで決める」を試す実験台</p>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="実験">
+      <button class="tab" role="tab" id="tab-satisfice" aria-controls="panel-satisfice" data-tab="satisfice"><b>満足化</b><small>探索と停止</small></button>
+      <button class="tab" role="tab" id="tab-matrix" aria-controls="panel-matrix" data-tab="matrix"><b>2×2ゲーム</b><small>均衡と学習</small></button>
+      <button class="tab" role="tab" id="tab-ipd" aria-controls="panel-ipd" data-tab="ipd"><b>くり返し囚人のジレンマ</b><small>大会と進化</small></button>
+      <button class="tab" role="tab" id="tab-spatial" aria-controls="panel-spatial" data-tab="spatial"><b>空間ゲーム</b><small>格子の上の協力</small></button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- ======================================================= 満足化 -->
+  <section class="panel" id="panel-satisfice" role="tabpanel" aria-labelledby="tab-satisfice">
+    <div class="lab">
+      <form class="controls" id="sat-form" autocomplete="off">
+        <fieldset class="group">
+          <legend>状況</legend>
+          <div class="ctl">
+            <label for="sat-n">候補の数 <output id="sat-n-out"></output></label>
+            <input type="range" id="sat-n" min="5" max="100" step="1" value="30">
+            <p class="hint">家・就職先・お店など。1つずつ順番に見ていきます。</p>
+          </div>
+          <div class="ctl">
+            <label for="sat-cost">1つ見るコスト <output id="sat-cost-out"></output></label>
+            <input type="range" id="sat-cost" min="0" max="5" step="0.1" value="1">
+            <p class="hint">時間や手間。手取り＝選んだ候補の値 − コスト×見た数。</p>
+          </div>
+          <div class="ctl">
+            <label for="sat-dist">候補の値の分布</label>
+            <select id="sat-dist"></select>
+          </div>
+          <div class="ctl">
+            <label for="sat-noise">見まちがい（ノイズ） <output id="sat-noise-out"></output></label>
+            <input type="range" id="sat-noise" min="0" max="30" step="1" value="0">
+            <p class="hint">見た値は 本当の値＋ゆらぎ。0 なら正確に見えます。</p>
+          </div>
+          <label class="check"><input type="checkbox" id="sat-recall"> 見送った候補に、あとで戻れる</label>
+        </fieldset>
+        <fieldset class="group">
+          <legend>満足化する人</legend>
+          <div class="ctl">
+            <label for="sat-asp">願望水準 <output id="sat-asp-out"></output></label>
+            <input type="range" id="sat-asp" min="0" max="100" step="1" value="70">
+            <p class="hint">これ以上なら「もう十分」として、その場で決めます。</p>
+          </div>
+          <div class="ctl">
+            <label for="sat-drop">妥協の速さ <output id="sat-drop-out"></output></label>
+            <input type="range" id="sat-drop" min="0" max="5" step="0.1" value="1">
+            <p class="hint">「妥協する満足化」は、1つ見るごとに願望水準をこれだけ下げます。</p>
+          </div>
+        </fieldset>
+        <fieldset class="group">
+          <legend>計算</legend>
+          <div class="ctl">
+            <label for="sat-trials">試行回数</label>
+            <select id="sat-trials">
+              <option value="500">500 回（速い）</option>
+              <option value="2000" selected>2,000 回</option>
+              <option value="6000">6,000 回（なめらか）</option>
+            </select>
+          </div>
+          <div class="btn-row">
+            <button type="button" class="btn" id="sat-reseed">乱数を変える</button>
+            <button type="button" class="btn" id="sat-best">最もよい願望水準にする</button>
+          </div>
+        </fieldset>
+      </form>
+
+      <div class="out">
+        <div class="finding" aria-live="polite"><h2 id="sat-head"></h2><p id="sat-body"></p></div>
+        <div class="fig">
+          <div class="fig-head"><h3>戦略ごとの成績</h3><p class="sub" id="sat-sub"></p></div>
+          <div class="tbl-wrap">
+            <table id="sat-table">
+              <thead><tr><th>戦略</th><th>平均の手取り</th><th class="bar-cell"></th><th>平均で見た数</th><th>本当の1番を選べた</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <figure class="fig">
+          <div class="fig-head"><h3>願望水準を変えると、手取りはどう変わる？</h3><p class="sub">横軸＝願望水準、縦軸＝平均の手取り</p></div>
+          <div class="chart" id="sat-sweep"></div>
+          <ul class="legend" id="sat-sweep-legend"></ul>
+        </figure>
+        <figure class="fig">
+          <div class="fig-head"><h3>1回の例：候補を順番に見る</h3><button type="button" class="btn" id="sat-next">別の例を見る</button></div>
+          <div class="chart" id="sat-strip"></div>
+          <ul class="legend" id="sat-strip-legend"></ul>
+        </figure>
+        <details class="about">
+          <summary>このモデルについて</summary>
+          <p>ハーバート・サイモンの「満足化（satisficing）」は、すべてを比べて最善を探すかわりに、「これなら十分」という願望水準を決めて、それを超えた最初の選択肢で決める方法です。探すのにコストがかかる世界では、うまく選んだ願望水準の満足化は、理論上の最善（最適停止）にかなり近い成績になります。</p>
+          <ul>
+            <li><b>満足化</b>：願望水準以上の最初の候補で止める。だれも届かなければ最後の候補（戻れるなら、見た中の一番）。</li>
+            <li><b>妥協する満足化</b>：1つ見るごとに願望水準を下げる。探すほど基準がゆるくなる。</li>
+            <li><b>全部見る（最大化）</b>：全部見て、一番よく見えたものを選ぶ。</li>
+            <li><b>37%ルール</b>：最初の約37%（n/e）は見るだけ。そのあと、それまでの一番を超えた最初の候補で止める（秘書問題の答え）。</li>
+            <li><b>最適停止</b>：値の分布とコストを完全に知っている人が、後ろ向き帰納法で計算した「位置ごとのしきい値」で止める。戻れない前提で計算した理論上の目安です。</li>
+          </ul>
+          <p>どの戦略も、まったく同じ候補の列（共通の乱数）で比べています。</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================= 2×2 -->
+  <section class="panel" id="panel-matrix" role="tabpanel" aria-labelledby="tab-matrix" hidden>
+    <div class="lab">
+      <form class="controls" id="mx-form" autocomplete="off">
+        <fieldset class="group">
+          <legend>ゲーム</legend>
+          <div class="ctl">
+            <label for="mx-preset">有名なゲームから選ぶ</label>
+            <select id="mx-preset"></select>
+            <p class="hint" id="mx-note"></p>
+          </div>
+          <p class="hint">右の表の数字は書きかえられます。</p>
+        </fieldset>
+        <fieldset class="group">
+          <legend>動き方</legend>
+          <div class="seg" role="radiogroup" aria-label="動き方">
+            <label><input type="radio" name="mx-dyn" value="replicator" checked><span>レプリケーター</span></label>
+            <label><input type="radio" name="mx-dyn" value="aspiration"><span>満足化学習</span></label>
+            <label><input type="radio" name="mx-dyn" value="fictitious"><span>仮想プレイ</span></label>
+          </div>
+          <p class="hint" id="mx-dyn-note"></p>
+          <div class="ctl" data-show="aspiration">
+            <label for="mx-asp">願望水準 <output id="mx-asp-out"></output></label>
+            <input type="range" id="mx-asp" min="0" max="100" step="1" value="50">
+            <p class="hint">各自の得点の「最小〜最大」のどのあたりで満足するか。</p>
+          </div>
+          <div class="ctl" data-show="aspiration">
+            <label for="mx-habit">願望水準の慣れ <output id="mx-habit-out"></output></label>
+            <input type="range" id="mx-habit" min="0" max="0.1" step="0.002" value="0.01">
+            <p class="hint">最近の得点に願望水準が近づく速さ。0 なら固定。</p>
+          </div>
+          <div class="ctl" data-show="aspiration">
+            <label for="mx-rate">学習の速さ <output id="mx-rate-out"></output></label>
+            <input type="range" id="mx-rate" min="0.01" max="0.5" step="0.01" value="0.1">
+          </div>
+          <div class="ctl" data-show="aspiration fictitious">
+            <label for="mx-rounds">ラウンド数 <output id="mx-rounds-out"></output></label>
+            <input type="range" id="mx-rounds" min="100" max="5000" step="100" value="1500">
+          </div>
+          <div class="btn-row" data-show="aspiration fictitious">
+            <button type="button" class="btn" id="mx-reseed">もう一度（乱数を変える）</button>
+          </div>
+        </fieldset>
+        <fieldset class="group">
+          <legend>始まりの状態</legend>
+          <div class="ctl">
+            <label for="mx-p0">A が上を出す確率 <output id="mx-p0-out"></output></label>
+            <input type="range" id="mx-p0" min="0.01" max="0.99" step="0.01" value="0.8">
+          </div>
+          <div class="ctl">
+            <label for="mx-q0">B が左を出す確率 <output id="mx-q0-out"></output></label>
+            <input type="range" id="mx-q0" min="0.01" max="0.99" step="0.01" value="0.3">
+          </div>
+          <p class="hint">右の図をクリック（タップ）しても始点を置けます。</p>
+        </fieldset>
+      </form>
+
+      <div class="out">
+        <div class="finding" aria-live="polite"><h2 id="mx-head"></h2><p id="mx-body"></p></div>
+        <div class="fig">
+          <div class="fig-head"><h3>利得表</h3><p class="sub">各マスは（A の得点 , B の得点）</p></div>
+          <div class="matrix-wrap"><table class="matrix" id="mx-table"></table></div>
+          <p class="key"><span><span class="badge ne">均衡</span>ナッシュ均衡</span><span><span class="badge po">パレート</span>だれかを損させずには改善できない</span><span><u>下線</u>＝相手の手に対する最適反応</span></p>
+        </div>
+        <div class="two">
+          <figure class="fig">
+            <div class="fig-head"><h3>戦略の動き</h3><p class="sub" id="mx-plane-sub"></p></div>
+            <div class="plane-box"><div class="plane" id="mx-plane"></div></div>
+            <ul class="legend" id="mx-plane-legend"></ul>
+          </figure>
+          <figure class="fig">
+            <div class="fig-head"><h3>時間の流れ</h3><p class="sub" id="mx-ts-sub"></p></div>
+            <div class="chart" id="mx-ts"></div>
+            <ul class="legend" id="mx-ts-legend"></ul>
+          </figure>
+        </div>
+        <details class="about">
+          <summary>このモデルについて</summary>
+          <ul>
+            <li><b>レプリケーター動態</b>：2つの集団（A 役の集団と B 役の集団）で、平均より得をした手を出す人が増える、という進化の動き。矢印はその向きです。</li>
+            <li><b>満足化学習</b>：得点が願望水準以上なら、いま出した手をもっと出すようにし、下回れば減らす（Bush–Mosteller 型の強化学習）。相手のことを考えず、自分の満足だけで動きます。</li>
+            <li><b>仮想プレイ</b>：相手がこれまで出した手の割合を数えて、それに一番よい手を出す。図は、実際に出した手の割合です。</li>
+          </ul>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================= IPD -->
+  <section class="panel" id="panel-ipd" role="tabpanel" aria-labelledby="tab-ipd" hidden>
+    <div class="lab">
+      <form class="controls" id="ipd-form" autocomplete="off">
+        <fieldset class="group">
+          <legend>1回の得点</legend>
+          <div class="ctl">
+            <label for="ipd-T">T 裏切って相手は協力 <output id="ipd-T-out"></output></label>
+            <input type="range" id="ipd-T" min="0" max="10" step="0.1" value="5">
+          </div>
+          <div class="ctl">
+            <label for="ipd-R">R 2人とも協力 <output id="ipd-R-out"></output></label>
+            <input type="range" id="ipd-R" min="0" max="10" step="0.1" value="3">
+          </div>
+          <div class="ctl">
+            <label for="ipd-P">P 2人とも裏切り <output id="ipd-P-out"></output></label>
+            <input type="range" id="ipd-P" min="0" max="10" step="0.1" value="1">
+          </div>
+          <div class="ctl">
+            <label for="ipd-S">S 協力して相手は裏切り <output id="ipd-S-out"></output></label>
+            <input type="range" id="ipd-S" min="0" max="10" step="0.1" value="0">
+          </div>
+          <p class="warnline" id="ipd-warn" hidden></p>
+        </fieldset>
+        <fieldset class="group">
+          <legend>試合</legend>
+          <div class="ctl">
+            <label for="ipd-rounds">1試合のラウンド数 <output id="ipd-rounds-out"></output></label>
+            <input type="range" id="ipd-rounds" min="5" max="500" step="5" value="200">
+          </div>
+          <div class="ctl">
+            <label for="ipd-noise">手のミス <output id="ipd-noise-out"></output></label>
+            <input type="range" id="ipd-noise" min="0" max="0.2" step="0.005" value="0.02">
+            <p class="hint">出そうとした手が、この確率で逆になります。</p>
+          </div>
+        </fieldset>
+        <fieldset class="group">
+          <legend>満足化の戦略</legend>
+          <div class="ctl">
+            <label for="ipd-asp">願望水準 <output id="ipd-asp-out"></output></label>
+            <input type="range" id="ipd-asp" min="0" max="10" step="0.1" value="2">
+            <p class="hint">P と R の間にすると、パブロフと同じ動きになります。</p>
+          </div>
+          <div class="ctl">
+            <label for="ipd-habit">願望水準の慣れ <output id="ipd-habit-out"></output></label>
+            <input type="range" id="ipd-habit" min="0" max="0.5" step="0.01" value="0">
+            <p class="hint">得点に合わせて願望水準が動く速さ。0 なら固定。</p>
+          </div>
+        </fieldset>
+        <fieldset class="group">
+          <legend>参加する戦略</legend>
+          <div class="strat-list" id="ipd-strats"></div>
+        </fieldset>
+        <fieldset class="group">
+          <legend>進化</legend>
+          <div class="ctl">
+            <label for="ipd-gens">世代数 <output id="ipd-gens-out"></output></label>
+            <input type="range" id="ipd-gens" min="10" max="400" step="10" value="120">
+          </div>
+          <div class="btn-row"><button type="button" class="btn" id="ipd-reseed">乱数を変える</button></div>
+        </fieldset>
+      </form>
+
+      <div class="out">
+        <div class="finding" aria-live="polite"><h2 id="ipd-head"></h2><p id="ipd-body"></p></div>
+        <div class="fig">
+          <div class="fig-head"><h3>総当たり大会の順位</h3><p class="sub">1ラウンドあたりの平均得点（自分のコピーとの対戦も含む）</p></div>
+          <div class="tbl-wrap"><table id="ipd-rank"><thead><tr><th>順位・戦略</th><th>平均得点</th><th class="bar-cell"></th><th>協力した割合</th></tr></thead><tbody></tbody></table></div>
+        </div>
+        <figure class="fig">
+          <div class="fig-head"><h3>戦略の割合の進化</h3><p class="sub">はじめは全員同じ割合。得点が平均より高い戦略が増えていく</p></div>
+          <div class="chart" id="ipd-evo"></div>
+          <ul class="legend" id="ipd-evo-legend"></ul>
+        </figure>
+        <div class="fig">
+          <div class="fig-head"><h3>対戦表</h3><p class="sub">行の戦略が、列の戦略と戦ったときの平均得点（濃いほど高い）</p></div>
+          <div class="tbl-wrap"><table class="heat" id="ipd-heat"></table></div>
+        </div>
+        <details class="about">
+          <summary>このモデルについて</summary>
+          <p>アクセルロッドの実験と同じように、各戦略が全員と（自分のコピーとも）決まった回数だけ対戦します。手のミスがあると、しっぺ返しどうしは報復の応酬におちいりやすく、ミスから立ち直れる戦略（パブロフ・寛容なしっぺ返し）が強くなります。</p>
+          <p>「満足化」は、得点が願望水準以上なら同じ手をつづけ、下回ったら手を変える戦略です。願望水準を P と R の間に置くとパブロフと同じになり、S 以下にすると「ずっと同じ手」、R より上にすると満足できずに手を変えつづけます。</p>
+          <p>進化は離散レプリケーター方程式です。各戦略の割合は、その戦略の得点（いまの割合で重みづけした平均）に比例して増えます。</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================= spatial -->
+  <section class="panel" id="panel-spatial" role="tabpanel" aria-labelledby="tab-spatial" hidden>
+    <div class="lab">
+      <form class="controls" id="sp-form" autocomplete="off">
+        <fieldset class="group">
+          <legend>ゲーム</legend>
+          <div class="ctl">
+            <label for="sp-b">裏切りの誘惑 b <output id="sp-b-out"></output></label>
+            <input type="range" id="sp-b" min="1" max="2.5" step="0.01" value="1.85">
+            <p class="hint">協力どうしは 1 点、協力者から裏切ると b 点、ほかは 0 点。</p>
+          </div>
+          <label class="check"><input type="checkbox" id="sp-self" checked> 自分とも対戦する（Nowak–May の設定）</label>
+        </fieldset>
+        <fieldset class="group">
+          <legend>まねのしかた</legend>
+          <div class="seg" role="radiogroup" aria-label="まねのしかた">
+            <label><input type="radio" name="sp-rule" value="best" checked><span>一番をまねる</span></label>
+            <label><input type="radio" name="sp-rule" value="fermi"><span>確率でまねる</span></label>
+            <label><input type="radio" name="sp-rule" value="aspire"><span>満足化</span></label>
+          </div>
+          <p class="hint" id="sp-rule-note"></p>
+          <div class="ctl" data-show="fermi">
+            <label for="sp-K">迷い K <output id="sp-K-out"></output></label>
+            <input type="range" id="sp-K" min="0.01" max="1" step="0.01" value="0.1">
+          </div>
+          <div class="ctl" data-show="aspire">
+            <label for="sp-asp">願望水準（1回あたり） <output id="sp-asp-out"></output></label>
+            <input type="range" id="sp-asp" min="0" max="2.5" step="0.05" value="0.6">
+          </div>
+          <div class="ctl">
+            <label for="sp-mu">突然変異 <output id="sp-mu-out"></output></label>
+            <input type="range" id="sp-mu" min="0" max="0.02" step="0.001" value="0">
+          </div>
+        </fieldset>
+        <fieldset class="group">
+          <legend>はじめの配置</legend>
+          <div class="ctl">
+            <label for="sp-init">配置</label>
+            <select id="sp-init">
+              <option value="random">ランダム</option>
+              <option value="single">協力者の中に裏切り者1人</option>
+              <option value="island">裏切り者の中に協力の島</option>
+            </select>
+          </div>
+          <div class="ctl" data-init="random">
+            <label for="sp-c0">はじめの協力率 <output id="sp-c0-out"></output></label>
+            <input type="range" id="sp-c0" min="0.05" max="0.95" step="0.05" value="0.9">
+          </div>
+          <div class="ctl">
+            <label for="sp-L">格子の大きさ</label>
+            <select id="sp-L">
+              <option value="49">49 × 49</option>
+              <option value="99" selected>99 × 99</option>
+              <option value="149">149 × 149</option>
+            </select>
+          </div>
+        </fieldset>
+        <fieldset class="group">
+          <legend>再生</legend>
+          <div class="btn-row">
+            <button type="button" class="btn btn-primary" id="sp-play">一時停止</button>
+            <button type="button" class="btn" id="sp-step">1世代すすめる</button>
+            <button type="button" class="btn" id="sp-reset">最初から</button>
+          </div>
+          <div class="ctl">
+            <label for="sp-speed">速さ（世代／秒） <output id="sp-speed-out"></output></label>
+            <input type="range" id="sp-speed" min="1" max="60" step="1" value="12">
+          </div>
+          <p class="hint">格子をクリック（ドラッグ）すると、そのマスの戦略を入れかえられます。</p>
+        </fieldset>
+      </form>
+
+      <div class="out">
+        <div class="finding" aria-live="polite"><h2 id="sp-head"></h2><p id="sp-body"></p></div>
+        <div class="two">
+          <figure class="fig">
+            <div class="fig-head"><h3>格子</h3><p class="sub" id="sp-sub"></p></div>
+            <div class="grid-box"><canvas id="sp-canvas" width="99" height="99" role="img" aria-label="協力者と裏切り者の格子"></canvas></div>
+            <ul class="legend">
+              <li><span class="sw" style="background:var(--s1)"></span>協力のまま</li>
+              <li><span class="sw" style="background:var(--s8)"></span>裏切りのまま</li>
+              <li><span class="sw" style="background:var(--s3)"></span>裏切り→協力</li>
+              <li><span class="sw" style="background:var(--s4)"></span>協力→裏切り</li>
+            </ul>
+          </figure>
+          <figure class="fig">
+            <div class="fig-head"><h3>協力者の割合</h3><p class="sub">世代ごと</p></div>
+            <div class="stat-row"><span>世代 <b id="sp-gen">0</b></span><span>協力率 <b id="sp-coop">–</b></span><span>この世代で変わった人 <b id="sp-flip">–</b></span></div>
+            <div class="chart" id="sp-chart"></div>
+          </figure>
+        </div>
+        <details class="about">
+          <summary>このモデルについて</summary>
+          <p>Nowak と May（1992）の空間囚人のジレンマです。各マスの人は周り8人（と自分）とゲームをして、得点をもとに全員いっせいに戦略を更新します。だれとでも出会う世界では裏切りが勝ちますが、隣とだけ出会う世界では、協力者がかたまりを作って生きのこれます。b が 1.8〜2.0 あたりで、協力と裏切りがまざりあう模様が続きます。「協力者の中に裏切り者1人」で b=1.85 にすると、万華鏡のような模様が見られます。</p>
+          <p>「満足化」では、周りを見ずに、自分の1回あたりの得点が願望水準より低いときだけ、半分の確率で手を変えます。</p>
+        </details>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="src/sim.js"></script>
+<script src="src/chart.js"></script>
+<script src="src/app.js"></script>
+</body>
+</html>

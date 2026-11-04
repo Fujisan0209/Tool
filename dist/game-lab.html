@@ -1,0 +1,2268 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- artifact:start -->
+<title>満足化×ゲーム理論ラボ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@700;800&family=BIZ+UDPGothic:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: a lab bench — tabbed experiments; each is a sticky control rail (left) beside the readout: one-line finding, results, charts. Stacks on phones. */
+  :root {
+    --bg: #edf0ec;          /* graph-paper green-grey */
+    --surface: #fbfcfa;
+    --sunken: #f2f5f1;
+    --ink: #142019;
+    --ink-2: #3c4842;
+    --muted: #66716b;
+    --line: #d4dad5;
+    --grid: #e3e8e3;
+    --axis: #b5beb8;
+    --accent: #1e5d54;      /* deep verdigris: controls & focus only */
+    --accent-ink: #ffffff;
+    --accent-soft: #dbeae5;
+    --good: #0d7a3b; --good-bg: #e2f3e8;
+    --warn: #8f5a00; --warn-bg: #fbf0d9;
+    /* categorical series, fixed order (validated palette) */
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
+    --s5: #e87ba4; --s6: #008300; --s7: #6250d6; --s8: #e34948;
+    /* sequential (heatmap) ends */
+    --seq-lo: #eaf2fc; --seq-hi: #104281; --seq-mid-ink: #ffffff;
+
+    --f-display: "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", serif;
+    --f-body: "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif;
+    --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+    --r: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e1311; --surface: #151b18; --sunken: #1a221f; --ink: #e5ebe7; --ink-2: #bec8c2; --muted: #8b968f;
+      --line: #29322e; --grid: #212925; --axis: #3b4641;
+      --accent: #6cc2b2; --accent-ink: #072019; --accent-soft: #1b3430;
+      --good: #4fd08a; --good-bg: #163023; --warn: #f0b54a; --warn-bg: #33270f;
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+      --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+      --seq-lo: #1b2633; --seq-hi: #9ec5f4; --seq-mid-ink: #0b1420;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e1311; --surface: #151b18; --sunken: #1a221f; --ink: #e5ebe7; --ink-2: #bec8c2; --muted: #8b968f;
+    --line: #29322e; --grid: #212925; --axis: #3b4641;
+    --accent: #6cc2b2; --accent-ink: #072019; --accent-soft: #1b3430;
+    --good: #4fd08a; --good-bg: #163023; --warn: #f0b54a; --warn-bg: #33270f;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+    --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+    --seq-lo: #1b2633; --seq-hi: #9ec5f4; --seq-mid-ink: #0b1420;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--f-body); font-size: 15px; line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 1280px; margin: 0 auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .num, output { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+
+  /* ---------- masthead ---------- */
+  .mast { background: var(--surface); border-bottom: 1px solid var(--line); }
+  .mast-inner { padding-block: 22px 0; display: grid; gap: 14px; }
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .logo { flex: none; width: 46px; height: 46px; }
+  .logo rect { fill: var(--accent-soft); }
+  .logo .c { fill: var(--accent); }
+  .logo .l { stroke: var(--accent); }
+  h1 { font-family: var(--f-display); font-weight: 800; font-size: clamp(23px, 3.2vw, 31px); line-height: 1.25; margin: 0; letter-spacing: .02em; text-wrap: balance; }
+  .tagline { margin: 2px 0 0; color: var(--muted); font-size: 14px; }
+
+  .tabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; margin-bottom: -1px; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    flex: none; font: inherit; cursor: pointer; background: transparent; color: var(--ink-2);
+    border: 1px solid transparent; border-bottom: 0; border-radius: 8px 8px 0 0;
+    padding: 8px 14px 9px; text-align: left; line-height: 1.3;
+  }
+  .tab b { display: block; font-size: 15px; }
+  .tab small { display: block; font-size: 11.5px; color: var(--muted); letter-spacing: .04em; }
+  .tab:hover { color: var(--accent); }
+  .tab[aria-selected="true"] { background: var(--bg); border-color: var(--line); color: var(--ink); }
+  .tab[aria-selected="true"] b { color: var(--accent); }
+
+  main { padding-block: 22px 60px; }
+
+  /* ---------- lab layout ---------- */
+  .lab { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 22px; align-items: start; }
+  @media (max-width: 900px) { .lab { grid-template-columns: minmax(0, 1fr); } }
+  .controls {
+    position: sticky; top: calc(env(safe-area-inset-top, 0px) + 14px);
+    max-height: calc(100vh - 28px); overflow-y: auto;
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--r);
+    padding: 6px 16px 16px;
+  }
+  @media (max-width: 900px) { .controls { position: static; max-height: none; } }
+  .group { border: 0; margin: 0; padding: 12px 0 4px; border-top: 1px solid var(--line); display: grid; gap: 12px; min-width: 0; }
+  .group:first-child { border-top: 0; }
+  .group > legend { padding: 0; font-size: 11.5px; font-weight: 700; letter-spacing: .12em; color: var(--muted); float: left; width: 100%; margin-bottom: 2px; }
+  .ctl { display: grid; gap: 2px; min-width: 0; }
+  .ctl > label, .ctl > .lbl { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 14px; font-weight: 700; }
+  .ctl output { font-size: 13px; font-weight: 500; color: var(--accent); }
+  .hint { margin: 0; font-size: 12.5px; color: var(--muted); line-height: 1.55; }
+  input[type="range"] { width: 100%; accent-color: var(--accent); margin: 4px 0 2px; }
+  select, input[type="number"] {
+    font: inherit; font-size: 14px; color: var(--ink); background: var(--sunken);
+    border: 1px solid var(--line); border-radius: 7px; padding: 5px 8px; width: 100%;
+  }
+  .check { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; cursor: pointer; }
+  .check input { accent-color: var(--accent); width: 16px; height: 16px; margin: 3px 0 0; flex: none; }
+  .seg { display: flex; flex-wrap: wrap; gap: 4px; background: var(--sunken); border: 1px solid var(--line); border-radius: 8px; padding: 3px; }
+  .seg label { flex: 1 1 auto; text-align: center; cursor: pointer; font-size: 13px; padding: 5px 8px; border-radius: 6px; color: var(--ink-2); }
+  .seg input { position: absolute; opacity: 0; pointer-events: none; }
+  .seg input:checked + span { color: var(--accent-ink); }
+  .seg label:has(input:checked) { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+  .seg label:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: 1px; }
+  .btn-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .btn {
+    font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; border-radius: 7px;
+    padding: 6px 14px; border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .btn-primary:hover { color: var(--accent-ink); filter: brightness(1.08); }
+  .strat-list { display: grid; gap: 6px; }
+  .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; flex: none; }
+
+  /* ---------- output column ---------- */
+  .out { display: grid; gap: 18px; min-width: 0; }
+  .finding {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--r);
+    padding: 14px 18px;
+  }
+  .finding h2 { font-family: var(--f-display); font-weight: 700; font-size: clamp(18px, 2.2vw, 22px); line-height: 1.5; margin: 0; text-wrap: balance; }
+  .finding p { margin: 6px 0 0; color: var(--ink-2); max-width: 46em; }
+  .finding strong { color: var(--accent); font-family: var(--f-mono); font-weight: 500; }
+  .fig { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px 12px; min-width: 0; }
+  .fig-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 12px; margin-bottom: 6px; }
+  .fig h3 { font-size: 15px; margin: 0; }
+  .fig .sub { font-size: 12.5px; color: var(--muted); margin: 0; }
+  .chart { position: relative; width: 100%; min-width: 0; }
+  .chart canvas { display: block; touch-action: pan-y; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 8px 0 0; padding: 0; list-style: none; font-size: 12.5px; color: var(--ink-2); }
+  .legend li { display: flex; align-items: center; gap: 6px; }
+  .legend .ln { width: 16px; height: 0; border-top: 2px solid; }
+  .legend .ln.dash { border-top-style: dashed; }
+  .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+  .two > * { min-width: 0; }
+
+  .tip {
+    position: absolute; z-index: 5; pointer-events: none; min-width: 150px;
+    background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 8px;
+    box-shadow: 0 8px 24px -12px rgba(0,0,0,.35); padding: 8px 10px; font-size: 12.5px; line-height: 1.5;
+  }
+  .tip-head { font-weight: 700; margin-bottom: 4px; color: var(--ink-2); }
+  .tip-row { display: grid; grid-template-columns: 10px 1fr auto; align-items: center; gap: 6px; }
+  .tip-row i { width: 10px; height: 10px; border-radius: 3px; }
+  .tip-row b { font-family: var(--f-mono); font-weight: 500; }
+
+  /* results table */
+  .tbl-wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { padding: 7px 10px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  thead th { font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: .04em; }
+  td.num { font-family: var(--f-mono); }
+  tr.best td { background: var(--accent-soft); }
+  .name { display: flex; align-items: center; gap: 8px; }
+  .pill { display: inline-block; font-size: 11px; font-weight: 700; padding: 0 7px; border-radius: 999px; background: var(--good-bg); color: var(--good); letter-spacing: .04em; margin-left: 6px; }
+  .bar-cell { width: 34%; min-width: 120px; }
+  .bar { height: 10px; border-radius: 0 4px 4px 0; background: var(--axis); }
+
+  details.about { background: transparent; border-top: 1px solid var(--line); padding: 10px 2px 0; }
+  details.about summary { cursor: pointer; font-weight: 700; color: var(--ink-2); }
+  details.about p, details.about li { color: var(--ink-2); max-width: 46em; font-size: 14px; }
+  details.about ul { padding-left: 1.2em; }
+
+  /* ---------- 2x2 matrix ---------- */
+  .matrix-wrap { overflow-x: auto; }
+  .matrix { border-collapse: separate; border-spacing: 6px; width: auto; margin: 0 auto; }
+  .matrix th, .matrix td { border: 0; padding: 0; text-align: center; white-space: normal; }
+  .matrix .colh { font-size: 13px; font-weight: 700; padding: 0 4px 2px; color: var(--ink-2); }
+  .matrix .rowh { font-size: 13px; font-weight: 700; padding-right: 6px; text-align: right; color: var(--ink-2); }
+  .matrix .who { font-size: 11.5px; color: var(--muted); font-weight: 400; display: block; letter-spacing: .06em; }
+  .cell {
+    position: relative; width: 168px; min-height: 92px; border-radius: 9px; border: 1px solid var(--line); background: var(--sunken);
+    padding: 22px 10px 10px; display: flex; justify-content: center; align-items: center; gap: 8px;
+  }
+  .cell.ne { border: 2px solid var(--accent); background: var(--accent-soft); }
+  .cell input { width: 56px; text-align: center; font-family: var(--f-mono); font-size: 16px; padding: 4px 2px; background: var(--surface); }
+  .cell input.br { font-weight: 500; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+  .cell .pa { border-color: color-mix(in srgb, var(--s1) 60%, var(--line)); color: var(--s1); }
+  .cell .pb { border-color: color-mix(in srgb, var(--s2) 60%, var(--line)); color: var(--s2); }
+  .cell .comma { color: var(--muted); }
+  .badges { position: absolute; top: 4px; left: 6px; right: 6px; display: flex; gap: 4px; justify-content: flex-start; }
+  .badge { font-size: 10.5px; font-weight: 700; letter-spacing: .04em; border-radius: 4px; padding: 0 5px; line-height: 16px; }
+  .badge.ne { background: var(--accent); color: var(--accent-ink); }
+  .badge.po { background: var(--surface); color: var(--ink-2); border: 1px solid var(--line); }
+  .badge.fr { background: var(--surface); color: var(--muted); border: 1px solid var(--line); margin-left: auto; font-family: var(--f-mono); font-weight: 500; }
+  @media (max-width: 520px) { .cell { width: 128px; } .cell input { width: 46px; font-size: 15px; } }
+  .key { display: flex; flex-wrap: wrap; gap: 4px 14px; justify-content: center; font-size: 12.5px; color: var(--muted); margin: 8px 0 0; }
+  .key span { display: inline-flex; align-items: center; gap: 5px; }
+
+  .plane-box { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; }
+  .plane { position: relative; width: 100%; max-width: 440px; }
+  .plane canvas { display: block; cursor: crosshair; touch-action: none; }
+
+  /* ---------- spatial ---------- */
+  .grid-box { display: grid; justify-items: center; gap: 8px; }
+  #sp-canvas { width: 100%; max-width: 560px; aspect-ratio: 1; height: auto; image-rendering: pixelated; border-radius: 6px; cursor: cell; touch-action: none; display: block; }
+  .stat-row { display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 13.5px; color: var(--ink-2); }
+  .stat-row b { font-family: var(--f-mono); font-weight: 500; color: var(--ink); font-size: 16px; }
+
+  .warnline { margin: 0; font-size: 12.5px; color: var(--warn); background: var(--warn-bg); border-radius: 6px; padding: 4px 8px; }
+  .heat td.hv { font-family: var(--f-mono); text-align: center; min-width: 46px; border: 2px solid var(--surface); }
+  .heat th.rot { font-size: 11.5px; font-weight: 700; text-align: center; white-space: normal; min-width: 46px; line-height: 1.3; vertical-align: bottom; color: var(--ink-2); }
+
+  @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
+</style>
+<!-- artifact:end -->
+</head>
+<body>
+<header class="mast">
+  <div class="wrap mast-inner">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 46 46" aria-hidden="true">
+        <rect width="46" height="46" rx="11"></rect>
+        <path class="l" d="M10 34 C 18 33, 22 14, 36 12" fill="none" stroke-width="2.4" stroke-linecap="round"></path>
+        <line class="l" x1="10" y1="22" x2="36" y2="22" stroke-width="1.6" stroke-dasharray="3 3"></line>
+        <circle class="c" cx="25.5" cy="22" r="4"></circle>
+      </svg>
+      <div>
+        <h1>満足化×ゲーム理論ラボ</h1>
+        <p class="tagline">条件を動かしながら、「ほどほどで決める」と「相手を読んで決める」を試す実験台</p>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="実験">
+      <button class="tab" role="tab" id="tab-satisfice" aria-controls="panel-satisfice" data-tab="satisfice"><b>満足化</b><small>探索と停止</small></button>
+      <button class="tab" role="tab" id="tab-matrix" aria-controls="panel-matrix" data-tab="matrix"><b>2×2ゲーム</b><small>均衡と学習</small></button>
+      <button class="tab" role="tab" id="tab-ipd" aria-controls="panel-ipd" data-tab="ipd"><b>くり返し囚人のジレンマ</b><small>大会と進化</small></button>
+      <button class="tab" role="tab" id="tab-spatial" aria-controls="panel-spatial" data-tab="spatial"><b>空間ゲーム</b><small>格子の上の協力</small></button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- ======================================================= 満足化 -->
+  <section class="panel" id="panel-satisfice" role="tabpanel" aria-labelledby="tab-satisfice">
+    <div class="lab">
+      <form class="controls" id="sat-form" autocomplete="off">
+        <fieldset class="group">
+          <legend>状況</legend>
+          <div class="ctl">
+            <label for="sat-n">候補の数 <output id="sat-n-out"></output></label>
+            <input type="range" id="sat-n" min="5" max="100" step="1" value="30">
+            <p class="hint">家・就職先・お店など。1つずつ順番に見ていきます。</p>
+          </div>
+          <div class="ctl">
+            <label for="sat-cost">1つ見るコスト <output id="sat-cost-out"></output></label>
+            <input type="range" id="sat-cost" min="0" max="5" step="0.1" value="1">
+            <p class="hint">時間や手間。手取り＝選んだ候補の値 − コスト×見た数。</p>
+          </div>
+          <div class="ctl">
+            <label for="sat-dist">候補の値の分布</label>
+            <select id="sat-dist"></select>
+          </div>
+          <div class="ctl">
+            <label for="sat-noise">見まちがい（ノイズ） <output id="sat-noise-out"></output></label>
+            <input type="range" id="sat-noise" min="0" max="30" step="1" value="0">
+            <p class="hint">見た値は 本当の値＋ゆらぎ。0 なら正確に見えます。</p>
+          </div>
+          <label class="check"><input type="checkbox" id="sat-recall"> 見送った候補に、あとで戻れる</label>
+        </fieldset>
+        <fieldset class="group">
+          <legend>満足化する人</legend>
+          <div class="ctl">
+            <label for="sat-asp">願望水準 <output id="sat-asp-out"></output></label>
+            <input type="range" id="sat-asp" min="0" max="100" step="1" value="70">
+            <p class="hint">これ以上なら「もう十分」として、その場で決めます。</p>
+          </div>
+          <div class="ctl">
+            <label for="sat-drop">妥協の速さ <output id="sat-drop-out"></output></label>
+            <input type="range" id="sat-drop" min="0" max="5" step="0.1" value="1">
+            <p class="hint">「妥協する満足化」は、1つ見るごとに願望水準をこれだけ下げます。</p>
+          </div>
+        </fieldset>
+        <fieldset class="group">
+          <legend>計算</legend>
+          <div class="ctl">
+            <label for="sat-trials">試行回数</label>
+            <select id="sat-trials">
+              <option value="500">500 回（速い）</option>
+              <option value="2000" selected>2,000 回</option>
+              <option value="6000">6,000 回（なめらか）</option>
+            </select>
+          </div>
+          <div class="btn-row">
+            <button type="button" class="btn" id="sat-reseed">乱数を変える</button>
+            <button type="button" class="btn" id="sat-best">最もよい願望水準にする</button>
+          </div>
+        </fieldset>
+      </form>
+
+      <div class="out">
+        <div class="finding" aria-live="polite"><h2 id="sat-head"></h2><p id="sat-body"></p></div>
+        <div class="fig">
+          <div class="fig-head"><h3>戦略ごとの成績</h3><p class="sub" id="sat-sub"></p></div>
+          <div class="tbl-wrap">
+            <table id="sat-table">
+              <thead><tr><th>戦略</th><th>平均の手取り</th><th class="bar-cell"></th><th>平均で見た数</th><th>本当の1番を選べた</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <figure class="fig">
+          <div class="fig-head"><h3>願望水準を変えると、手取りはどう変わる？</h3><p class="sub">横軸＝願望水準、縦軸＝平均の手取り</p></div>
+          <div class="chart" id="sat-sweep"></div>
+          <ul class="legend" id="sat-sweep-legend"></ul>
+        </figure>
+        <figure class="fig">
+          <div class="fig-head"><h3>1回の例：候補を順番に見る</h3><button type="button" class="btn" id="sat-next">別の例を見る</button></div>
+          <div class="chart" id="sat-strip"></div>
+          <ul class="legend" id="sat-strip-legend"></ul>
+        </figure>
+        <details class="about">
+          <summary>このモデルについて</summary>
+          <p>ハーバート・サイモンの「満足化（satisficing）」は、すべてを比べて最善を探すかわりに、「これなら十分」という願望水準を決めて、それを超えた最初の選択肢で決める方法です。探すのにコストがかかる世界では、うまく選んだ願望水準の満足化は、理論上の最善（最適停止）にかなり近い成績になります。</p>
+          <ul>
+            <li><b>満足化</b>：願望水準以上の最初の候補で止める。だれも届かなければ最後の候補（戻れるなら、見た中の一番）。</li>
+            <li><b>妥協する満足化</b>：1つ見るごとに願望水準を下げる。探すほど基準がゆるくなる。</li>
+            <li><b>全部見る（最大化）</b>：全部見て、一番よく見えたものを選ぶ。</li>
+            <li><b>37%ルール</b>：最初の約37%（n/e）は見るだけ。そのあと、それまでの一番を超えた最初の候補で止める（秘書問題の答え）。</li>
+            <li><b>最適停止</b>：値の分布とコストを完全に知っている人が、後ろ向き帰納法で計算した「位置ごとのしきい値」で止める。戻れない前提で計算した理論上の目安です。</li>
+          </ul>
+          <p>どの戦略も、まったく同じ候補の列（共通の乱数）で比べています。</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================= 2×2 -->
+  <section class="panel" id="panel-matrix" role="tabpanel" aria-labelledby="tab-matrix" hidden>
+    <div class="lab">
+      <form class="controls" id="mx-form" autocomplete="off">
+        <fieldset class="group">
+          <legend>ゲーム</legend>
+          <div class="ctl">
+            <label for="mx-preset">有名なゲームから選ぶ</label>
+            <select id="mx-preset"></select>
+            <p class="hint" id="mx-note"></p>
+          </div>
+          <p class="hint">右の表の数字は書きかえられます。</p>
+        </fieldset>
+        <fieldset class="group">
+          <legend>動き方</legend>
+          <div class="seg" role="radiogroup" aria-label="動き方">
+            <label><input type="radio" name="mx-dyn" value="replicator" checked><span>レプリケーター</span></label>
+            <label><input type="radio" name="mx-dyn" value="aspiration"><span>満足化学習</span></label>
+            <label><input type="radio" name="mx-dyn" value="fictitious"><span>仮想プレイ</span></label>
+          </div>
+          <p class="hint" id="mx-dyn-note"></p>
+          <div class="ctl" data-show="aspiration">
+            <label for="mx-asp">願望水準 <output id="mx-asp-out"></output></label>
+            <input type="range" id="mx-asp" min="0" max="100" step="1" value="50">
+            <p class="hint">各自の得点の「最小〜最大」のどのあたりで満足するか。</p>
+          </div>
+          <div class="ctl" data-show="aspiration">
+            <label for="mx-habit">願望水準の慣れ <output id="mx-habit-out"></output></label>
+            <input type="range" id="mx-habit" min="0" max="0.1" step="0.002" value="0.01">
+            <p class="hint">最近の得点に願望水準が近づく速さ。0 なら固定。</p>
+          </div>
+          <div class="ctl" data-show="aspiration">
+            <label for="mx-rate">学習の速さ <output id="mx-rate-out"></output></label>
+            <input type="range" id="mx-rate" min="0.01" max="0.5" step="0.01" value="0.1">
+          </div>
+          <div class="ctl" data-show="aspiration fictitious">
+            <label for="mx-rounds">ラウンド数 <output id="mx-rounds-out"></output></label>
+            <input type="range" id="mx-rounds" min="100" max="5000" step="100" value="1500">
+          </div>
+          <div class="btn-row" data-show="aspiration fictitious">
+            <button type="button" class="btn" id="mx-reseed">もう一度（乱数を変える）</button>
+          </div>
+        </fieldset>
+        <fieldset class="group">
+          <legend>始まりの状態</legend>
+          <div class="ctl">
+            <label for="mx-p0">A が上を出す確率 <output id="mx-p0-out"></output></label>
+            <input type="range" id="mx-p0" min="0.01" max="0.99" step="0.01" value="0.8">
+          </div>
+          <div class="ctl">
+            <label for="mx-q0">B が左を出す確率 <output id="mx-q0-out"></output></label>
+            <input type="range" id="mx-q0" min="0.01" max="0.99" step="0.01" value="0.3">
+          </div>
+          <p class="hint">右の図をクリック（タップ）しても始点を置けます。</p>
+        </fieldset>
+      </form>
+
+      <div class="out">
+        <div class="finding" aria-live="polite"><h2 id="mx-head"></h2><p id="mx-body"></p></div>
+        <div class="fig">
+          <div class="fig-head"><h3>利得表</h3><p class="sub">各マスは（A の得点 , B の得点）</p></div>
+          <div class="matrix-wrap"><table class="matrix" id="mx-table"></table></div>
+          <p class="key"><span><span class="badge ne">均衡</span>ナッシュ均衡</span><span><span class="badge po">パレート</span>だれかを損させずには改善できない</span><span><u>下線</u>＝相手の手に対する最適反応</span></p>
+        </div>
+        <div class="two">
+          <figure class="fig">
+            <div class="fig-head"><h3>戦略の動き</h3><p class="sub" id="mx-plane-sub"></p></div>
+            <div class="plane-box"><div class="plane" id="mx-plane"></div></div>
+            <ul class="legend" id="mx-plane-legend"></ul>
+          </figure>
+          <figure class="fig">
+            <div class="fig-head"><h3>時間の流れ</h3><p class="sub" id="mx-ts-sub"></p></div>
+            <div class="chart" id="mx-ts"></div>
+            <ul class="legend" id="mx-ts-legend"></ul>
+          </figure>
+        </div>
+        <details class="about">
+          <summary>このモデルについて</summary>
+          <ul>
+            <li><b>レプリケーター動態</b>：2つの集団（A 役の集団と B 役の集団）で、平均より得をした手を出す人が増える、という進化の動き。矢印はその向きです。</li>
+            <li><b>満足化学習</b>：得点が願望水準以上なら、いま出した手をもっと出すようにし、下回れば減らす（Bush–Mosteller 型の強化学習）。相手のことを考えず、自分の満足だけで動きます。</li>
+            <li><b>仮想プレイ</b>：相手がこれまで出した手の割合を数えて、それに一番よい手を出す。図は、実際に出した手の割合です。</li>
+          </ul>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================= IPD -->
+  <section class="panel" id="panel-ipd" role="tabpanel" aria-labelledby="tab-ipd" hidden>
+    <div class="lab">
+      <form class="controls" id="ipd-form" autocomplete="off">
+        <fieldset class="group">
+          <legend>1回の得点</legend>
+          <div class="ctl">
+            <label for="ipd-T">T 裏切って相手は協力 <output id="ipd-T-out"></output></label>
+            <input type="range" id="ipd-T" min="0" max="10" step="0.1" value="5">
+          </div>
+          <div class="ctl">
+            <label for="ipd-R">R 2人とも協力 <output id="ipd-R-out"></output></label>
+            <input type="range" id="ipd-R" min="0" max="10" step="0.1" value="3">
+          </div>
+          <div class="ctl">
+            <label for="ipd-P">P 2人とも裏切り <output id="ipd-P-out"></output></label>
+            <input type="range" id="ipd-P" min="0" max="10" step="0.1" value="1">
+          </div>
+          <div class="ctl">
+            <label for="ipd-S">S 協力して相手は裏切り <output id="ipd-S-out"></output></label>
+            <input type="range" id="ipd-S" min="0" max="10" step="0.1" value="0">
+          </div>
+          <p class="warnline" id="ipd-warn" hidden></p>
+        </fieldset>
+        <fieldset class="group">
+          <legend>試合</legend>
+          <div class="ctl">
+            <label for="ipd-rounds">1試合のラウンド数 <output id="ipd-rounds-out"></output></label>
+            <input type="range" id="ipd-rounds" min="5" max="500" step="5" value="200">
+          </div>
+          <div class="ctl">
+            <label for="ipd-noise">手のミス <output id="ipd-noise-out"></output></label>
+            <input type="range" id="ipd-noise" min="0" max="0.2" step="0.005" value="0.02">
+            <p class="hint">出そうとした手が、この確率で逆になります。</p>
+          </div>
+        </fieldset>
+        <fieldset class="group">
+          <legend>満足化の戦略</legend>
+          <div class="ctl">
+            <label for="ipd-asp">願望水準 <output id="ipd-asp-out"></output></label>
+            <input type="range" id="ipd-asp" min="0" max="10" step="0.1" value="2">
+            <p class="hint">P と R の間にすると、パブロフと同じ動きになります。</p>
+          </div>
+          <div class="ctl">
+            <label for="ipd-habit">願望水準の慣れ <output id="ipd-habit-out"></output></label>
+            <input type="range" id="ipd-habit" min="0" max="0.5" step="0.01" value="0">
+            <p class="hint">得点に合わせて願望水準が動く速さ。0 なら固定。</p>
+          </div>
+        </fieldset>
+        <fieldset class="group">
+          <legend>参加する戦略</legend>
+          <div class="strat-list" id="ipd-strats"></div>
+        </fieldset>
+        <fieldset class="group">
+          <legend>進化</legend>
+          <div class="ctl">
+            <label for="ipd-gens">世代数 <output id="ipd-gens-out"></output></label>
+            <input type="range" id="ipd-gens" min="10" max="400" step="10" value="120">
+          </div>
+          <div class="btn-row"><button type="button" class="btn" id="ipd-reseed">乱数を変える</button></div>
+        </fieldset>
+      </form>
+
+      <div class="out">
+        <div class="finding" aria-live="polite"><h2 id="ipd-head"></h2><p id="ipd-body"></p></div>
+        <div class="fig">
+          <div class="fig-head"><h3>総当たり大会の順位</h3><p class="sub">1ラウンドあたりの平均得点（自分のコピーとの対戦も含む）</p></div>
+          <div class="tbl-wrap"><table id="ipd-rank"><thead><tr><th>順位・戦略</th><th>平均得点</th><th class="bar-cell"></th><th>協力した割合</th></tr></thead><tbody></tbody></table></div>
+        </div>
+        <figure class="fig">
+          <div class="fig-head"><h3>戦略の割合の進化</h3><p class="sub">はじめは全員同じ割合。得点が平均より高い戦略が増えていく</p></div>
+          <div class="chart" id="ipd-evo"></div>
+          <ul class="legend" id="ipd-evo-legend"></ul>
+        </figure>
+        <div class="fig">
+          <div class="fig-head"><h3>対戦表</h3><p class="sub">行の戦略が、列の戦略と戦ったときの平均得点（濃いほど高い）</p></div>
+          <div class="tbl-wrap"><table class="heat" id="ipd-heat"></table></div>
+        </div>
+        <details class="about">
+          <summary>このモデルについて</summary>
+          <p>アクセルロッドの実験と同じように、各戦略が全員と（自分のコピーとも）決まった回数だけ対戦します。手のミスがあると、しっぺ返しどうしは報復の応酬におちいりやすく、ミスから立ち直れる戦略（パブロフ・寛容なしっぺ返し）が強くなります。</p>
+          <p>「満足化」は、得点が願望水準以上なら同じ手をつづけ、下回ったら手を変える戦略です。願望水準を P と R の間に置くとパブロフと同じになり、S 以下にすると「ずっと同じ手」、R より上にすると満足できずに手を変えつづけます。</p>
+          <p>進化は離散レプリケーター方程式です。各戦略の割合は、その戦略の得点（いまの割合で重みづけした平均）に比例して増えます。</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================= spatial -->
+  <section class="panel" id="panel-spatial" role="tabpanel" aria-labelledby="tab-spatial" hidden>
+    <div class="lab">
+      <form class="controls" id="sp-form" autocomplete="off">
+        <fieldset class="group">
+          <legend>ゲーム</legend>
+          <div class="ctl">
+            <label for="sp-b">裏切りの誘惑 b <output id="sp-b-out"></output></label>
+            <input type="range" id="sp-b" min="1" max="2.5" step="0.01" value="1.85">
+            <p class="hint">協力どうしは 1 点、協力者から裏切ると b 点、ほかは 0 点。</p>
+          </div>
+          <label class="check"><input type="checkbox" id="sp-self" checked> 自分とも対戦する（Nowak–May の設定）</label>
+        </fieldset>
+        <fieldset class="group">
+          <legend>まねのしかた</legend>
+          <div class="seg" role="radiogroup" aria-label="まねのしかた">
+            <label><input type="radio" name="sp-rule" value="best" checked><span>一番をまねる</span></label>
+            <label><input type="radio" name="sp-rule" value="fermi"><span>確率でまねる</span></label>
+            <label><input type="radio" name="sp-rule" value="aspire"><span>満足化</span></label>
+          </div>
+          <p class="hint" id="sp-rule-note"></p>
+          <div class="ctl" data-show="fermi">
+            <label for="sp-K">迷い K <output id="sp-K-out"></output></label>
+            <input type="range" id="sp-K" min="0.01" max="1" step="0.01" value="0.1">
+          </div>
+          <div class="ctl" data-show="aspire">
+            <label for="sp-asp">願望水準（1回あたり） <output id="sp-asp-out"></output></label>
+            <input type="range" id="sp-asp" min="0" max="2.5" step="0.05" value="0.6">
+          </div>
+          <div class="ctl">
+            <label for="sp-mu">突然変異 <output id="sp-mu-out"></output></label>
+            <input type="range" id="sp-mu" min="0" max="0.02" step="0.001" value="0">
+          </div>
+        </fieldset>
+        <fieldset class="group">
+          <legend>はじめの配置</legend>
+          <div class="ctl">
+            <label for="sp-init">配置</label>
+            <select id="sp-init">
+              <option value="random">ランダム</option>
+              <option value="single">協力者の中に裏切り者1人</option>
+              <option value="island">裏切り者の中に協力の島</option>
+            </select>
+          </div>
+          <div class="ctl" data-init="random">
+            <label for="sp-c0">はじめの協力率 <output id="sp-c0-out"></output></label>
+            <input type="range" id="sp-c0" min="0.05" max="0.95" step="0.05" value="0.9">
+          </div>
+          <div class="ctl">
+            <label for="sp-L">格子の大きさ</label>
+            <select id="sp-L">
+              <option value="49">49 × 49</option>
+              <option value="99" selected>99 × 99</option>
+              <option value="149">149 × 149</option>
+            </select>
+          </div>
+        </fieldset>
+        <fieldset class="group">
+          <legend>再生</legend>
+          <div class="btn-row">
+            <button type="button" class="btn btn-primary" id="sp-play">一時停止</button>
+            <button type="button" class="btn" id="sp-step">1世代すすめる</button>
+            <button type="button" class="btn" id="sp-reset">最初から</button>
+          </div>
+          <div class="ctl">
+            <label for="sp-speed">速さ（世代／秒） <output id="sp-speed-out"></output></label>
+            <input type="range" id="sp-speed" min="1" max="60" step="1" value="12">
+          </div>
+          <p class="hint">格子をクリック（ドラッグ）すると、そのマスの戦略を入れかえられます。</p>
+        </fieldset>
+      </form>
+
+      <div class="out">
+        <div class="finding" aria-live="polite"><h2 id="sp-head"></h2><p id="sp-body"></p></div>
+        <div class="two">
+          <figure class="fig">
+            <div class="fig-head"><h3>格子</h3><p class="sub" id="sp-sub"></p></div>
+            <div class="grid-box"><canvas id="sp-canvas" width="99" height="99" role="img" aria-label="協力者と裏切り者の格子"></canvas></div>
+            <ul class="legend">
+              <li><span class="sw" style="background:var(--s1)"></span>協力のまま</li>
+              <li><span class="sw" style="background:var(--s8)"></span>裏切りのまま</li>
+              <li><span class="sw" style="background:var(--s3)"></span>裏切り→協力</li>
+              <li><span class="sw" style="background:var(--s4)"></span>協力→裏切り</li>
+            </ul>
+          </figure>
+          <figure class="fig">
+            <div class="fig-head"><h3>協力者の割合</h3><p class="sub">世代ごと</p></div>
+            <div class="stat-row"><span>世代 <b id="sp-gen">0</b></span><span>協力率 <b id="sp-coop">–</b></span><span>この世代で変わった人 <b id="sp-flip">–</b></span></div>
+            <div class="chart" id="sp-chart"></div>
+          </figure>
+        </div>
+        <details class="about">
+          <summary>このモデルについて</summary>
+          <p>Nowak と May（1992）の空間囚人のジレンマです。各マスの人は周り8人（と自分）とゲームをして、得点をもとに全員いっせいに戦略を更新します。だれとでも出会う世界では裏切りが勝ちますが、隣とだけ出会う世界では、協力者がかたまりを作って生きのこれます。b が 1.8〜2.0 あたりで、協力と裏切りがまざりあう模様が続きます。「協力者の中に裏切り者1人」で b=1.85 にすると、万華鏡のような模様が見られます。</p>
+          <p>「満足化」では、周りを見ずに、自分の1回あたりの得点が願望水準より低いときだけ、半分の確率で手を変えます。</p>
+        </details>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+/* src/sim.js */
+/*
+ * 満足化とゲーム理論のシミュレーション（計算だけ）。DOM は使いません（Node でもテストできます）。
+ *
+ *   satisficing  … 候補を1つずつ見て、どこで止めるか（満足化・最大化・37%ルール・最適停止）
+ *   game2x2      … 2×2ゲームの均衡分析と、レプリケーター動態・学習のシミュレーション
+ *   ipd          … くり返し囚人のジレンマの総当たり大会と、戦略の割合の進化
+ *   spatial      … 格子の上で隣とだけ遊ぶ囚人のジレンマ（Nowak–May 型）
+ *
+ * 乱数はすべて seed 付き（同じ seed なら同じ結果）。
+ */
+(function (root) {
+  "use strict";
+
+  // ---------------------------------------------------------------- 乱数
+  function rng(seed) {
+    // mulberry32
+    let a = seed >>> 0;
+    return function () {
+      a = (a + 0x6d2b79f5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function gauss(r) {
+    let u = 0;
+    while (u === 0) u = r();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * r());
+  }
+  const clamp = (x, lo, hi) => (x < lo ? lo : x > hi ? hi : x);
+
+  // ================================================================ 満足化
+  const DISTS = {
+    uniform: { label: "一様（どの値も同じくらい）", draw: (r) => 100 * r() },
+    normal: { label: "山なり（平凡が多い）", draw: (r) => clamp(50 + 15 * gauss(r), 0, 100) },
+    rare: { label: "まれに大当たり", draw: (r) => 100 * Math.pow(r(), 3) },
+    mostly: { label: "ほとんど良い", draw: (r) => 100 * (1 - Math.pow(r(), 3)) },
+  };
+
+  /** trials 回ぶんの「候補の列」を作る。truth=本当の値、seen=見えた値（ノイズ入り） */
+  function makeTrials({ n, trials, dist = "uniform", noise = 0, seed = 1 }) {
+    const r = rng(seed);
+    const draw = (DISTS[dist] || DISTS.uniform).draw;
+    const truth = new Float64Array(trials * n);
+    const seen = new Float64Array(trials * n);
+    for (let i = 0; i < truth.length; i++) {
+      const v = draw(r);
+      truth[i] = v;
+      seen[i] = noise > 0 ? v + noise * gauss(r) : v;
+    }
+    return { n, trials, truth, seen, dist };
+  }
+
+  /** 分布を知っている人の最適停止のしきい値（戻れない前提、後ろ向き帰納法） */
+  function optimalThresholds(n, cost, dist = "uniform", seed = 99) {
+    const M = 20000;
+    const r = rng(seed);
+    const draw = (DISTS[dist] || DISTS.uniform).draw;
+    const s = new Float64Array(M);
+    for (let i = 0; i < M; i++) s[i] = draw(r);
+    s.sort();
+    const suffix = new Float64Array(M + 1); // suffix[i] = s[i] + ... + s[M-1]
+    for (let i = M - 1; i >= 0; i--) suffix[i] = suffix[i + 1] + s[i];
+    const eMax = (t) => {
+      // E[max(X, t)]
+      let lo = 0, hi = M;
+      while (lo < hi) {
+        const mid = (lo + hi) >> 1;
+        if (s[mid] < t) lo = mid + 1; else hi = mid;
+      }
+      return (t * lo + suffix[lo]) / M;
+    };
+    // C[k] = k 番目を見る直前の「この先の期待手取り」（k 番目以降の探索コストを含む）
+    const C = new Float64Array(n + 1);
+    C[n - 1] = suffix[0] / M - cost;
+    for (let k = n - 2; k >= 0; k--) C[k] = eMax(C[k + 1]) - cost;
+    const th = new Float64Array(n);
+    for (let k = 0; k < n - 1; k++) th[k] = C[k + 1];
+    th[n - 1] = -Infinity;
+    return { thresholds: th, expected: C[0] };
+  }
+
+  function argmaxSeen(seen, base, upto) {
+    let best = base;
+    for (let k = base + 1; k < base + upto; k++) if (seen[k] > seen[best]) best = k;
+    return best - base;
+  }
+
+  /**
+   * 1回ぶんの探索。戻り値 { looked: 見た数, pick: 選んだ位置 }
+   * strategy: { kind: "satisfice", aspiration, drop } | { kind: "maximize" } | { kind: "secretary" } | { kind: "optimal", thresholds }
+   */
+  function searchOnce(T, t, strategy, recall) {
+    const { n, seen } = T;
+    const base = t * n;
+    switch (strategy.kind) {
+      case "maximize":
+        return { looked: n, pick: argmaxSeen(seen, base, n) };
+      case "secretary": {
+        const m = Math.max(1, Math.round(n / Math.E));
+        if (m >= n) return { looked: n, pick: argmaxSeen(seen, base, n) };
+        let bestSeen = -Infinity;
+        for (let k = 0; k < m; k++) if (seen[base + k] > bestSeen) bestSeen = seen[base + k];
+        for (let k = m; k < n; k++) if (seen[base + k] > bestSeen) return { looked: k + 1, pick: k };
+        return { looked: n, pick: recall ? argmaxSeen(seen, base, n) : n - 1 };
+      }
+      case "optimal": {
+        const th = strategy.thresholds;
+        for (let k = 0; k < n; k++) if (seen[base + k] >= th[k]) return { looked: k + 1, pick: k };
+        return { looked: n, pick: n - 1 };
+      }
+      default: {
+        // 満足化: 願望水準 A 以上の最初の候補で止まる。drop>0 なら1つ見るごとに A を下げる（妥協）
+        const A = strategy.aspiration, d = strategy.drop || 0;
+        for (let k = 0; k < n; k++) if (seen[base + k] >= A - d * k) return { looked: k + 1, pick: k };
+        return { looked: n, pick: recall ? argmaxSeen(seen, base, n) : n - 1 };
+      }
+    }
+  }
+
+  /** ある戦略を全試行で評価する */
+  function evaluate(T, strategy, cost, recall, keepNet) {
+    const { n, trials, truth } = T;
+    let sumNet = 0, sumVal = 0, sumLook = 0, hitBest = 0;
+    const nets = keepNet ? new Float64Array(trials) : null;
+    for (let t = 0; t < trials; t++) {
+      const { looked, pick } = searchOnce(T, t, strategy, recall);
+      const base = t * n;
+      const v = truth[base + pick];
+      let bestTrue = truth[base];
+      for (let k = 1; k < n; k++) if (truth[base + k] > bestTrue) bestTrue = truth[base + k];
+      const net = v - cost * looked;
+      sumNet += net; sumVal += v; sumLook += looked;
+      if (v >= bestTrue) hitBest++;
+      if (nets) nets[t] = net;
+    }
+    return { net: sumNet / trials, value: sumVal / trials, looked: sumLook / trials, pBest: hitBest / trials, nets };
+  }
+
+  /** 願望水準を 0〜100 で動かしたときの平均手取り（共通の乱数で比べるので曲線がなめらか） */
+  function sweepAspiration(T, cost, drop, recall, step = 1) {
+    const xs = [], net = [], looked = [];
+    let best = { a: 0, net: -Infinity };
+    for (let a = 0; a <= 100 + 1e-9; a += step) {
+      const e = evaluate(T, { kind: "satisfice", aspiration: a, drop }, cost, recall);
+      xs.push(a); net.push(e.net); looked.push(e.looked);
+      if (e.net > best.net) best = { a, net: e.net };
+    }
+    return { xs, net, looked, best };
+  }
+
+  /** 満足化タブ用: すべての戦略をまとめて評価 */
+  function runSatisficing(p) {
+    const T = makeTrials(p);
+    const opt = optimalThresholds(p.n, p.cost, p.dist);
+    const strategies = {
+      satisfice: { kind: "satisfice", aspiration: p.aspiration, drop: 0 },
+      adaptive: { kind: "satisfice", aspiration: p.aspiration, drop: p.drop },
+      maximize: { kind: "maximize" },
+      secretary: { kind: "secretary" },
+      optimal: { kind: "optimal", thresholds: opt.thresholds },
+    };
+    const results = {};
+    for (const [k, s] of Object.entries(strategies)) results[k] = evaluate(T, s, p.cost, p.recall, true);
+    const sweep = sweepAspiration(T, p.cost, 0, p.recall);
+    const sweepAdaptive = p.drop > 0 ? sweepAspiration(T, p.cost, p.drop, p.recall) : null;
+    // 例として見せる1回ぶん
+    const ex = p.exampleIndex % p.trials;
+    const example = {
+      truth: Array.from(T.truth.subarray(ex * p.n, ex * p.n + p.n)),
+      seen: Array.from(T.seen.subarray(ex * p.n, ex * p.n + p.n)),
+      stops: Object.fromEntries(Object.entries(strategies).map(([k, s]) => [k, searchOnce(T, ex, s, p.recall)])),
+    };
+    return { results, sweep, sweepAdaptive, optimal: opt, example, strategies };
+  }
+
+  // ================================================================ 2×2ゲーム
+  // g.a[i][j] = 行プレイヤー（A）の利得、g.b[i][j] = 列プレイヤー（B）の利得。i=0:上 1:下、j=0:左 1:右
+  const GAMES = {
+    pd: { label: "囚人のジレンマ", rows: ["協力", "裏切り"], cols: ["協力", "裏切り"], a: [[3, 0], [5, 1]], b: [[3, 5], [0, 1]],
+      note: "2人とも裏切るのが唯一の均衡。でも2人とも協力したほうが、どちらにとっても得です。" },
+    stag: { label: "鹿狩り", rows: ["鹿", "うさぎ"], cols: ["鹿", "うさぎ"], a: [[4, 0], [3, 3]], b: [[4, 3], [0, 3]],
+      note: "均衡が2つ。大きな得（鹿）は相手を信じないと取れず、安全な手（うさぎ）は小さな得で確実。" },
+    chicken: { label: "チキンゲーム", rows: ["よける", "突っこむ"], cols: ["よける", "突っこむ"], a: [[3, 1], [4, 0]], b: [[3, 4], [1, 0]],
+      note: "相手と逆の手を取るのが均衡。どちらが譲るかで争いになり、混合戦略の均衡もあります。" },
+    bos: { label: "男女の争い", rows: ["映画", "野球"], cols: ["映画", "野球"], a: [[3, 0], [0, 2]], b: [[2, 0], [0, 3]],
+      note: "一緒に行きたいが、行き先の好みがちがう。どちらの均衡に落ちつくかで得をする人が変わります。" },
+    coord: { label: "調整ゲーム", rows: ["左側通行", "右側通行"], cols: ["左側通行", "右側通行"], a: [[2, 0], [0, 1]], b: [[2, 0], [0, 1]],
+      note: "そろえば得をする。どちらにそろっても均衡ですが、2つの均衡の良さがちがいます。" },
+    pennies: { label: "コイン合わせ", rows: ["表", "裏"], cols: ["表", "裏"], a: [[1, -1], [-1, 1]], b: [[-1, 1], [1, -1]],
+      note: "純粋戦略の均衡がなく、半々で出すのが唯一の均衡。動態は均衡のまわりを回ります。" },
+    hawkdove: { label: "タカとハト", rows: ["タカ", "ハト"], cols: ["タカ", "ハト"], a: [[-1, 4], [0, 2]], b: [[-1, 0], [4, 2]],
+      note: "資源の価値 V=4、けんかの損 C=6 の例。けんかが高くつくほど、ハトが増えます。" },
+  };
+
+  function analyze2x2(g) {
+    const { a, b } = g;
+    const nash = [];
+    const rowBR = [[], []], colBR = [[], []]; // rowBR[j] = 列 j に対する A の最適反応（行の集合）
+    for (let j = 0; j < 2; j++) {
+      const m = Math.max(a[0][j], a[1][j]);
+      for (let i = 0; i < 2; i++) if (a[i][j] === m) rowBR[j].push(i);
+    }
+    for (let i = 0; i < 2; i++) {
+      const m = Math.max(b[i][0], b[i][1]);
+      for (let j = 0; j < 2; j++) if (b[i][j] === m) colBR[i].push(j);
+    }
+    for (let i = 0; i < 2; i++)
+      for (let j = 0; j < 2; j++) if (rowBR[j].includes(i) && colBR[i].includes(j)) nash.push([i, j]);
+
+    const dominant = { row: null, col: null };
+    for (let i = 0; i < 2; i++) if (a[i][0] > a[1 - i][0] && a[i][1] > a[1 - i][1]) dominant.row = i;
+    for (let j = 0; j < 2; j++) if (b[0][j] > b[0][1 - j] && b[1][j] > b[1][1 - j]) dominant.col = j;
+
+    const pareto = [];
+    for (let i = 0; i < 2; i++)
+      for (let j = 0; j < 2; j++) {
+        let dominated = false;
+        for (let k = 0; k < 2; k++)
+          for (let l = 0; l < 2; l++)
+            if (a[k][l] >= a[i][j] && b[k][l] >= b[i][j] && (a[k][l] > a[i][j] || b[k][l] > b[i][j])) dominated = true;
+        if (!dominated) pareto.push([i, j]);
+      }
+
+    // 混合戦略: p = A が上を出す確率、q = B が左を出す確率
+    let mixed = null;
+    const dq = a[0][0] - a[0][1] - a[1][0] + a[1][1];
+    const dp = b[0][0] - b[1][0] - b[0][1] + b[1][1];
+    if (dq !== 0 && dp !== 0) {
+      const q = (a[1][1] - a[0][1]) / dq;
+      const p = (b[1][1] - b[1][0]) / dp;
+      if (p > 0 && p < 1 && q > 0 && q < 1) {
+        mixed = { p, q, payA: a[0][0] * q + a[0][1] * (1 - q), payB: b[0][0] * p + b[1][0] * (1 - p) };
+      }
+    }
+    return { nash, dominant, pareto, mixed, rowBR, colBR };
+  }
+
+  /** 2集団レプリケーター動態の向き (dp/dt, dq/dt) */
+  function replicatorField(g, p, q) {
+    const { a, b } = g;
+    const fa = (a[0][0] - a[1][0]) * q + (a[0][1] - a[1][1]) * (1 - q);
+    const fb = (b[0][0] - b[0][1]) * p + (b[1][0] - b[1][1]) * (1 - p);
+    return [p * (1 - p) * fa, q * (1 - q) * fb];
+  }
+
+  function replicatorPath(g, p0, q0, steps = 1500, dt = 0.02) {
+    const out = [[p0, q0]];
+    let p = p0, q = q0;
+    for (let s = 0; s < steps; s++) {
+      const k1 = replicatorField(g, p, q);
+      const k2 = replicatorField(g, p + (dt / 2) * k1[0], q + (dt / 2) * k1[1]);
+      const k3 = replicatorField(g, p + (dt / 2) * k2[0], q + (dt / 2) * k2[1]);
+      const k4 = replicatorField(g, p + dt * k3[0], q + dt * k3[1]);
+      p = clamp(p + (dt / 6) * (k1[0] + 2 * k2[0] + 2 * k3[0] + k4[0]), 0, 1);
+      q = clamp(q + (dt / 6) * (k1[1] + 2 * k2[1] + 2 * k3[1] + k4[1]), 0, 1);
+      out.push([p, q]);
+    }
+    return out;
+  }
+
+  /**
+   * 満足化学習（願望水準つきの強化学習: Bush–Mosteller 型）
+   * 得点が願望水準以上なら、いま出した手を出す確率を上げる。下回ったら下げる。
+   * 願望水準は h の速さで、最近の得点に近づく（h=0 なら固定）。
+   */
+  function aspirationLearning(g, { p0, q0, rounds = 2000, rate = 0.1, aspA, aspB, habit = 0, seed = 1 }) {
+    const r = rng(seed);
+    const { a, b } = g;
+    const flatA = a.flat(), flatB = b.flat();
+    let p = p0, q = q0, AA = aspA, AB = aspB;
+    const path = [[p, q]];
+    const asp = [[AA, AB]];
+    const counts = [[0, 0], [0, 0]];
+    const tail = Math.floor(rounds * 0.8);
+    for (let t = 0; t < rounds; t++) {
+      const i = r() < p ? 0 : 1;
+      const j = r() < q ? 0 : 1;
+      const pa = a[i][j], pb = b[i][j];
+      const sa = (pa - AA) / Math.max(1e-9, ...flatA.map((x) => Math.abs(x - AA)));
+      const sb = (pb - AB) / Math.max(1e-9, ...flatB.map((x) => Math.abs(x - AB)));
+      // 選んだ手の確率を更新
+      let pi = i === 0 ? p : 1 - p;
+      pi = sa >= 0 ? pi + rate * sa * (1 - pi) : pi + rate * sa * pi;
+      p = i === 0 ? pi : 1 - pi;
+      let qj = j === 0 ? q : 1 - q;
+      qj = sb >= 0 ? qj + rate * sb * (1 - qj) : qj + rate * sb * qj;
+      q = j === 0 ? qj : 1 - qj;
+      AA += habit * (pa - AA);
+      AB += habit * (pb - AB);
+      path.push([p, q]);
+      asp.push([AA, AB]);
+      if (t >= tail) counts[i][j]++;
+    }
+    return { path, aspiration: asp, counts };
+  }
+
+  /** 仮想プレイ: 相手のこれまでの出し方の割合に対して、最適反応を出す */
+  function fictitiousPlay(g, { p0, q0, rounds = 2000, seed = 1 }) {
+    const r = rng(seed);
+    const { a, b } = g;
+    let nA = [p0, 1 - p0], nB = [q0, 1 - q0]; // 重み1の事前の数
+    const path = [[p0, q0]];
+    const counts = [[0, 0], [0, 0]];
+    const tail = Math.floor(rounds * 0.8);
+    for (let t = 0; t < rounds; t++) {
+      const q = nB[0] / (nB[0] + nB[1]);
+      const p = nA[0] / (nA[0] + nA[1]);
+      const u0 = a[0][0] * q + a[0][1] * (1 - q), u1 = a[1][0] * q + a[1][1] * (1 - q);
+      const v0 = b[0][0] * p + b[1][0] * (1 - p), v1 = b[0][1] * p + b[1][1] * (1 - p);
+      const i = u0 > u1 ? 0 : u1 > u0 ? 1 : r() < 0.5 ? 0 : 1;
+      const j = v0 > v1 ? 0 : v1 > v0 ? 1 : r() < 0.5 ? 0 : 1;
+      nA[i]++; nB[j]++;
+      path.push([nA[0] / (nA[0] + nA[1]), nB[0] / (nB[0] + nB[1])]);
+      if (t >= tail) counts[i][j]++;
+    }
+    return { path, counts };
+  }
+
+  // ================================================================ くり返し囚人のジレンマ
+  // 手: 1 = 協力 (C), 0 = 裏切り (D)
+  const IPD_STRATEGIES = [
+    { id: "tft", name: "しっぺ返し", desc: "最初は協力。あとは相手の前の手をまねる。",
+      make: () => (t, my, op) => (t === 0 ? 1 : op) },
+    { id: "alld", name: "いつも裏切り", desc: "ずっと裏切る。",
+      make: () => () => 0 },
+    { id: "wsls", name: "パブロフ", desc: "勝てば同じ手、負ければ手を変える（願望水準 R の満足化と同じ）。",
+      make: () => (t, my, op, pay, P) => (t === 0 ? 1 : pay >= P.R ? my : 1 - my) },
+    { id: "sat", name: "満足化", desc: "得点が願望水準以上なら同じ手、下回ったら手を変える。",
+      make: (prm) => {
+        let A = prm.aspiration;
+        return (t, my, op, pay) => {
+          if (t === 0) return 1;
+          const keep = pay >= A;
+          A += prm.habit * (pay - A);
+          return keep ? my : 1 - my;
+        };
+      } },
+    { id: "allc", name: "いつも協力", desc: "ずっと協力する。",
+      make: () => () => 1 },
+    { id: "grim", name: "恨み続ける", desc: "1回でも裏切られたら、そのあとずっと裏切る。",
+      make: () => {
+        let mad = false;
+        return (t, my, op) => {
+          if (t > 0 && op === 0) mad = true;
+          return mad ? 0 : 1;
+        };
+      } },
+    { id: "gtft", name: "寛容なしっぺ返し", desc: "しっぺ返しだが、裏切られても 1/3 の確率で許す。",
+      make: (prm, r) => (t, my, op) => (t === 0 || op === 1 ? 1 : r() < 1 / 3 ? 1 : 0) },
+    { id: "rand", name: "でたらめ", desc: "半々の確率で協力か裏切り。",
+      make: (prm, r) => () => (r() < 0.5 ? 1 : 0) },
+  ];
+
+  function ipdPay(P, me, op) {
+    return me ? (op ? P.R : P.S) : op ? P.T : P.P;
+  }
+
+  /** 1試合。戻り値は1ラウンドあたりの平均得点 [x, y] と協力率 */
+  function playMatch(sx, sy, P, rounds, noise, prm, r) {
+    const fx = sx.make(prm, r), fy = sy.make(prm, r);
+    let mx = 1, my = 1, px = 0, py = 0, tx = 0, ty = 0, coop = 0;
+    for (let t = 0; t < rounds; t++) {
+      let ax = fx(t, mx, my, px, P);
+      let ay = fy(t, my, mx, py, P);
+      if (noise > 0) {
+        if (r() < noise) ax = 1 - ax;
+        if (r() < noise) ay = 1 - ay;
+      }
+      px = ipdPay(P, ax, ay);
+      py = ipdPay(P, ay, ax);
+      tx += px; ty += py; coop += ax + ay;
+      mx = ax; my = ay;
+    }
+    return [tx / rounds, ty / rounds, coop / (2 * rounds)];
+  }
+
+  /** 総当たり（自分自身との対戦も含む）。M[i][j] = i が j と戦ったときの平均得点 */
+  function tournament({ ids, payoff: P, rounds = 200, noise = 0, reps = 10, aspiration = 2, habit = 0, seed = 1 }) {
+    const r = rng(seed);
+    const strats = ids.map((id) => IPD_STRATEGIES.find((s) => s.id === id)).filter(Boolean);
+    const k = strats.length;
+    const M = Array.from({ length: k }, () => new Array(k).fill(0));
+    const C = Array.from({ length: k }, () => new Array(k).fill(0));
+    const prm = { aspiration, habit };
+    for (let i = 0; i < k; i++)
+      for (let j = i; j < k; j++) {
+        let sx = 0, sy = 0, sc = 0;
+        for (let rep = 0; rep < reps; rep++) {
+          const [x, y, c] = playMatch(strats[i], strats[j], P, rounds, noise, prm, r);
+          sx += x; sy += y; sc += c;
+        }
+        M[i][j] = i === j ? (sx + sy) / (2 * reps) : sx / reps;
+        M[j][i] = i === j ? M[i][j] : sy / reps;
+        C[i][j] = C[j][i] = sc / reps;
+      }
+    const scores = M.map((row) => row.reduce((s, x) => s + x, 0) / k);
+    return { strategies: strats, M, coop: C, scores };
+  }
+
+  /** 戦略の割合の進化（離散レプリケーター）。得点が高い戦略ほど次の世代で増える */
+  function evolve(M, x0, generations = 100) {
+    const k = M.length;
+    let minM = Infinity;
+    for (const row of M) for (const v of row) minM = Math.min(minM, v);
+    let x = x0.slice();
+    const hist = [x.slice()];
+    for (let g = 0; g < generations; g++) {
+      const f = new Array(k).fill(0);
+      let mean = 0;
+      for (let i = 0; i < k; i++) {
+        for (let j = 0; j < k; j++) f[i] += M[i][j] * x[j];
+        f[i] = f[i] - minM + 0.05; // すべて正にする（向きは変わらない）
+        mean += f[i] * x[i];
+      }
+      x = x.map((xi, i) => (xi * f[i]) / mean);
+      hist.push(x.slice());
+    }
+    return hist;
+  }
+
+  // ================================================================ 空間ゲーム
+  function spatialInit(L, mode, coopFrac, seed) {
+    const r = rng(seed);
+    const g = new Uint8Array(L * L);
+    if (mode === "single") {
+      g.fill(1);
+      g[(L >> 1) * L + (L >> 1)] = 0;
+    } else if (mode === "island") {
+      const h = Math.max(2, Math.round(L / 10));
+      for (let y = 0; y < L; y++)
+        for (let x = 0; x < L; x++) g[y * L + x] = Math.abs(y - L / 2) < h && Math.abs(x - L / 2) < h ? 1 : 0;
+    } else {
+      for (let i = 0; i < g.length; i++) g[i] = r() < coopFrac ? 1 : 0;
+    }
+    return g;
+  }
+
+  /**
+   * 1世代すすめる（全員いっせいに更新）。
+   * 得点: C と C → 1、D が C から → b、それ以外 0（Nowak–May の弱い囚人のジレンマ）
+   * rule: "best"   … まわり（自分を含む）でいちばん得点が高い人をまねる
+   *       "fermi"  … ランダムな隣を1人見て、得点差が大きいほど高い確率でまねる
+   *       "aspire" … 1回あたりの得点が願望水準未満なら、半分の確率で手を変える（満足化）
+   */
+  function spatialStep(g, L, prm, r, pay) {
+    const { b, self = true, rule = "best", K = 0.1, aspiration = 0.5, mutation = 0 } = prm;
+    const N = L * L;
+    if (!pay || pay.length !== N) pay = new Float64Array(N);
+    for (let y = 0; y < L; y++) {
+      const ym = ((y - 1 + L) % L) * L, y0 = y * L, yp = ((y + 1) % L) * L;
+      for (let x = 0; x < L; x++) {
+        const xm = (x - 1 + L) % L, xp = (x + 1) % L;
+        const nc =
+          g[ym + xm] + g[ym + x] + g[ym + xp] + g[y0 + xm] + g[y0 + xp] + g[yp + xm] + g[yp + x] + g[yp + xp] +
+          (self ? g[y0 + x] : 0);
+        pay[y0 + x] = g[y0 + x] ? nc : b * nc;
+      }
+    }
+    const games = self ? 9 : 8;
+    const next = new Uint8Array(N);
+    for (let y = 0; y < L; y++) {
+      for (let x = 0; x < L; x++) {
+        const i = y * L + x;
+        let s = g[i];
+        if (rule === "best") {
+          let bp = pay[i];
+          for (let dy = -1; dy <= 1; dy++)
+            for (let dx = -1; dx <= 1; dx++) {
+              if (!dx && !dy) continue;
+              const j = ((y + dy + L) % L) * L + ((x + dx + L) % L);
+              if (pay[j] > bp) { bp = pay[j]; s = g[j]; }
+            }
+        } else if (rule === "fermi") {
+          const k = Math.floor(r() * 8);
+          const dx = [-1, 0, 1, -1, 1, -1, 0, 1][k], dy = [-1, -1, -1, 0, 0, 1, 1, 1][k];
+          const j = ((y + dy + L) % L) * L + ((x + dx + L) % L);
+          const pr = 1 / (1 + Math.exp((pay[i] - pay[j]) / (games * Math.max(K, 1e-4))));
+          if (r() < pr) s = g[j];
+        } else {
+          if (pay[i] / games < aspiration && r() < 0.5) s = 1 - s;
+        }
+        if (mutation > 0 && r() < mutation) s = 1 - s;
+        next[i] = s;
+      }
+    }
+    return { next, pay };
+  }
+
+  const api = {
+    rng, gauss, DISTS, makeTrials, optimalThresholds, searchOnce, evaluate, sweepAspiration, runSatisficing,
+    GAMES, analyze2x2, replicatorField, replicatorPath, aspirationLearning, fictitiousPlay,
+    IPD_STRATEGIES, playMatch, tournament, evolve, spatialInit, spatialStep,
+  };
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  else root.GameLabSim = api;
+})(typeof globalThis !== "undefined" ? globalThis : this);
+
+</script>
+<script>
+/* src/chart.js */
+/*
+ * 小さなキャンバス用グラフ部品（折れ線・積み上げ面）。ライブラリなし。
+ * 色はすべて CSS 変数から読むので、ライト／ダークどちらでも読めます。
+ */
+(function (root) {
+  "use strict";
+
+  const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const color = (c) => (c && c.startsWith("--") ? css(c) : c);
+
+  function niceTicks(min, max, count = 5) {
+    if (!(max > min)) return [min];
+    const span = max - min;
+    const step0 = span / count;
+    const mag = Math.pow(10, Math.floor(Math.log10(step0)));
+    const err = step0 / mag;
+    const step = (err >= 7.5 ? 10 : err >= 3.5 ? 5 : err >= 1.5 ? 2 : 1) * mag;
+    const out = [];
+    for (let v = Math.ceil(min / step - 1e-9) * step; v <= max + 1e-9; v += step) out.push(+v.toFixed(10));
+    return out;
+  }
+
+  function setupCanvas(canvas, w, h) {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+    }
+    canvas.style.width = w + "px";
+    canvas.style.height = h + "px";
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return ctx;
+  }
+
+  const FONT = '12px "IBM Plex Mono", ui-monospace, monospace';
+  const FONT_LABEL = '12px "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic UI", sans-serif';
+
+  /**
+   * 折れ線グラフ / 積み上げ面グラフ
+   * spec = {
+   *   xs: [...], series: [{ name, color: "--s1", ys: [...], width, dash, area }],
+   *   stacked: false, xDomain, yDomain, xLabel, yLabel, xFmt, yFmt,
+   *   hlines: [{ y, color, label, dash }], vlines: [{ x, color, label }], points: [{ x, y, color, label }],
+   *   tooltip: (index) => [ [label, value, color], ... ] | null
+   * }
+   */
+  class Chart {
+    constructor(wrap, opts = {}) {
+      this.wrap = wrap;
+      this.opts = opts;
+      this.canvas = document.createElement("canvas");
+      this.canvas.setAttribute("role", "img");
+      if (opts.ariaLabel) this.canvas.setAttribute("aria-label", opts.ariaLabel);
+      this.tip = document.createElement("div");
+      this.tip.className = "tip";
+      this.tip.hidden = true;
+      wrap.append(this.canvas, this.tip);
+      this.hover = null;
+      new ResizeObserver(() => this.draw()).observe(wrap);
+      this.canvas.addEventListener("pointermove", (e) => this.onMove(e));
+      this.canvas.addEventListener("pointerleave", () => { this.hover = null; this.tip.hidden = true; this.draw(); });
+    }
+    set(spec) { this.spec = spec; this.draw(); }
+
+    geom() {
+      const w = this.wrap.clientWidth;
+      const h = this.opts.height || 260;
+      const m = { l: 48, r: 14, t: 12, b: 38 };
+      return { w, h, m, pw: Math.max(10, w - m.l - m.r), ph: Math.max(10, h - m.t - m.b) };
+    }
+
+    domains() {
+      const s = this.spec;
+      const xs = s.xs;
+      const xd = s.xDomain || [xs[0], xs[xs.length - 1]];
+      let yd = s.yDomain;
+      if (!yd) {
+        let lo = Infinity, hi = -Infinity;
+        for (const se of s.series) for (const v of se.ys) if (isFinite(v)) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+        for (const hl of s.hlines || []) { lo = Math.min(lo, hl.y); hi = Math.max(hi, hl.y); }
+        if (!isFinite(lo)) { lo = 0; hi = 1; }
+        const pad = (hi - lo) * 0.08 || 1;
+        yd = [lo - pad, hi + pad];
+      }
+      return { xd, yd };
+    }
+
+    draw() {
+      const s = this.spec;
+      if (!s || !this.wrap.isConnected || this.wrap.clientWidth === 0) return;
+      const { w, h, m, pw, ph } = this.geom();
+      const ctx = setupCanvas(this.canvas, w, h);
+      const { xd, yd } = this.domains();
+      const X = (x) => m.l + ((x - xd[0]) / (xd[1] - xd[0] || 1)) * pw;
+      const Y = (y) => m.t + ph - ((y - yd[0]) / (yd[1] - yd[0] || 1)) * ph;
+      this.X = X; this.Y = Y; this.m = m; this.pw = pw;
+      ctx.clearRect(0, 0, w, h);
+      const ink = css("--muted"), grid = css("--grid"), axis = css("--axis");
+
+      // 目盛りとグリッド
+      ctx.font = FONT;
+      ctx.fillStyle = ink;
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      const yt = niceTicks(yd[0], yd[1], Math.max(3, Math.round(ph / 48)));
+      for (const v of yt) {
+        const y = Math.round(Y(v)) + 0.5;
+        ctx.strokeStyle = grid; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(m.l, y); ctx.lineTo(m.l + pw, y); ctx.stroke();
+        ctx.fillText((s.yFmt || fmt)(v), m.l - 6, y);
+      }
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      const xt = niceTicks(xd[0], xd[1], Math.max(3, Math.round(pw / 80)));
+      for (const v of xt) ctx.fillText((s.xFmt || fmt)(v), X(v), m.t + ph + 6);
+      ctx.strokeStyle = axis; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(m.l, Math.round(m.t + ph) + 0.5); ctx.lineTo(m.l + pw, Math.round(m.t + ph) + 0.5); ctx.stroke();
+      ctx.font = FONT_LABEL;
+      if (s.xLabel) { ctx.textAlign = "right"; ctx.fillText(s.xLabel, m.l + pw, m.t + ph + 22); }
+      if (s.yLabel) { ctx.textAlign = "left"; ctx.textBaseline = "top"; ctx.fillText(s.yLabel, m.l + 4, m.t); }
+
+      ctx.save();
+      ctx.beginPath(); ctx.rect(m.l, m.t - 2, pw, ph + 4); ctx.clip();
+
+      if (s.stacked) {
+        // 積み上げ面（各層の間に背景色で 2px のすき間）
+        const n = s.xs.length;
+        const base = new Float64Array(n);
+        const surf = css("--surface");
+        for (const se of s.series) {
+          ctx.beginPath();
+          for (let i = 0; i < n; i++) { const x = X(s.xs[i]), y = Y(base[i] + se.ys[i]); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+          for (let i = n - 1; i >= 0; i--) ctx.lineTo(X(s.xs[i]), Y(base[i]));
+          ctx.closePath();
+          ctx.fillStyle = color(se.color);
+          ctx.fill();
+          for (let i = 0; i < n; i++) base[i] += se.ys[i];
+          ctx.beginPath();
+          for (let i = 0; i < n; i++) { const x = X(s.xs[i]), y = Y(base[i]); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+          ctx.strokeStyle = surf; ctx.lineWidth = 2; ctx.stroke();
+        }
+      } else {
+        for (const se of s.series) {
+          if (se.area) {
+            ctx.beginPath();
+            se.ys.forEach((v, i) => { const x = X(s.xs[i]), y = Y(v); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+            ctx.lineTo(X(s.xs[s.xs.length - 1]), Y(yd[0])); ctx.lineTo(X(s.xs[0]), Y(yd[0])); ctx.closePath();
+            ctx.globalAlpha = 0.12; ctx.fillStyle = color(se.color); ctx.fill(); ctx.globalAlpha = 1;
+          }
+          ctx.beginPath();
+          let started = false;
+          se.ys.forEach((v, i) => {
+            if (!isFinite(v)) { started = false; return; }
+            const x = X(s.xs[i]), y = Y(v);
+            started ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+            started = true;
+          });
+          ctx.strokeStyle = color(se.color);
+          ctx.lineWidth = se.width || 2;
+          ctx.lineJoin = "round";
+          ctx.setLineDash(se.dash || []);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+      }
+      for (const hl of s.hlines || []) {
+        const y = Math.round(Y(hl.y)) + 0.5;
+        ctx.strokeStyle = color(hl.color); ctx.lineWidth = hl.width || 1.5; ctx.setLineDash(hl.dash || [5, 4]);
+        ctx.beginPath(); ctx.moveTo(m.l, y); ctx.lineTo(m.l + pw, y); ctx.stroke(); ctx.setLineDash([]);
+      }
+      for (const vl of s.vlines || []) {
+        const x = Math.round(X(vl.x)) + 0.5;
+        ctx.strokeStyle = color(vl.color || "--axis"); ctx.lineWidth = 1; ctx.setLineDash(vl.dash || [3, 3]);
+        ctx.beginPath(); ctx.moveTo(x, m.t); ctx.lineTo(x, m.t + ph); ctx.stroke(); ctx.setLineDash([]);
+      }
+      ctx.restore();
+
+      // ラベル付きの点（2px の背景色リング）
+      const surf = css("--surface");
+      for (const pt of s.points || []) {
+        const x = X(pt.x), y = Y(pt.y);
+        ctx.beginPath(); ctx.arc(x, y, pt.r || 5, 0, Math.PI * 2);
+        ctx.fillStyle = pt.hollow ? surf : color(pt.color); ctx.fill();
+        ctx.lineWidth = pt.hollow ? 2.5 : 2; ctx.strokeStyle = pt.hollow ? color(pt.color) : surf; ctx.stroke();
+        if (pt.label) {
+          ctx.font = FONT_LABEL; ctx.fillStyle = css("--ink"); ctx.textBaseline = "bottom";
+          const tw = ctx.measureText(pt.label).width;
+          const right = x + 8 + tw < m.l + pw;
+          ctx.textAlign = right ? "left" : "right";
+          ctx.fillText(pt.label, right ? x + 8 : x - 8, y - 4);
+        }
+      }
+      for (const hl of s.hlines || []) {
+        if (!hl.label) continue;
+        ctx.font = FONT_LABEL; ctx.fillStyle = css("--ink-2"); ctx.textAlign = "left"; ctx.textBaseline = "bottom";
+        ctx.fillText(hl.label, m.l + 6, Y(hl.y) - 3);
+      }
+
+      // ホバー（十字線と各系列の点）
+      if (this.hover != null) {
+        const i = this.hover;
+        const x = Math.round(X(s.xs[i])) + 0.5;
+        ctx.strokeStyle = axis; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(x, m.t); ctx.lineTo(x, m.t + ph); ctx.stroke();
+        let base = 0;
+        for (const se of s.series) {
+          const v = s.stacked ? (base += se.ys[i]) : se.ys[i];
+          if (!isFinite(v)) continue;
+          ctx.beginPath(); ctx.arc(X(s.xs[i]), Y(v), 4, 0, Math.PI * 2);
+          ctx.fillStyle = color(se.color); ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = surf; ctx.stroke();
+        }
+      }
+    }
+
+    onMove(e) {
+      const s = this.spec;
+      if (!s || !this.X) return;
+      const rect = this.canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      let best = 0, bd = Infinity;
+      for (let i = 0; i < s.xs.length; i++) {
+        const d = Math.abs(this.X(s.xs[i]) - mx);
+        if (d < bd) { bd = d; best = i; }
+      }
+      this.hover = best;
+      this.draw();
+      const rows = s.tooltip
+        ? s.tooltip(best)
+        : s.series.map((se) => [se.name, (s.yFmt || fmt)(se.ys[best]), se.color]);
+      if (!rows) { this.tip.hidden = true; return; }
+      const head = s.tipHead ? s.tipHead(best) : `${s.xLabel || "x"} ${(s.xFmt || fmt)(s.xs[best])}`;
+      this.tip.innerHTML =
+        `<div class="tip-head">${head}</div>` +
+        rows.map(([k, v, c]) => `<div class="tip-row"><i style="background:${color(c) || "transparent"}"></i><span>${k}</span><b>${v}</b></div>`).join("");
+      this.tip.hidden = false;
+      const tw = this.tip.offsetWidth;
+      const x = this.X(s.xs[best]);
+      const left = x + 14 + tw < this.wrap.clientWidth ? x + 14 : Math.max(0, x - 14 - tw);
+      this.tip.style.left = left + "px";
+      this.tip.style.top = Math.max(0, e.clientY - rect.top - 40) + "px";
+    }
+  }
+
+  function fmt(v) {
+    if (!isFinite(v)) return "–";
+    const a = Math.abs(v);
+    if (a >= 1000) return Math.round(v).toLocaleString("ja-JP");
+    if (a >= 100 || Number.isInteger(v)) return String(Math.round(v * 10) / 10);
+    return (Math.round(v * 100) / 100).toString();
+  }
+
+  root.GameLabChart = { Chart, niceTicks, setupCanvas, css, color, fmt };
+})(typeof globalThis !== "undefined" ? globalThis : this);
+
+</script>
+<script>
+/* src/app.js */
+/* 画面の動き。計算は sim.js、グラフは chart.js。 */
+(function () {
+  "use strict";
+  const S = window.GameLabSim;
+  const { Chart, setupCanvas, css, color, fmt } = window.GameLabChart;
+  const $ = (id) => document.getElementById(id);
+  const num = (id) => +$(id).value;
+  const f1 = (v) => (Math.round(v * 10) / 10).toFixed(1);
+  const f2 = (v) => (Math.round(v * 100) / 100).toFixed(2);
+  const pct = (v, d = 0) => (v * 100).toFixed(d) + "%";
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const FONT_LABEL = '12px "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic UI", sans-serif';
+  const FONT_NUM = '12px "IBM Plex Mono", ui-monospace, monospace';
+
+  // ------------------------------------------------------------ 共通: スライダーの数字表示
+  const OUT_FMT = {
+    "sat-cost": f1, "sat-drop": f1,
+    "mx-asp": (v) => v + "%", "mx-habit": (v) => v.toFixed(3), "mx-rate": f2, "mx-p0": f2, "mx-q0": f2,
+    "ipd-noise": (v) => pct(v, 1), "ipd-T": f1, "ipd-R": f1, "ipd-P": f1, "ipd-S": f1, "ipd-asp": f1, "ipd-habit": f2,
+    "sp-b": f2, "sp-K": f2, "sp-asp": f2, "sp-mu": (v) => pct(v, 1), "sp-c0": (v) => pct(v),
+  };
+  function syncOutputs(scope = document) {
+    scope.querySelectorAll('input[type="range"]').forEach((el) => {
+      const out = $(el.id + "-out");
+      if (out) out.textContent = (OUT_FMT[el.id] || String)(+el.value);
+    });
+  }
+
+  function legend(ul, items) {
+    ul.innerHTML = items
+      .map((it) =>
+        `<li>${it.line ? `<span class="ln${it.dash ? " dash" : ""}" style="border-color:${color(it.color)}"></span>` : `<span class="sw" style="background:${color(it.color)}"></span>`}${esc(it.name)}</li>`)
+      .join("");
+  }
+
+  /** 連続した入力を1フレームにまとめる */
+  function scheduler(fn) {
+    let queued = false, quick = true;
+    return (isQuick) => {
+      quick = queued ? quick && isQuick : isQuick;
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(() => { queued = false; fn(quick); });
+    };
+  }
+
+  // ------------------------------------------------------------ タブ
+  const TABS = ["satisfice", "matrix", "ipd", "spatial"];
+  const inited = {};
+  const INIT = {}, ON_SHOW = {}, ON_HIDE = {}, REDRAW = {};
+  let current = null;
+  function showTab(name) {
+    if (!TABS.includes(name)) name = "satisfice";
+    if (current && current !== name && ON_HIDE[current]) ON_HIDE[current]();
+    current = name;
+    for (const t of TABS) {
+      const on = t === name;
+      const btn = $("tab-" + t);
+      btn.setAttribute("aria-selected", on);
+      btn.tabIndex = on ? 0 : -1;
+      $("panel-" + t).hidden = !on;
+    }
+    if (!inited[name]) { inited[name] = true; INIT[name](); }
+    else if (REDRAW[name]) REDRAW[name]();
+    if (ON_SHOW[name]) ON_SHOW[name]();
+  }
+  document.querySelectorAll(".tab").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const name = btn.dataset.tab;
+      if (location.hash !== "#" + name) history.replaceState(null, "", "#" + name);
+      showTab(name);
+    });
+    btn.addEventListener("keydown", (e) => {
+      const i = TABS.indexOf(btn.dataset.tab);
+      const j = e.key === "ArrowRight" ? i + 1 : e.key === "ArrowLeft" ? i - 1 : null;
+      if (j == null) return;
+      e.preventDefault();
+      const next = $("tab-" + TABS[(j + TABS.length) % TABS.length]);
+      next.focus(); next.click();
+    });
+  });
+  window.addEventListener("hashchange", () => showTab(location.hash.slice(1)));
+
+  // ============================================================ 満足化
+  const SAT = [
+    { k: "satisfice", name: "満足化", color: "--s1" },
+    { k: "adaptive", name: "妥協する満足化", color: "--s2" },
+    { k: "maximize", name: "全部見る（最大化）", color: "--s3" },
+    { k: "secretary", name: "37%ルール", color: "--s4" },
+    { k: "optimal", name: "最適停止（理論上の目安）", color: "--ink", dash: true },
+  ];
+  INIT.satisfice = function () {
+    const dist = $("sat-dist");
+    dist.innerHTML = Object.entries(S.DISTS).map(([k, d]) => `<option value="${k}">${d.label}</option>`).join("");
+    let seed = 7, exampleIndex = 0, last = null;
+    const cache = { key: null, T: null, okey: null, opt: null };
+    const sweepChart = new Chart($("sat-sweep"), { height: 280, ariaLabel: "願望水準と平均の手取りのグラフ" });
+    const strip = makeStrip($("sat-strip"));
+
+    function compute(quick) {
+      const p = {
+        n: num("sat-n"), cost: num("sat-cost"), dist: dist.value, noise: num("sat-noise"),
+        aspiration: num("sat-asp"), drop: num("sat-drop"), recall: $("sat-recall").checked,
+        trials: quick ? Math.min(800, num("sat-trials")) : num("sat-trials"), seed,
+      };
+      const key = [p.n, p.trials, p.dist, p.noise, p.seed].join("|");
+      if (cache.key !== key) { cache.key = key; cache.T = S.makeTrials(p); }
+      const okey = [p.n, p.cost, p.dist].join("|");
+      if (cache.okey !== okey) { cache.okey = okey; cache.opt = S.optimalThresholds(p.n, p.cost, p.dist); }
+      const T = cache.T, opt = cache.opt;
+      const strategies = {
+        satisfice: { kind: "satisfice", aspiration: p.aspiration, drop: 0 },
+        adaptive: { kind: "satisfice", aspiration: p.aspiration, drop: p.drop },
+        maximize: { kind: "maximize" },
+        secretary: { kind: "secretary" },
+        optimal: { kind: "optimal", thresholds: opt.thresholds },
+      };
+      const res = {};
+      for (const [k, s] of Object.entries(strategies)) res[k] = S.evaluate(T, s, p.cost, p.recall);
+      const step = quick ? 2 : 1;
+      const sweep = S.sweepAspiration(T, p.cost, 0, p.recall, step);
+      const sweepA = p.drop > 0 ? S.sweepAspiration(T, p.cost, p.drop, p.recall, step) : null;
+      const ex = exampleIndex % p.trials;
+      const example = {
+        truth: Array.from(T.truth.subarray(ex * p.n, ex * p.n + p.n)),
+        seen: Array.from(T.seen.subarray(ex * p.n, ex * p.n + p.n)),
+        stops: Object.fromEntries(Object.entries(strategies).map(([k, s]) => [k, S.searchOnce(T, ex, s, p.recall)])),
+      };
+      last = { p, res, sweep, sweepA, opt, example };
+      render();
+    }
+
+    function render() {
+      if (!last) return;
+      const { p, res, sweep, sweepA, opt, example } = last;
+      // 見出し
+      const best = sweep.best;
+      const mine = res.satisfice.net;
+      const ratio = res.optimal.net > 0 ? best.net / res.optimal.net : null;
+      $("sat-head").innerHTML = `この条件で一番よい願望水準は <strong>${best.a}</strong>。平均の手取りは <strong>${f1(best.net)}</strong>`;
+      const parts = [];
+      parts.push(`いまの願望水準 ${p.aspiration} では ${f1(mine)}${Math.abs(best.net - mine) < 0.05 ? "（最善と同じ）" : `（最善より ${f1(best.net - mine)} 少ない）`}。`);
+      const dm = best.net - res.maximize.net;
+      parts.push(dm > 0
+        ? `全部見る（最大化）は ${f1(res.maximize.net)} で、うまく満足化したほうが ${f1(dm)} 得です。`
+        : `全部見る（最大化）は ${f1(res.maximize.net)} で、この条件ではそのほうが得です（コストが小さいため）。`);
+      if (ratio && ratio > 0) parts.push(`理論上の最適停止（${f1(res.optimal.net)}）の ${Math.min(100, Math.round(ratio * 100))}% に届いています。`);
+      if (p.noise > 0) parts.push(`見まちがいがあると、全部見る人は「よく見えただけ」の候補をつかみやすくなります。`);
+      $("sat-body").textContent = parts.join("");
+      $("sat-sub").textContent = `${p.trials.toLocaleString("ja-JP")} 回の平均・候補 ${p.n} 個・コスト ${f1(p.cost)}`;
+
+      // 表
+      const nets = SAT.map((s) => res[s.k].net);
+      const maxNet = Math.max(...nets, 1e-9);
+      const winner = SAT.filter((s) => s.k !== "optimal").reduce((a, b) => (res[b.k].net > res[a.k].net ? b : a));
+      $("sat-table").tBodies[0].innerHTML = SAT.map((s) => {
+        const r = res[s.k];
+        const w = Math.max(0, r.net) / maxNet * 100;
+        return `<tr${s === winner ? ' class="best"' : ""}><td><span class="name"><span class="sw" style="background:${color(s.color)}"></span>${s.name}${s === winner ? '<span class="pill">いちばん</span>' : ""}</span></td>` +
+          `<td class="num">${f1(r.net)}</td><td class="bar-cell"><div class="bar" style="width:${w}%;background:${color(s.color)}"></div></td>` +
+          `<td class="num">${f1(r.looked)}</td><td class="num">${pct(r.pBest)}</td></tr>`;
+      }).join("");
+
+      // 願望水準スイープ
+      const series = [{ name: "満足化", color: "--s1", ys: sweep.net, area: true }];
+      if (sweepA) series.push({ name: "妥協する満足化", color: "--s2", ys: sweepA.net });
+      const hlines = [
+        { y: res.maximize.net, color: "--s3", label: "全部見る" },
+        { y: res.secretary.net, color: "--s4", label: "37%ルール" },
+        { y: res.optimal.net, color: "--ink", label: "最適停止", dash: [2, 3] },
+      ];
+      const iA = sweep.xs.findIndex((x) => x >= p.aspiration);
+      const points = [{ x: best.a, y: best.net, color: "--s1", label: `最善 ${best.a}` }];
+      if (iA >= 0 && Math.abs(sweep.xs[iA] - best.a) > 3) points.push({ x: sweep.xs[iA], y: sweep.net[iA], color: "--s1", hollow: true, label: "いま" });
+      sweepChart.set({
+        xs: sweep.xs, series, hlines, points, xDomain: [0, 100],
+        vlines: [{ x: p.aspiration, color: "--s1" }],
+        xLabel: "願望水準",
+        tipHead: (i) => `願望水準 ${sweep.xs[i]}`,
+        tooltip: (i) => {
+          const rows = [["満足化", f1(sweep.net[i]), "--s1"], ["…見た数", f1(sweep.looked[i]), ""]];
+          if (sweepA) rows.push(["妥協する満足化", f1(sweepA.net[i]), "--s2"]);
+          rows.push(["全部見る", f1(res.maximize.net), "--s3"], ["37%ルール", f1(res.secretary.net), "--s4"], ["最適停止", f1(res.optimal.net), "--ink"]);
+          return rows;
+        },
+      });
+      legend($("sat-sweep-legend"), [
+        { name: "満足化（願望水準ごと）", color: "--s1", line: true },
+        ...(sweepA ? [{ name: `妥協する満足化（1つごとに −${f1(p.drop)}）`, color: "--s2", line: true }] : []),
+        { name: "全部見る", color: "--s3", line: true, dash: true },
+        { name: "37%ルール", color: "--s4", line: true, dash: true },
+        { name: "最適停止", color: "--ink", line: true, dash: true },
+      ]);
+
+      strip.set({ ...example, p, opt });
+      legend($("sat-strip-legend"), [
+        { name: "候補の本当の値", color: "--axis" },
+        ...(p.noise > 0 ? [{ name: "見えた値", color: "--ink-2" }] : []),
+        { name: "願望水準", color: "--s1", line: true },
+        ...(p.drop > 0 ? [{ name: "妥協する満足化のしきい値", color: "--s2", line: true }] : []),
+        { name: "最適停止のしきい値", color: "--ink", line: true, dash: true },
+      ]);
+    }
+
+    const run = scheduler(compute);
+    $("sat-form").addEventListener("input", () => { syncOutputs($("sat-form")); run(true); });
+    $("sat-form").addEventListener("change", () => run(false));
+    $("sat-reseed").addEventListener("click", () => { seed = (seed * 7919 + 13) % 100003; run(false); });
+    $("sat-best").addEventListener("click", () => {
+      if (!last) return;
+      $("sat-asp").value = last.sweep.best.a; syncOutputs($("sat-form")); run(false);
+    });
+    $("sat-next").addEventListener("click", () => { exampleIndex++; run(false); });
+    REDRAW.satisfice = () => { render(); };
+    syncOutputs($("sat-form"));
+    compute(false);
+  };
+
+  /** 1回の例: 候補の棒 + しきい値 + 各戦略がどこまで見てどれを選んだか */
+  function makeStrip(wrap) {
+    const canvas = document.createElement("canvas");
+    canvas.setAttribute("role", "img");
+    canvas.setAttribute("aria-label", "1回の探索の例");
+    const tip = document.createElement("div");
+    tip.className = "tip"; tip.hidden = true;
+    wrap.append(canvas, tip);
+    let data = null, hover = null, geo = null;
+    const LANE = 18;
+    function draw() {
+      if (!data || !wrap.clientWidth) return;
+      const { truth, seen, stops, p, opt } = data;
+      const n = truth.length;
+      const w = wrap.clientWidth;
+      const lanes = SAT.length;
+      const narrow = w < 520;
+      const m = { l: narrow ? 92 : 150, r: 10, t: 10 };
+      const ph = 170, h = m.t + ph + 26 + lanes * LANE + 6;
+      const ctx = setupCanvas(canvas, w, h);
+      ctx.clearRect(0, 0, w, h);
+      const pw = w - m.l - m.r, bw = pw / n;
+      const X = (k) => m.l + k * bw + bw / 2;
+      const Y = (v) => m.t + ph - (Math.max(0, Math.min(100, v)) / 100) * ph;
+      geo = { m, bw, n };
+      const grid = css("--grid"), muted = css("--muted");
+      ctx.font = FONT_NUM; ctx.fillStyle = muted; ctx.textAlign = "right"; ctx.textBaseline = "middle";
+      for (const v of [0, 50, 100]) {
+        ctx.strokeStyle = grid; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(m.l, Math.round(Y(v)) + 0.5); ctx.lineTo(m.l + pw, Math.round(Y(v)) + 0.5); ctx.stroke();
+        ctx.fillText(v, m.l - 6, Y(v));
+      }
+      // 棒
+      const picks = new Set(Object.values(stops).map((s) => s.pick));
+      const gap = bw > 6 ? 2 : bw > 3 ? 1 : 0;
+      for (let k = 0; k < n; k++) {
+        ctx.fillStyle = hover === k ? css("--ink-2") : picks.has(k) ? css("--muted") : css("--axis");
+        const x = m.l + k * bw + gap / 2, y = Y(truth[k]);
+        const bwid = Math.max(1, bw - gap);
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(x, y, bwid, Y(0) - y, [Math.min(4, bwid / 2), Math.min(4, bwid / 2), 0, 0]);
+        else ctx.rect(x, y, bwid, Y(0) - y);
+        ctx.fill();
+        if (p.noise > 0) {
+          ctx.fillStyle = css("--ink-2");
+          ctx.fillRect(x, Math.round(Y(seen[k])) - 1, bwid, 2);
+        }
+      }
+      // しきい値
+      const line = (fn, c, dash, width = 2) => {
+        ctx.strokeStyle = color(c); ctx.lineWidth = width; ctx.setLineDash(dash || []);
+        ctx.beginPath();
+        let started = false;
+        for (let k = 0; k < n; k++) {
+          const v = fn(k);
+          if (!isFinite(v)) continue;
+          const y = Y(v);
+          if (!started) { ctx.moveTo(m.l + k * bw, y); started = true; } else ctx.lineTo(m.l + k * bw, y);
+          ctx.lineTo(m.l + (k + 1) * bw, y);
+        }
+        ctx.stroke(); ctx.setLineDash([]);
+      };
+      line((k) => opt.thresholds[k], "--ink", [3, 3], 1.5);
+      if (p.drop > 0) line((k) => p.aspiration - p.drop * k, "--s2", null);
+      line(() => p.aspiration, "--s1", null);
+
+      // レーン: どこまで見て、どれを選んだか
+      const top = m.t + ph + 22;
+      ctx.font = FONT_NUM; ctx.fillStyle = muted; ctx.textAlign = "center"; ctx.textBaseline = "top";
+      const every = Math.ceil(n / Math.max(4, Math.floor(pw / 40)));
+      for (let k = 0; k < n; k += every) ctx.fillText(k + 1, X(k), m.t + ph + 4);
+      SAT.forEach((s, i) => {
+        const y = top + i * LANE + LANE / 2;
+        const st = stops[s.k];
+        ctx.font = FONT_LABEL; ctx.fillStyle = css("--ink-2"); ctx.textAlign = "right"; ctx.textBaseline = "middle";
+        const short = narrow ? { satisfice: "満足化", adaptive: "妥協", maximize: "全部見る", secretary: "37%", optimal: "最適停止" }[s.k] : s.name.replace("（理論上の目安）", "");
+        ctx.fillText(short, m.l - 8, y);
+        ctx.strokeStyle = color(s.color); ctx.globalAlpha = 0.45; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(m.l + 1, y); ctx.lineTo(m.l + st.looked * bw - 1, y); ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.beginPath(); ctx.arc(X(st.pick), y, 5, 0, Math.PI * 2);
+        ctx.fillStyle = color(s.color); ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = css("--surface"); ctx.stroke();
+      });
+    }
+    canvas.addEventListener("pointermove", (e) => {
+      if (!geo || !data) return;
+      const r = canvas.getBoundingClientRect();
+      const k = Math.floor((e.clientX - r.left - geo.m.l) / geo.bw);
+      if (k < 0 || k >= geo.n) { hover = null; tip.hidden = true; draw(); return; }
+      hover = k; draw();
+      const { truth, seen, stops, p, opt } = data;
+      const who = SAT.filter((s) => stops[s.k].pick === k).map((s) => s.name.replace("（理論上の目安）", ""));
+      tip.innerHTML = `<div class="tip-head">${k + 1} 番目の候補</div>` +
+        `<div class="tip-row"><i style="background:${css("--axis")}"></i><span>本当の値</span><b>${f1(truth[k])}</b></div>` +
+        (p.noise > 0 ? `<div class="tip-row"><i style="background:${css("--ink-2")}"></i><span>見えた値</span><b>${f1(seen[k])}</b></div>` : "") +
+        `<div class="tip-row"><i></i><span>最適停止のしきい値</span><b>${isFinite(opt.thresholds[k]) ? f1(opt.thresholds[k]) : "（最後）"}</b></div>` +
+        (who.length ? `<div class="tip-row"><i></i><span>ここで選んだ</span><b>${esc(who.join("・"))}</b></div>` : "");
+      tip.hidden = false;
+      const x = geo.m.l + (k + 0.5) * geo.bw;
+      const tw = tip.offsetWidth;
+      tip.style.left = (x + 14 + tw < wrap.clientWidth ? x + 14 : Math.max(0, x - 14 - tw)) + "px";
+      tip.style.top = "8px";
+    });
+    canvas.addEventListener("pointerleave", () => { hover = null; tip.hidden = true; draw(); });
+    new ResizeObserver(draw).observe(wrap);
+    return { set(d) { data = d; draw(); }, draw };
+  }
+
+  // ============================================================ 2×2ゲーム
+  INIT.matrix = function () {
+    const preset = $("mx-preset");
+    preset.innerHTML = Object.entries(S.GAMES).map(([k, g]) => `<option value="${k}">${g.label}</option>`).join("");
+    let game = null, seed = 3, last = null;
+    const ts = new Chart($("mx-ts"), { height: 250, ariaLabel: "確率の時間変化" });
+    const planeWrap = $("mx-plane");
+    const planeCanvas = document.createElement("canvas");
+    planeCanvas.setAttribute("role", "img");
+    planeCanvas.setAttribute("aria-label", "戦略の動きの図。横軸は A が上を出す確率、縦軸は B が左を出す確率");
+    planeWrap.append(planeCanvas);
+    let planeGeo = null;
+
+    const DYN_NOTE = {
+      replicator: "得をした手が増える進化の動き。矢印が向き、黒い線が始点からの道すじです。",
+      aspiration: "得点が願望水準を超えたら同じ手を強め、下回ったら弱める。相手の得点は見ません。",
+      fictitious: "相手がこれまで出した手の割合に、一番よい手を返します。",
+    };
+    const dyn = () => document.querySelector('input[name="mx-dyn"]:checked').value;
+
+    function loadPreset() {
+      const g = S.GAMES[preset.value];
+      game = { ...g, a: g.a.map((r) => r.slice()), b: g.b.map((r) => r.slice()) };
+      $("mx-note").textContent = g.note;
+      buildTable();
+    }
+
+    function buildTable() {
+      const t = $("mx-table");
+      const { rows, cols } = game;
+      let h = `<tr><th></th>${cols.map((c, j) => `<th class="colh"><span class="who">B ・ ${j ? "右" : "左"}</span>${esc(c)}</th>`).join("")}</tr>`;
+      for (let i = 0; i < 2; i++) {
+        h += `<tr><th class="rowh"><span class="who">A ・ ${i ? "下" : "上"}</span>${esc(rows[i])}</th>`;
+        for (let j = 0; j < 2; j++) {
+          h += `<td><div class="cell" id="mx-c${i}${j}"><div class="badges"></div>` +
+            `<input type="number" step="any" class="pa" id="mx-a${i}${j}" value="${game.a[i][j]}" aria-label="${esc(rows[i])}・${esc(cols[j])} のときの A の得点">` +
+            `<span class="comma">,</span>` +
+            `<input type="number" step="any" class="pb" id="mx-b${i}${j}" value="${game.b[i][j]}" aria-label="${esc(rows[i])}・${esc(cols[j])} のときの B の得点"></div></td>`;
+        }
+        h += "</tr>";
+      }
+      t.innerHTML = h;
+    }
+    $("mx-table").addEventListener("input", (e) => {
+      const m = /^mx-([ab])(\d)(\d)$/.exec(e.target.id);
+      if (!m || e.target.value === "" || isNaN(+e.target.value)) return;
+      game[m[1]][+m[2]][+m[3]] = +e.target.value;
+      run(true);
+    });
+
+    function compute() {
+      const an = S.analyze2x2(game);
+      const p0 = num("mx-p0"), q0 = num("mx-q0");
+      const d = dyn();
+      let path, counts = null, dt = null;
+      const flows = [];
+      if (d === "replicator") {
+        dt = 0.02;
+        path = S.replicatorPath(game, p0, q0, 1500, dt);
+        for (const sp of [0.1, 0.5, 0.9]) for (const sq of [0.1, 0.5, 0.9]) flows.push(S.replicatorPath(game, sp, sq, 900, 0.03));
+      } else if (d === "aspiration") {
+        const lo = (arr) => Math.min(...arr.flat()), hi = (arr) => Math.max(...arr.flat());
+        const t = num("mx-asp") / 100;
+        const res = S.aspirationLearning(game, {
+          p0, q0, rounds: num("mx-rounds"), rate: num("mx-rate"), habit: num("mx-habit"), seed,
+          aspA: lo(game.a) + t * (hi(game.a) - lo(game.a)), aspB: lo(game.b) + t * (hi(game.b) - lo(game.b)),
+        });
+        path = res.path; counts = res.counts;
+      } else {
+        const res = S.fictitiousPlay(game, { p0, q0, rounds: num("mx-rounds"), seed });
+        path = res.path; counts = res.counts;
+      }
+      last = { an, path, counts, flows, d, dt, p0, q0 };
+      render();
+    }
+
+    function cellName(i, j) { return `（${game.rows[i]}, ${game.cols[j]}）`; }
+
+    function render() {
+      if (!last) return;
+      const { an, path, counts, d, dt } = last;
+      // 表の飾り
+      const total = counts ? counts.flat().reduce((s, v) => s + v, 0) : 0;
+      for (let i = 0; i < 2; i++)
+        for (let j = 0; j < 2; j++) {
+          const isNE = an.nash.some(([a, b]) => a === i && b === j);
+          const isPO = an.pareto.some(([a, b]) => a === i && b === j);
+          const cell = $(`mx-c${i}${j}`);
+          cell.classList.toggle("ne", isNE);
+          $(`mx-a${i}${j}`).classList.toggle("br", an.rowBR[j].includes(i));
+          $(`mx-b${i}${j}`).classList.toggle("br", an.colBR[i].includes(j));
+          cell.querySelector(".badges").innerHTML =
+            (isNE ? '<span class="badge ne">均衡</span>' : "") + (isPO ? '<span class="badge po">パレート</span>' : "") +
+            (counts && total ? `<span class="badge fr" title="最後の2割で、この組み合わせになった割合">${pct(counts[i][j] / total)}</span>` : "");
+        }
+
+      // 見出し
+      const ne = an.nash.map(([i, j]) => cellName(i, j));
+      let head;
+      const notPO = an.nash.filter(([i, j]) => !an.pareto.some(([a, b]) => a === i && b === j));
+      if (an.nash.length === 0) head = "純粋戦略のナッシュ均衡はありません";
+      else if (an.nash.length === 1 && notPO.length) {
+        const [i, j] = notPO[0];
+        const better = [[0, 0], [0, 1], [1, 0], [1, 1]].find(([k, l]) => game.a[k][l] > game.a[i][j] && game.b[k][l] > game.b[i][j]);
+        head = `均衡は${ne[0]}。でも${better ? cellName(...better) : "ほかの組み合わせ"}のほうが2人とも得です`;
+      } else if (an.nash.length === 1) head = `均衡は${ne[0]}の1つだけ`;
+      else head = `均衡が ${an.nash.length} つ：${ne.join("と")}`;
+      $("mx-head").textContent = head;
+
+      const body = [];
+      if (an.dominant.row != null) body.push(`A にとって「${game.rows[an.dominant.row]}」は、相手が何を出しても得な支配戦略です。`);
+      if (an.dominant.col != null) body.push(`B にとって「${game.cols[an.dominant.col]}」は支配戦略です。`);
+      if (an.mixed) body.push(`混合戦略の均衡: A は上を ${pct(an.mixed.p)}、B は左を ${pct(an.mixed.q)} の確率で出す（期待得点 A ${f2(an.mixed.payA)}、B ${f2(an.mixed.payB)}）。`);
+      const [pe, qe] = path[path.length - 1];
+      const corner = (v) => (v > 0.95 ? 0 : v < 0.05 ? 1 : null);
+      const ci = corner(pe), cj = corner(qe);
+      const label = { replicator: "レプリケーター動態", aspiration: "満足化学習", fictitious: "仮想プレイ" }[d];
+      if (d !== "replicator" && counts && total) {
+        let bi = 0, bj = 0;
+        for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) if (counts[i][j] > counts[bi][bj]) { bi = i; bj = j; }
+        body.push(`${label}では、最後の2割でいちばん多かったのは${cellName(bi, bj)}（${pct(counts[bi][bj] / total)}）。`);
+      } else if (ci != null && cj != null) body.push(`${label}では、始点から${cellName(ci, cj)}に落ちつきます。`);
+      else if (an.mixed) body.push(`${label}では、混合均衡のまわりを回りつづけます。`);
+      $("mx-body").textContent = body.join("");
+      $("mx-dyn-note").textContent = DYN_NOTE[d];
+      document.querySelectorAll("#mx-form [data-show]").forEach((el) => { el.hidden = !el.dataset.show.split(" ").includes(d); });
+
+      drawPlane();
+
+      // 時系列
+      const stepN = Math.max(1, Math.ceil(path.length / 500));
+      const xs = [], ps = [], qs = [];
+      for (let k = 0; k < path.length; k += stepN) { xs.push(dt ? +(k * dt).toFixed(3) : k); ps.push(path[k][0]); qs.push(path[k][1]); }
+      ts.set({
+        xs, yDomain: [0, 1], xLabel: dt ? "時間" : "ラウンド",
+        yFmt: (v) => v.toFixed(1),
+        series: [
+          { name: `A が「${game.rows[0]}」を出す確率`, color: "--s1", ys: ps },
+          { name: `B が「${game.cols[0]}」を出す確率`, color: "--s2", ys: qs },
+        ],
+        tooltip: (i) => [[`A「${game.rows[0]}」`, f2(ps[i]), "--s1"], [`B「${game.cols[0]}」`, f2(qs[i]), "--s2"]],
+        tipHead: (i) => `${dt ? "時間" : "ラウンド"} ${xs[i]}`,
+      });
+      $("mx-ts-sub").textContent = d === "fictitious" ? "実際に出した手の割合" : "上を出す確率・左を出す確率";
+      legend($("mx-ts-legend"), [
+        { name: `A が「${game.rows[0]}」を出す確率`, color: "--s1", line: true },
+        { name: `B が「${game.cols[0]}」を出す確率`, color: "--s2", line: true },
+      ]);
+      legend($("mx-plane-legend"), [
+        { name: "道すじ", color: "--ink", line: true },
+        ...(d === "replicator" ? [{ name: "ほかの始点からの流れ", color: "--axis", line: true }] : []),
+        { name: "ナッシュ均衡", color: "--accent" },
+      ]);
+      $("mx-plane-sub").textContent = "横 = A が上を出す確率、縦 = B が左を出す確率";
+    }
+
+    function drawPlane() {
+      if (!last || !planeWrap.clientWidth) return;
+      const { an, path, flows } = last;
+      const size = Math.min(planeWrap.clientWidth, 440);
+      const m = { l: 74, r: 14, t: 26, b: 52 };
+      const side = Math.max(120, size - m.l - m.r);
+      const w = m.l + side + m.r, h = m.t + side + m.b;
+      const ctx = setupCanvas(planeCanvas, w, h);
+      const X = (p) => m.l + p * side, Y = (q) => m.t + (1 - q) * side;
+      planeGeo = { m, side };
+      ctx.clearRect(0, 0, w, h);
+      const grid = css("--grid"), axis = css("--axis"), muted = css("--muted"), ink = css("--ink"), surf = css("--surface");
+      ctx.fillStyle = css("--sunken"); ctx.fillRect(m.l, m.t, side, side);
+      ctx.strokeStyle = grid; ctx.lineWidth = 1;
+      for (let k = 1; k < 4; k++) {
+        const v = k / 4;
+        ctx.beginPath(); ctx.moveTo(X(v), m.t); ctx.lineTo(X(v), m.t + side); ctx.moveTo(m.l, Y(v)); ctx.lineTo(m.l + side, Y(v)); ctx.stroke();
+      }
+      ctx.strokeStyle = axis; ctx.strokeRect(m.l + 0.5, m.t + 0.5, side - 1, side - 1);
+      // 目盛り
+      ctx.font = FONT_NUM; ctx.fillStyle = muted;
+      ctx.textAlign = "center"; ctx.textBaseline = "top";
+      for (const v of [0, 0.5, 1]) ctx.fillText(v, X(v), m.t + side + 4);
+      ctx.textAlign = "right"; ctx.textBaseline = "middle";
+      for (const v of [0, 0.5, 1]) ctx.fillText(v, m.l - 6, Y(v));
+      // 軸の名前
+      ctx.font = FONT_LABEL; ctx.fillStyle = css("--ink-2");
+      ctx.textAlign = "center"; ctx.textBaseline = "top";
+      ctx.fillText(`A が「${game.rows[0]}」を出す確率 →`, m.l + side / 2, m.t + side + 22);
+      ctx.save(); ctx.translate(16, m.t + side / 2); ctx.rotate(-Math.PI / 2); ctx.textBaseline = "top";
+      ctx.fillText(`B が「${game.cols[0]}」を出す確率 →`, 0, 0); ctx.restore();
+      // 角の名前
+      ctx.font = FONT_LABEL; ctx.fillStyle = muted; ctx.textBaseline = "bottom";
+      ctx.textAlign = "left"; ctx.fillText(`${game.rows[1]}・${game.cols[0]}`, m.l, m.t - 4);
+      ctx.textAlign = "right"; ctx.fillText(`${game.rows[0]}・${game.cols[0]}`, m.l + side, m.t - 4);
+
+      // 矢印（レプリケーター動態の向き）
+      ctx.strokeStyle = axis; ctx.fillStyle = axis; ctx.lineWidth = 1.2;
+      const G = 9;
+      let maxLen = 1e-9;
+      const vec = [];
+      for (let a = 0; a < G; a++) for (let b = 0; b < G; b++) {
+        const p = (a + 0.5) / G, q = (b + 0.5) / G;
+        const [dp, dq] = S.replicatorField(game, p, q);
+        const len = Math.hypot(dp, dq);
+        maxLen = Math.max(maxLen, len);
+        vec.push([p, q, dp, dq, len]);
+      }
+      const cellPx = side / G;
+      for (const [p, q, dp, dq, len] of vec) {
+        if (len < 1e-9) continue;
+        const L = cellPx * 0.42 * Math.sqrt(len / maxLen);
+        const ux = dp / len, uy = -dq / len;
+        const x0 = X(p) - ux * L / 2, y0 = Y(q) - uy * L / 2, x1 = X(p) + ux * L / 2, y1 = Y(q) + uy * L / 2;
+        ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+        const ah = Math.min(5, L * 0.5);
+        ctx.beginPath(); ctx.moveTo(x1, y1);
+        ctx.lineTo(x1 - ux * ah - uy * ah * 0.6, y1 - uy * ah + ux * ah * 0.6);
+        ctx.lineTo(x1 - ux * ah + uy * ah * 0.6, y1 - uy * ah - ux * ah * 0.6);
+        ctx.closePath(); ctx.fill();
+      }
+      // 流れ
+      ctx.save(); ctx.beginPath(); ctx.rect(m.l, m.t, side, side); ctx.clip();
+      ctx.strokeStyle = axis; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.9;
+      for (const fl of flows) {
+        ctx.beginPath();
+        fl.forEach(([p, q], k) => (k ? ctx.lineTo(X(p), Y(q)) : ctx.moveTo(X(p), Y(q))));
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      // 道すじ
+      ctx.strokeStyle = ink; ctx.lineWidth = 2; ctx.lineJoin = "round";
+      ctx.beginPath();
+      path.forEach(([p, q], k) => (k ? ctx.lineTo(X(p), Y(q)) : ctx.moveTo(X(p), Y(q))));
+      ctx.stroke();
+      ctx.restore();
+      // 均衡
+      const acc = css("--accent");
+      for (const [i, j] of an.nash) {
+        ctx.beginPath(); ctx.arc(X(i === 0 ? 1 : 0), Y(j === 0 ? 1 : 0), 7, 0, Math.PI * 2);
+        ctx.fillStyle = acc; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = surf; ctx.stroke();
+      }
+      if (an.mixed) {
+        ctx.beginPath(); ctx.arc(X(an.mixed.p), Y(an.mixed.q), 6, 0, Math.PI * 2);
+        ctx.fillStyle = surf; ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = acc; ctx.stroke();
+      }
+      // 始点と終点
+      const [ps, qs] = path[0], [pe, qe] = path[path.length - 1];
+      ctx.beginPath(); ctx.arc(X(ps), Y(qs), 5, 0, Math.PI * 2);
+      ctx.fillStyle = surf; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = ink; ctx.stroke();
+      ctx.beginPath(); ctx.arc(X(pe), Y(qe), 4, 0, Math.PI * 2); ctx.fillStyle = ink; ctx.fill();
+      ctx.font = FONT_LABEL; ctx.fillStyle = ink; ctx.textBaseline = "bottom";
+      ctx.textAlign = X(ps) > m.l + side - 50 ? "right" : "left";
+      ctx.fillText("始点", X(ps) + (ctx.textAlign === "left" ? 8 : -8), Y(qs) - 4);
+    }
+
+    function setStart(e) {
+      if (!planeGeo) return;
+      const r = planeCanvas.getBoundingClientRect();
+      const { m, side } = planeGeo;
+      const p = (e.clientX - r.left - m.l) / side, q = 1 - (e.clientY - r.top - m.t) / side;
+      if (p < -0.05 || p > 1.05 || q < -0.05 || q > 1.05) return;
+      $("mx-p0").value = Math.min(0.99, Math.max(0.01, p)).toFixed(2);
+      $("mx-q0").value = Math.min(0.99, Math.max(0.01, q)).toFixed(2);
+      syncOutputs($("mx-form"));
+      run(true);
+    }
+    let dragging = false;
+    planeCanvas.addEventListener("pointerdown", (e) => { dragging = true; planeCanvas.setPointerCapture(e.pointerId); setStart(e); });
+    planeCanvas.addEventListener("pointermove", (e) => { if (dragging) setStart(e); });
+    planeCanvas.addEventListener("pointerup", () => { dragging = false; });
+    new ResizeObserver(drawPlane).observe(planeWrap);
+
+    const run = scheduler(compute);
+    preset.addEventListener("change", () => { loadPreset(); run(false); });
+    $("mx-form").addEventListener("input", (e) => { if (e.target !== preset) { syncOutputs($("mx-form")); run(true); } });
+    $("mx-reseed").addEventListener("click", () => { seed = (seed * 7919 + 13) % 100003; run(false); });
+    REDRAW.matrix = render;
+    loadPreset();
+    syncOutputs($("mx-form"));
+    compute();
+  };
+
+  // ============================================================ くり返し囚人のジレンマ
+  INIT.ipd = function () {
+    const SLOT = Object.fromEntries(S.IPD_STRATEGIES.map((s, i) => [s.id, `--s${i + 1}`]));
+    $("ipd-strats").innerHTML = S.IPD_STRATEGIES.map((s) =>
+      `<label class="check" title="${esc(s.desc)}"><input type="checkbox" id="ipd-on-${s.id}" value="${s.id}" checked>` +
+      `<span><span class="name"><span class="sw" style="background:var(${SLOT[s.id]})"></span><b>${s.name}</b></span><span class="hint">${s.desc}</span></span></label>`).join("");
+    let seed = 11, last = null;
+    const evo = new Chart($("ipd-evo"), { height: 270, ariaLabel: "戦略の割合の進化" });
+
+    function compute() {
+      const P = { T: num("ipd-T"), R: num("ipd-R"), P: num("ipd-P"), S: num("ipd-S") };
+      const warn = [];
+      if (!(P.T > P.R && P.R > P.P && P.P > P.S)) warn.push("T > R > P > S でないと、囚人のジレンマではありません。");
+      if (!(2 * P.R > P.T + P.S)) warn.push("2R > T + S でないと、交互に裏切りあうほうが得になります。");
+      $("ipd-warn").hidden = !warn.length;
+      $("ipd-warn").textContent = warn.join(" ");
+      const ids = S.IPD_STRATEGIES.map((s) => s.id).filter((id) => $("ipd-on-" + id).checked);
+      if (ids.length < 2) {
+        $("ipd-head").textContent = "戦略を2つ以上えらんでください";
+        $("ipd-body").textContent = "左の「参加する戦略」で、チェックを入れた戦略どうしが対戦します。";
+        return;
+      }
+      const res = S.tournament({
+        ids, payoff: P, rounds: num("ipd-rounds"), noise: num("ipd-noise"), reps: 10,
+        aspiration: num("ipd-asp"), habit: num("ipd-habit"), seed,
+      });
+      const hist = S.evolve(res.M, ids.map(() => 1 / ids.length), num("ipd-gens"));
+      last = { P, res, hist, ids };
+      render();
+    }
+
+    function render() {
+      if (!last) return;
+      const { P, res, hist } = last;
+      const k = res.strategies.length;
+      const order = res.scores.map((s, i) => i).sort((a, b) => res.scores[b] - res.scores[a]);
+      const final = hist[hist.length - 1];
+      const evoWin = final.indexOf(Math.max(...final));
+      const top = res.strategies[order[0]];
+      $("ipd-head").textContent = `大会の優勝は「${top.name}」。進化で最後に一番多いのは「${res.strategies[evoWin].name}」（${pct(final[evoWin])}）`;
+      const body = [];
+      const iSat = res.strategies.findIndex((s) => s.id === "sat");
+      if (iSat >= 0) {
+        const A = num("ipd-asp");
+        const rank = order.indexOf(iSat) + 1;
+        let why;
+        if (num("ipd-habit") > 0) why = "願望水準が得点に合わせて動くので、はじめの値だけでは決まりません。";
+        else if (A <= P.S) why = `願望水準 ${f1(A)} は S 以下なので、どんな結果にも満足して最初の手（協力）をつづけます。`;
+        else if (A <= P.P) why = `願望水準 ${f1(A)} は P 以下なので、裏切りあいにも満足してしまい、そこから抜け出せません。`;
+        else if (A <= P.R) why = `願望水準 ${f1(A)} は P と R の間なので、パブロフと同じ動きです。`;
+        else if (A <= P.T) why = `願望水準 ${f1(A)} は R より高いので、協力しあっていても満足できずに手を変えてしまいます。`;
+        else why = `願望水準 ${f1(A)} は T より高いので、何をしても満足できず、毎回手を変えます。`;
+        body.push(`満足化は ${k} 戦略中 ${rank} 位（平均 ${f2(res.scores[iSat])}）。${why}`);
+      }
+      if (num("ipd-noise") > 0) body.push(`手のミスが ${pct(num("ipd-noise"), 1)} あるので、ミスから立ち直れるかどうかで差がつきます。`);
+      $("ipd-body").textContent = body.join("");
+
+      // 順位表
+      const maxS = Math.max(...res.scores, 1e-9);
+      $("ipd-rank").tBodies[0].innerHTML = order.map((i, r) => {
+        const s = res.strategies[i];
+        const coop = res.coop[i].reduce((a, b) => a + b, 0) / k;
+        return `<tr${r === 0 ? ' class="best"' : ""}><td><span class="name"><span class="num" style="color:var(--muted);width:1.4em">${r + 1}</span><span class="sw" style="background:var(${SLOT[s.id]})"></span>${s.name}</span></td>` +
+          `<td class="num">${f2(res.scores[i])}</td><td class="bar-cell"><div class="bar" style="width:${(Math.max(0, res.scores[i]) / maxS) * 100}%;background:var(${SLOT[s.id]})"></div></td>` +
+          `<td class="num">${pct(coop)}</td></tr>`;
+      }).join("");
+
+      // 進化
+      const xs = hist.map((_, g) => g);
+      const series = res.strategies.map((s, i) => ({ name: s.name, color: SLOT[s.id], ys: hist.map((x) => x[i]) }));
+      evo.set({
+        xs, series, stacked: true, yDomain: [0, 1], xLabel: "世代", yFmt: (v) => pct(v),
+        tipHead: (g) => `${g} 世代`,
+        tooltip: (g) => res.strategies.map((s, i) => [s.name, pct(hist[g][i], 1), SLOT[s.id]]).sort((a, b) => parseFloat(b[1]) - parseFloat(a[1])),
+      });
+      legend($("ipd-evo-legend"), res.strategies.map((s) => ({ name: s.name, color: SLOT[s.id] })));
+
+      // 対戦表（濃さ = 得点）
+      let lo = Infinity, hi = -Infinity;
+      for (const row of res.M) for (const v of row) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+      const loC = parseColor(css("--seq-lo")), hiC = parseColor(css("--seq-hi"));
+      let h = `<thead><tr><th>行 ＼ 列</th>${res.strategies.map((s) => `<th class="rot">${s.name}</th>`).join("")}</tr></thead><tbody>`;
+      res.strategies.forEach((s, i) => {
+        h += `<tr><td><span class="name"><span class="sw" style="background:var(${SLOT[s.id]})"></span>${s.name}</span></td>`;
+        res.M[i].forEach((v) => {
+          const t = hi > lo ? (v - lo) / (hi - lo) : 0.5;
+          const c = loC.map((x, z) => Math.round(x + (hiC[z] - x) * t));
+          h += `<td class="hv" style="background:rgb(${c.join(",")});color:${t > 0.55 ? "var(--seq-mid-ink)" : "var(--ink)"}">${f2(v)}</td>`;
+        });
+        h += "</tr>";
+      });
+      $("ipd-heat").innerHTML = h + "</tbody>";
+    }
+
+    const run = scheduler(compute);
+    $("ipd-form").addEventListener("input", () => { syncOutputs($("ipd-form")); run(true); });
+    $("ipd-reseed").addEventListener("click", () => { seed = (seed * 7919 + 13) % 100003; run(false); });
+    REDRAW.ipd = render;
+    syncOutputs($("ipd-form"));
+    compute();
+  };
+
+  function parseColor(c) {
+    c = c.trim();
+    if (c.startsWith("#")) {
+      const h = c.length === 4 ? c.slice(1).split("").map((x) => x + x).join("") : c.slice(1);
+      return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
+    }
+    const m = c.match(/\d+(\.\d+)?/g);
+    return m ? m.slice(0, 3).map(Number) : [128, 128, 128];
+  }
+
+  // ============================================================ 空間ゲーム
+  INIT.spatial = function () {
+    const canvas = $("sp-canvas");
+    const ctx = canvas.getContext("2d");
+    const chart = new Chart($("sp-chart"), { height: 230, ariaLabel: "協力者の割合の推移" });
+    let L, g, prev, pay, gen, hist, seed = 5, playing = true, acc = 0, lastT = 0, raf = 0, lastChart = 0, flips = 0;
+    let rng = S.rng(seed);
+    let colors = null;
+    const rule = () => document.querySelector('input[name="sp-rule"]:checked').value;
+    const NOTE = {
+      best: "周り8人と自分の中で、一番得点が高い人の戦略をまねます（Nowak–May）。",
+      fermi: "ランダムな隣を1人見て、自分より得点が高いほど高い確率でまねます。K が大きいほど気まぐれ。",
+      aspire: "周りは見ない。1回あたりの得点が願望水準より低いと、半分の確率で手を変えます。",
+    };
+
+    function readColors() {
+      colors = { cc: parseColor(css("--s1")), dd: parseColor(css("--s8")), dc: parseColor(css("--s3")), cd: parseColor(css("--s4")) };
+    }
+    function reset() {
+      L = num("sp-L");
+      rng = S.rng(seed);
+      g = S.spatialInit(L, $("sp-init").value, num("sp-c0"), seed);
+      prev = g.slice();
+      pay = null; gen = 0; flips = 0;
+      hist = [coopFrac()];
+      canvas.width = L; canvas.height = L;
+      drawGrid(); updateStats(true);
+    }
+    function coopFrac() { let c = 0; for (let i = 0; i < g.length; i++) c += g[i]; return c / g.length; }
+    function params() {
+      return { b: num("sp-b"), self: $("sp-self").checked, rule: rule(), K: num("sp-K"), aspiration: num("sp-asp"), mutation: num("sp-mu") };
+    }
+    function step() {
+      const out = S.spatialStep(g, L, params(), rng, pay);
+      prev = g; g = out.next; pay = out.pay; gen++;
+      flips = 0;
+      for (let i = 0; i < g.length; i++) if (g[i] !== prev[i]) flips++;
+      hist.push(coopFrac());
+      if (hist.length > 2000) hist.splice(0, hist.length - 2000);
+    }
+    function drawGrid() {
+      if (!colors) readColors();
+      const img = ctx.createImageData(L, L);
+      const d = img.data;
+      for (let i = 0; i < g.length; i++) {
+        const c = g[i] ? (prev[i] ? colors.cc : colors.dc) : prev[i] ? colors.cd : colors.dd;
+        d[i * 4] = c[0]; d[i * 4 + 1] = c[1]; d[i * 4 + 2] = c[2]; d[i * 4 + 3] = 255;
+      }
+      ctx.putImageData(img, 0, 0);
+    }
+    function updateStats(force) {
+      const c = hist[hist.length - 1];
+      $("sp-gen").textContent = gen;
+      $("sp-coop").textContent = pct(c, 1);
+      $("sp-flip").textContent = gen ? pct(flips / g.length, 1) : "–";
+      $("sp-sub").textContent = `${L} × ${L} マス・端は反対側とつながっています`;
+      const now = performance.now();
+      if (!force && now - lastChart < 120) return;
+      lastChart = now;
+      const start = gen - hist.length + 1;
+      chart.set({
+        xs: hist.map((_, i) => start + i), series: [{ name: "協力者の割合", color: "--s1", ys: hist, area: true }],
+        yDomain: [0, 1], xLabel: "世代", yFmt: (v) => pct(v),
+        tipHead: (i) => `${start + i} 世代`, tooltip: (i) => [["協力者", pct(hist[i], 1), "--s1"]],
+      });
+      // 見出し
+      const b = num("sp-b"), r = rule();
+      let head;
+      if (c >= 0.999) head = "全員が協力しています";
+      else if (c <= 0.001) head = "協力者はいなくなりました";
+      else head = `協力者が ${pct(c)} 生きのこっています`;
+      if (gen === 0) head = "はじめの配置です。再生すると動きだします";
+      $("sp-head").textContent = head;
+      let body = "";
+      if (r === "best" && $("sp-self").checked) {
+        body = b < 1.8 ? `b = ${f2(b)} は小さめ。協力者のかたまりは裏切り者に負けず、広がるか、動かない形で固まります。`
+          : b < 2 ? `b = ${f2(b)} は 1.8〜2.0 の間。協力と裏切りのかたまりが、いつまでも形を変えながら共存します（割合はおよそ 3 割前後）。`
+          : `b = ${f2(b)} は 2 以上。裏切り者が強く、協力者は大きなかたまりでないと生きのこれません。`;
+      } else if (r === "aspire") {
+        body = `願望水準 ${f2(num("sp-asp"))}。協力者どうしの 1 回の得点は 1、裏切り者が協力者から取ると ${f2(b)} です。願望水準が 1 より高いと、協力しあっていても満足できません。`;
+      } else if (r === "fermi") {
+        body = `確率でまねるので、ゆっくりと形が変わります。K が小さいほど、得点差に正直にまねます。`;
+      } else body = "自分とは対戦しない設定です。周り8人とだけ遊びます。";
+      $("sp-body").textContent = body;
+    }
+    function loop(t) {
+      raf = 0;
+      if (!playing || $("panel-spatial").hidden || document.hidden) return;
+      const dt = lastT ? Math.min(250, t - lastT) : 0;
+      lastT = t;
+      acc += (dt / 1000) * num("sp-speed");
+      let n = 0;
+      while (acc >= 1 && n < 8) { step(); acc -= 1; n++; }
+      if (acc > 8) acc = 0;
+      if (n) { drawGrid(); updateStats(); }
+      raf = requestAnimationFrame(loop);
+    }
+    function start() { if (!raf && playing) { lastT = 0; raf = requestAnimationFrame(loop); } }
+    function setPlaying(v) {
+      playing = v;
+      $("sp-play").textContent = v ? "一時停止" : "再生";
+      if (v) start(); else updateStats(true);
+    }
+
+    // 塗る
+    let paintVal = null;
+    function paint(e) {
+      const r = canvas.getBoundingClientRect();
+      const x = Math.floor(((e.clientX - r.left) / r.width) * L), y = Math.floor(((e.clientY - r.top) / r.height) * L);
+      if (x < 0 || y < 0 || x >= L || y >= L) return;
+      const i = y * L + x;
+      if (paintVal == null) paintVal = 1 - g[i];
+      g[i] = paintVal; prev[i] = paintVal;
+      hist[hist.length - 1] = coopFrac();
+      drawGrid();
+    }
+    canvas.addEventListener("pointerdown", (e) => { paintVal = null; canvas.setPointerCapture(e.pointerId); paint(e); });
+    canvas.addEventListener("pointermove", (e) => { if (e.buttons) paint(e); });
+    canvas.addEventListener("pointerup", () => { paintVal = null; updateStats(true); });
+
+    $("sp-play").addEventListener("click", () => setPlaying(!playing));
+    $("sp-step").addEventListener("click", () => { setPlaying(false); step(); drawGrid(); updateStats(true); });
+    $("sp-reset").addEventListener("click", () => { seed = (seed * 7919 + 13) % 100003; reset(); });
+    $("sp-form").addEventListener("input", (e) => {
+      syncOutputs($("sp-form"));
+      const id = e.target.id;
+      if (id === "sp-L" || id === "sp-init" || id === "sp-c0") reset();
+      showControls();
+      if (!playing) updateStats(true);
+    });
+    function showControls() {
+      const r = rule();
+      document.querySelectorAll("#sp-form [data-show]").forEach((el) => { el.hidden = el.dataset.show !== r; });
+      document.querySelectorAll("#sp-form [data-init]").forEach((el) => { el.hidden = el.dataset.init !== $("sp-init").value; });
+      $("sp-rule-note").textContent = NOTE[r];
+    }
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) start(); });
+    ON_SHOW.spatial = start;
+    REDRAW.spatial = () => { readColors(); drawGrid(); updateStats(true); };
+    syncOutputs($("sp-form"));
+    showControls();
+    reset();
+  };
+
+  // ------------------------------------------------------------ テーマが変わったら描き直す
+  const redrawAll = () => { for (const t of TABS) if (inited[t] && REDRAW[t]) REDRAW[t](); };
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", redrawAll);
+  new MutationObserver(redrawAll).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  showTab(location.hash.slice(1));
+})();
+
+</script>
+</body>
+</html>
