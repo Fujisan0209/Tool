@@ -1,0 +1,90 @@
+swagger: "2.0"
+info:
+  title: ToDo API
+  version: "0.9"
+host: todo.example.com
+basePath: /api
+schemes: [https]
+consumes: [application/json]
+produces: [application/json]
+securityDefinitions:
+  apiKey:
+    type: apiKey
+    in: header
+    name: X-API-Key
+security:
+  - apiKey: []
+paths:
+  /todos:
+    get:
+      operationId: listTodos
+      summary: やることの一覧
+      parameters:
+        - name: done
+          in: query
+          type: boolean
+        - name: page
+          in: query
+          type: integer
+          minimum: 1
+          default: 1
+      responses:
+        "200":
+          description: 一覧
+          schema:
+            type: array
+            items: { $ref: "#/definitions/Todo" }
+        "401": { description: 認証が必要 }
+    post:
+      operationId: createTodo
+      summary: やることを追加
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema: { $ref: "#/definitions/NewTodo" }
+      responses:
+        "201":
+          description: 追加した
+          schema: { $ref: "#/definitions/Todo" }
+        "400":
+          description: まちがったリクエスト
+          schema: { $ref: "#/definitions/Error" }
+  /todos/{todoId}:
+    parameters:
+      - name: todoId
+        in: path
+        required: true
+        type: string
+        format: uuid
+    get:
+      operationId: getTodo
+      summary: やることを1件取得
+      responses:
+        "200":
+          description: やること
+          schema: { $ref: "#/definitions/Todo" }
+        "404":
+          description: 見つからない
+          schema: { $ref: "#/definitions/Error" }
+definitions:
+  NewTodo:
+    type: object
+    required: [title]
+    properties:
+      title: { type: string, minLength: 1, maxLength: 80, example: 牛乳を買う }
+      dueOn: { type: string, format: date }
+      priority: { type: string, enum: [low, normal, high] }
+  Todo:
+    allOf:
+      - $ref: "#/definitions/NewTodo"
+      - type: object
+        required: [id, done]
+        properties:
+          id: { type: string, format: uuid }
+          done: { type: boolean }
+  Error:
+    type: object
+    required: [message]
+    properties:
+      message: { type: string }

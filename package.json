@@ -1,11 +1,12 @@
 {
   "name": "java-error-yasashiku",
   "version": "1.0.0",
-  "description": "Javaのエラーメッセージを、初心者向けのやさしい日本語で説明するツール",
+  "description": "初心者向けの小さな開発ツール集（Javaエラーやさしく解説 / API テスト自動生成）",
   "private": true,
   "scripts": {
-    "test": "node --test test/*.test.js",
-    "build": "node scripts/build.js"
+    "test": "node --test test/*.test.js api-test-gen/test/*.test.js",
+    "build": "node scripts/build.js",
+    "api-test": "node api-test-gen/cli.js"
   },
   "license": "MIT"
 }

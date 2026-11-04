@@ -1,0 +1,160 @@
+openapi: 3.0.3
+info:
+  title: 図書館 API
+  version: 1.2.0
+  description: 本の検索・登録・貸し出しを行うサンプル API です。
+servers:
+  - url: http://localhost:4010/v1
+security:
+  - bearerAuth: []
+paths:
+  /books:
+    get:
+      operationId: listBooks
+      summary: 本を検索する
+      security: []
+      parameters:
+        - name: q
+          in: query
+          description: タイトルや著者名の一部
+          schema: { type: string, maxLength: 100 }
+        - name: genre
+          in: query
+          schema:
+            type: string
+            enum: [novel, science, history, comic]
+        - name: limit
+          in: query
+          description: 1ページの件数
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+      responses:
+        "200":
+          description: 見つかった本
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, total]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/Book" }
+                  total: { type: integer, minimum: 0 }
+        "400": { $ref: "#/components/responses/BadRequest" }
+    post:
+      operationId: createBook
+      summary: 本を登録する
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BookInput" }
+      responses:
+        "201":
+          description: 登録した本
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Book" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /books/{bookId}:
+    parameters:
+      - name: bookId
+        in: path
+        required: true
+        schema: { type: integer, minimum: 1 }
+        example: 1
+    get:
+      operationId: getBook
+      summary: 本を1冊取得する
+      security: []
+      responses:
+        "200":
+          description: 本
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Book" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: deleteBook
+      summary: 本を削除する
+      responses:
+        "204": { description: 削除しました }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /loans:
+    post:
+      operationId: createLoan
+      summary: 本を貸し出す
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [bookId, memberEmail]
+              properties:
+                bookId: { type: integer, minimum: 1 }
+                memberEmail: { type: string, format: email }
+                days: { type: integer, minimum: 1, maximum: 14, default: 7 }
+      responses:
+        "201":
+          description: 貸し出し記録
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Loan" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  responses:
+    BadRequest:
+      description: リクエストがまちがっている
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Unauthorized:
+      description: 認証が必要
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: 見つからない
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+  schemas:
+    BookInput:
+      type: object
+      required: [title, isbn]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 200, example: 吾輩は猫である }
+        isbn: { type: string, pattern: "^97[89]-\\d{10}$", example: "978-4101010014" }
+        price: { type: integer, minimum: 0, maximum: 100000 }
+        genre: { type: string, enum: [novel, science, history, comic] }
+        publishedOn: { type: string, format: date }
+    Book:
+      allOf:
+        - $ref: "#/components/schemas/BookInput"
+        - type: object
+          required: [id, available]
+          properties:
+            id: { type: integer, readOnly: true, minimum: 1 }
+            available: { type: boolean }
+    Loan:
+      type: object
+      required: [id, bookId, dueOn]
+      properties:
+        id: { type: string, format: uuid }
+        bookId: { type: integer }
+        dueOn: { type: string, format: date }
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }

@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>API テスト自動生成</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Murecho:wght@600;800&family=IBM+Plex+Sans+JP:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  /* Layout: 検査台 — 左に仕様書（原本）と条件、右に検査票（テストケース一覧と書き出したコード）。スマホでは縦に並ぶ。 */
+  :root {
+    --bg: #eef2f1;          /* 少し緑がかった検査室の紙 */
+    --surface: #ffffff;
+    --sunken: #f5f8f7;
+    --ink: #14201d;
+    --muted: #586763;
+    --line: #d5dedb;
+    --accent: #0b6b5d;      /* 緑青: 操作・選択 */
+    --accent-soft: #dcefeb;
+    --accent-ink: #ffffff;
+    --slab: #101a18;        /* 仕様書とコードの台 */
+    --slab-2: #17231f;
+    --slab-ink: #d6e2de;
+    --slab-dim: #7d918b;
+    --tag: #f2b33d;         /* 検査タグの黄 */
+
+    --pass: #1a7a46; --pass-bg: #e2f3e8;
+    --fail: #b8322a; --fail-bg: #fbe6e3;
+    --skip: #8a6100; --skip-bg: #f8efd6;
+
+    --m-get: #2463c9; --m-post: #1a7a46; --m-put: #b45f06; --m-patch: #7046c2; --m-delete: #b8322a; --m-other: #586763;
+
+    --c-positive: #1a7a46; --c-boundary: #2463c9; --c-required: #b45f06; --c-invalid: #b8322a;
+    --c-format: #a3407a; --c-auth: #7046c2; --c-notFound: #586763;
+
+    --hl-key: #8fb8ff; --hl-str: #b7e08a; --hl-num: #f7b267; --hl-com: #6f847e; --hl-prop: #e6c07b;
+
+    --f-display: "Murecho", "Hiragino Sans", "Yu Gothic", sans-serif;
+    --f-body: "IBM Plex Sans JP", "Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif;
+    --f-mono: "IBM Plex Mono", "Noto Sans Mono CJK JP", "Osaka-Mono", "MS Gothic", ui-monospace, monospace;
+    --r: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0d1412; --surface: #141e1b; --sunken: #111a17; --ink: #e2ebe8; --muted: #93a6a0; --line: #26342f;
+      --accent: #4fc2ad; --accent-soft: #163a33; --accent-ink: #06201b;
+      --slab: #080e0c; --slab-2: #0f1815; --slab-ink: #d6e2de; --slab-dim: #6d827b; --tag: #f2b33d;
+      --pass: #5fd08f; --pass-bg: #123222; --fail: #ff8a7e; --fail-bg: #3a1a17; --skip: #e8c25a; --skip-bg: #332a12;
+      --m-get: #7aa9ff; --m-post: #5fd08f; --m-put: #f0a24f; --m-patch: #b598ff; --m-delete: #ff8a7e; --m-other: #93a6a0;
+      --c-positive: #5fd08f; --c-boundary: #7aa9ff; --c-required: #f0a24f; --c-invalid: #ff8a7e;
+      --c-format: #f08fc4; --c-auth: #b598ff; --c-notFound: #93a6a0;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d1412; --surface: #141e1b; --sunken: #111a17; --ink: #e2ebe8; --muted: #93a6a0; --line: #26342f;
+    --accent: #4fc2ad; --accent-soft: #163a33; --accent-ink: #06201b;
+    --slab: #080e0c; --slab-2: #0f1815; --slab-ink: #d6e2de; --slab-dim: #6d827b; --tag: #f2b33d;
+    --pass: #5fd08f; --pass-bg: #123222; --fail: #ff8a7e; --fail-bg: #3a1a17; --skip: #e8c25a; --skip-bg: #332a12;
+    --m-get: #7aa9ff; --m-post: #5fd08f; --m-put: #f0a24f; --m-patch: #b598ff; --m-delete: #ff8a7e; --m-other: #93a6a0;
+    --c-positive: #5fd08f; --c-boundary: #7aa9ff; --c-required: #f0a24f; --c-invalid: #ff8a7e;
+    --c-format: #f08fc4; --c-auth: #b598ff; --c-notFound: #93a6a0;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--f-body); font-size: 15px; line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 1320px; margin: 0 auto;
+    padding-block: 24px 56px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  code, pre, .mono { font-family: var(--f-mono); }
+
+  /* ---------- header ---------- */
+  .masthead { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px 24px; margin-bottom: 20px; }
+  .brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
+  .logo {
+    flex: none; width: 46px; height: 46px; border-radius: 12px; background: var(--slab);
+    display: grid; place-items: center; position: relative;
+  }
+  .logo svg { width: 28px; height: 28px; }
+  h1 { font-family: var(--f-display); font-weight: 800; font-size: clamp(22px, 3vw, 30px); line-height: 1.25; margin: 0; letter-spacing: .01em; text-wrap: balance; }
+  .tagline { margin: 2px 0 0; color: var(--muted); font-size: 14.5px; max-width: 48em; text-wrap: pretty; }
+  .privacy { font-size: 12.5px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .privacy::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--pass); }
+
+  .grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 20px; align-items: start; }
+  @media (max-width: 960px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+  .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+  /* ---------- spec editor ---------- */
+  .editor { background: var(--slab); color: var(--slab-ink); border-radius: var(--r); overflow: hidden; box-shadow: 0 14px 30px -22px rgba(5, 20, 15, .7); }
+  .editor:focus-within { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 60%, transparent); }
+  .editor-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,.07); }
+  .editor-bar .label { font-family: var(--f-mono); font-size: 12px; color: var(--slab-dim); margin-right: auto; letter-spacing: .04em; }
+  .slab-btn, .slab-select {
+    font-size: 13px; border-radius: 7px; padding: 4px 10px; cursor: pointer;
+    background: var(--slab-2); color: var(--slab-ink); border: 1px solid rgba(255,255,255,.12);
+  }
+  .slab-btn:hover, .slab-select:hover { border-color: rgba(255,255,255,.3); }
+  .slab-select option { background: var(--slab-2); color: var(--slab-ink); }
+  #spec {
+    display: block; width: 100%; height: 360px; min-height: 180px; resize: vertical;
+    background: transparent; color: var(--slab-ink); border: 0; outline: none;
+    padding: 12px 14px; font-family: var(--f-mono); font-size: 12.5px; line-height: 1.6; tab-size: 2;
+    white-space: pre; overflow: auto;
+  }
+  #spec::placeholder { color: var(--slab-dim); }
+  .editor.drag { box-shadow: 0 0 0 3px var(--tag); }
+  .spec-status { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; padding: 9px 14px 11px; border-top: 1px solid rgba(255,255,255,.07); font-size: 13px; }
+  .spec-status .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--pass); flex: none; align-self: center; }
+  .spec-status[data-state="error"] .dot { background: var(--fail); }
+  .spec-status[data-state="error"] { color: #ffb3aa; }
+  .spec-status .meta { color: var(--slab-dim); font-family: var(--f-mono); font-size: 12px; }
+  .warnings { margin: 0; padding: 0 14px 12px 32px; color: var(--tag); font-size: 12.5px; }
+  .warnings:empty { display: none; }
+
+  /* ---------- panels ---------- */
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px 16px; min-width: 0; }
+  .panel h2 { font-size: 12.5px; font-weight: 700; letter-spacing: .08em; color: var(--muted); margin: 0 0 10px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .panel h2 .aside { font-weight: 500; letter-spacing: 0; }
+  .link-btn { background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; font-size: 12.5px; font-weight: 500; letter-spacing: 0; }
+  .link-btn:hover { text-decoration: underline; }
+
+  .cats { display: flex; flex-wrap: wrap; gap: 8px; }
+  .cat {
+    --c: var(--muted);
+    display: inline-flex; align-items: center; gap: 7px; cursor: pointer; user-select: none;
+    border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px 4px 9px; font-size: 13.5px; background: var(--surface);
+  }
+  .cat input { position: absolute; opacity: 0; pointer-events: none; }
+  .cat .sw { width: 10px; height: 10px; border-radius: 3px; border: 2px solid var(--c); }
+  .cat:has(input:checked) { border-color: color-mix(in srgb, var(--c) 45%, var(--line)); background: color-mix(in srgb, var(--c) 9%, var(--surface)); }
+  .cat:has(input:checked) .sw { background: var(--c); }
+  .cat:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .cat .n { font-family: var(--f-mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .cat-hint { margin: 10px 0 0; font-size: 12.5px; color: var(--muted); }
+
+  .ops { display: flex; flex-direction: column; max-height: 300px; overflow: auto; margin: 0 -6px; }
+  .op { display: grid; grid-template-columns: auto 64px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 6px; cursor: pointer; }
+  .op:hover { background: var(--sunken); }
+  .op input { margin: 0; accent-color: var(--accent); width: 16px; height: 16px; }
+  .op .path { font-family: var(--f-mono); font-size: 12.5px; overflow-wrap: anywhere; }
+  .op .sum { display: block; font-family: var(--f-body); font-size: 12px; color: var(--muted); }
+  .op .cnt { font-family: var(--f-mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .op.off .path, .op.off .method { opacity: .45; }
+  .method {
+    --m: var(--m-other);
+    font-family: var(--f-mono); font-size: 11px; font-weight: 600; letter-spacing: .04em; text-align: center;
+    color: var(--m); background: color-mix(in srgb, var(--m) 12%, transparent); border-radius: 5px; padding: 1px 0;
+  }
+  .method.get { --m: var(--m-get); } .method.post { --m: var(--m-post); } .method.put { --m: var(--m-put); }
+  .method.patch { --m: var(--m-patch); } .method.delete { --m: var(--m-delete); }
+
+  .fields { display: grid; gap: 12px; }
+  .field { display: grid; gap: 4px; min-width: 0; }
+  .field label, .field .lbl { font-size: 13px; font-weight: 500; }
+  .field .help { font-size: 12px; color: var(--muted); }
+  .input {
+    width: 100%; min-width: 0; border: 1px solid var(--line); border-radius: 7px; padding: 6px 10px;
+    background: var(--sunken); font-family: var(--f-mono); font-size: 13px;
+  }
+  .input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+  .pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+  .radios { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13.5px; }
+  .radios label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+  .radios input { accent-color: var(--accent); margin: 0; }
+  .subhead { font-size: 12px; color: var(--muted); letter-spacing: .06em; margin: 4px 0 -4px; }
+
+  /* ---------- overview ---------- */
+  .overview { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; display: grid; gap: 10px; }
+  .ov-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; }
+  .ov-total { font-family: var(--f-display); font-weight: 800; font-size: 34px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .ov-total small { font-family: var(--f-body); font-weight: 500; font-size: 14px; margin-left: 4px; }
+  .ov-sub { color: var(--muted); font-size: 13px; }
+  .ov-run { margin-left: auto; font-family: var(--f-mono); font-size: 13px; display: flex; gap: 10px; font-variant-numeric: tabular-nums; }
+  .ov-run .p { color: var(--pass); } .ov-run .f { color: var(--fail); } .ov-run .s { color: var(--skip); }
+  .stack { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: var(--sunken); gap: 2px; }
+  .stack span { display: block; height: 100%; min-width: 3px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--muted); }
+  .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; vertical-align: 0; }
+  .legend b { font-family: var(--f-mono); font-weight: 500; color: var(--ink); margin-left: 3px; font-variant-numeric: tabular-nums; }
+
+  /* ---------- tabs ---------- */
+  .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
+  .tab {
+    background: none; border: 0; border-bottom: 3px solid transparent; padding: 8px 14px 7px; cursor: pointer;
+    font-weight: 700; font-size: 14px; color: var(--muted); white-space: nowrap;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+  .tab .ext { font-family: var(--f-mono); font-weight: 400; font-size: 11.5px; color: var(--muted); margin-left: 6px; }
+
+  /* ---------- run bar ---------- */
+  .runbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 700; font-size: 14px;
+    border-radius: 8px; padding: 7px 16px; border: 1px solid transparent;
+  }
+  .btn-primary { background: var(--accent); color: var(--accent-ink); }
+  .btn-primary:hover { filter: brightness(1.08); }
+  .btn-primary:disabled { opacity: .5; cursor: default; filter: none; }
+  .btn-ghost { background: var(--surface); border-color: var(--line); color: var(--ink); }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .btn svg { width: 14px; height: 14px; }
+  .run-note { font-size: 12.5px; color: var(--muted); flex: 1 1 260px; min-width: 0; }
+  .progress { height: 3px; background: var(--sunken); border-radius: 2px; overflow: hidden; }
+  .progress span { display: block; height: 100%; width: 0; background: var(--accent); transition: width .15s; }
+  .filters { display: flex; flex-wrap: wrap; gap: 6px; }
+  .filter { font-size: 12.5px; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 2px 10px; cursor: pointer; color: var(--muted); }
+  .filter[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+  /* ---------- case list ---------- */
+  .groups { display: flex; flex-direction: column; gap: 12px; }
+  .group { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+  .group-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 10px 14px; background: var(--sunken); border-bottom: 1px solid var(--line); }
+  .group-head .method { min-width: 60px; padding: 1px 6px; }
+  .group-head .path { font-family: var(--f-mono); font-size: 13.5px; font-weight: 500; overflow-wrap: anywhere; }
+  .group-head .sum { color: var(--muted); font-size: 13px; }
+  .group-head .gstat { margin-left: auto; font-family: var(--f-mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .case { border-top: 1px solid var(--line); }
+  .case:first-of-type { border-top: 0; }
+  .case > summary {
+    list-style: none; cursor: pointer; display: grid; grid-template-columns: 22px 46px 84px minmax(0, 1fr) auto; gap: 8px; align-items: center;
+    padding: 7px 14px; font-size: 13.5px;
+  }
+  .case > summary::-webkit-details-marker { display: none; }
+  .case > summary:hover { background: var(--sunken); }
+  .case .id { font-family: var(--f-mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .chip { --c: var(--muted); font-size: 11.5px; font-weight: 700; color: var(--c); background: color-mix(in srgb, var(--c) 11%, transparent); border-radius: 5px; padding: 1px 6px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .case .title { min-width: 0; overflow-wrap: anywhere; }
+  .case .exp { font-family: var(--f-mono); font-size: 12px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .case .exp b { font-weight: 600; }
+  .mark { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; border: 1.5px dashed var(--line); font-size: 11px; line-height: 1; font-weight: 700; }
+  .case[data-r="pass"] .mark { border: 0; background: var(--pass); color: var(--surface); }
+  .case[data-r="fail"] .mark { border: 0; background: var(--fail); color: var(--surface); }
+  .case[data-r="skip"] .mark { border: 0; background: var(--skip-bg); color: var(--skip); }
+  .case[data-r="run"] .mark { border-color: var(--accent); border-style: solid; border-top-color: transparent; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .case[data-r="run"] .mark { animation: none; } .progress span { transition: none; } }
+  .case[data-r="fail"] > summary { background: color-mix(in srgb, var(--fail-bg) 60%, transparent); }
+  .detail { padding: 4px 14px 14px 44px; display: grid; gap: 10px; font-size: 13px; }
+  .detail h4 { margin: 0 0 3px; font-size: 11.5px; letter-spacing: .08em; color: var(--muted); font-weight: 700; }
+  .reqline { font-family: var(--f-mono); font-size: 12.5px; overflow-wrap: anywhere; }
+  .reqline .method { display: inline-block; min-width: 0; padding: 0 6px; margin-right: 6px; }
+  .detail pre { margin: 0; background: var(--slab); color: var(--slab-ink); border-radius: 7px; padding: 8px 12px; font-size: 12px; line-height: 1.55; overflow-x: auto; max-height: 260px; }
+  .errors { margin: 0; padding: 8px 12px 8px 28px; background: var(--fail-bg); color: var(--fail); border-radius: 7px; }
+  .result-ok { color: var(--pass); font-weight: 500; }
+  .empty { padding: 28px 18px; text-align: center; color: var(--muted); background: var(--surface); border: 1px dashed var(--line); border-radius: var(--r); }
+
+  /* ---------- code ---------- */
+  .codebar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+  .codebar .fname { font-family: var(--f-mono); font-size: 13px; font-weight: 600; margin-right: auto; overflow-wrap: anywhere; }
+  .howto { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 14px; font-size: 13px; }
+  .howto pre { margin: 6px 0 0; background: var(--sunken); border-radius: 6px; padding: 6px 10px; font-size: 12.5px; overflow-x: auto; white-space: pre; }
+  .code { margin: 0; background: var(--slab); color: var(--slab-ink); border-radius: var(--r); overflow: auto; max-height: 70vh; font-size: 12.5px; line-height: 1.6; }
+  .code code { display: block; padding: 14px 16px; white-space: pre; tab-size: 2; min-width: max-content; }
+  .t-k { color: var(--hl-key); } .t-s { color: var(--hl-str); } .t-n { color: var(--hl-num); } .t-c { color: var(--hl-com); font-style: italic; } .t-p { color: var(--hl-prop); }
+  .toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 8px 16px; border-radius: 8px; font-size: 13.5px; z-index: 20; }
+
+  /* ---------- footer ---------- */
+  .about { margin-top: 36px; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .about section { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 18px; }
+  .about h2 { font-family: var(--f-display); font-weight: 600; font-size: 17px; margin: 0 0 6px; }
+  .about p, .about li { font-size: 13.5px; color: var(--muted); }
+  .about p { margin: 0; }
+  .about ul { margin: 0; padding-left: 1.2em; display: grid; gap: 3px; }
+  .about code { font-size: .92em; background: var(--sunken); border-radius: 4px; padding: 0 .3em; color: var(--ink); }
+
+  @media (max-width: 560px) {
+    .case > summary { grid-template-columns: 20px 42px minmax(0, 1fr); }
+    .case .chip { display: none; }
+    .case .exp { grid-column: 3; }
+    .detail { padding-left: 14px; }
+    .pair { grid-template-columns: minmax(0, 1fr); }
+    .op { grid-template-columns: auto 56px minmax(0, 1fr); }
+    .op .cnt { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="masthead">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">
+        <svg viewBox="0 0 28 28" fill="none">
+          <path d="M9 6H7.5A2.5 2.5 0 0 0 5 8.5v3c0 1.4-.9 2.5-2 2.5 1.1 0 2 1.1 2 2.5v3A2.5 2.5 0 0 0 7.5 22H9" stroke="#7d918b" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M19 6h1.5A2.5 2.5 0 0 1 23 8.5v3c0 1.4.9 2.5 2 2.5-1.1 0-2 1.1-2 2.5v3a2.5 2.5 0 0 1-2.5 2.5H19" stroke="#7d918b" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M10 14.2l2.8 2.8L18.5 11" stroke="#f2b33d" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div>
+        <h1>API テスト自動生成</h1>
+        <p class="tagline">OpenAPI / Swagger の仕様書から、正常系・異常系・境界値のテストを作ります。JavaScript・Python・Postman で書き出せて、その場で実行もできます。</p>
+      </div>
+    </div>
+    <p class="privacy">仕様書はこのページの外に送りません</p>
+  </header>
+
+  <main class="grid">
+    <div class="col">
+      <div class="editor" id="editor">
+        <div class="editor-bar">
+          <span class="label">仕様書 · YAML / JSON</span>
+          <select class="slab-select" id="sample" aria-label="サンプルの仕様書">
+            <option value="">サンプルを読みこむ…</option>
+            <option value="library">図書館 API（OpenAPI 3.0）</option>
+            <option value="todo">ToDo API（Swagger 2.0）</option>
+          </select>
+          <button class="slab-btn" id="openFile" type="button">ファイルを開く</button>
+          <input type="file" id="fileInput" accept=".yaml,.yml,.json,application/json,text/yaml" hidden>
+        </div>
+        <textarea id="spec" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="仕様書" placeholder="openapi: 3.0.3&#10;info:&#10;  title: …&#10;paths:&#10;  /items: …&#10;&#10;ここに貼りつけるか、ファイルをドロップしてください"></textarea>
+        <div class="spec-status" id="specStatus" data-state="ok" role="status" aria-live="polite"><span class="dot"></span><span id="specMsg">読みこみ中…</span></div>
+        <ul class="warnings" id="warnings"></ul>
+      </div>
+
+      <section class="panel" aria-labelledby="h-cats">
+        <h2 id="h-cats">テストの種類</h2>
+        <div class="cats" id="cats"></div>
+        <p class="cat-hint" id="catHint"></p>
+      </section>
+
+      <section class="panel" aria-labelledby="h-ops">
+        <h2 id="h-ops">エンドポイント <span class="aside"><button class="link-btn" type="button" id="opsAll">すべて選ぶ</button> · <button class="link-btn" type="button" id="opsGet">GET だけ</button></span></h2>
+        <div class="ops" id="ops"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="h-run">
+        <h2 id="h-run">実行の設定</h2>
+        <div class="fields">
+          <div class="field">
+            <label for="baseUrl">テストするサーバーの URL</label>
+            <input class="input" id="baseUrl" type="url" inputmode="url" spellcheck="false">
+          </div>
+          <div class="fields" id="paramFields"></div>
+          <div class="fields" id="authFields"></div>
+          <div class="field">
+            <span class="lbl" id="negLbl">異常系で期待するステータス</span>
+            <div class="radios" role="radiogroup" aria-labelledby="negLbl">
+              <label><input type="radio" name="neg" id="negSpec" value="spec" checked>仕様書に書かれた 400 / 422</label>
+              <label><input type="radio" name="neg" id="negAny" value="any4xx">4xx なら何でもよい</label>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="overview" aria-label="テストの内訳">
+        <div class="ov-top">
+          <div class="ov-total"><span id="total">0</span><small>件のテスト</small></div>
+          <div class="ov-sub" id="ovSub"></div>
+          <div class="ov-run" id="ovRun" hidden><span class="p" id="nPass"></span><span class="f" id="nFail"></span><span class="s" id="nSkip"></span></div>
+        </div>
+        <div class="stack" id="stack" aria-hidden="true"></div>
+        <div class="legend" id="legend"></div>
+      </section>
+
+      <div class="tabs" role="tablist" aria-label="表示">
+        <button class="tab" role="tab" id="tab-cases" aria-controls="view-cases" aria-selected="true" data-view="cases">テストケース</button>
+        <button class="tab" role="tab" id="tab-js" aria-controls="view-code" aria-selected="false" data-view="js">JavaScript<span class="ext">node:test</span></button>
+        <button class="tab" role="tab" id="tab-py" aria-controls="view-code" aria-selected="false" data-view="py">Python<span class="ext">pytest</span></button>
+        <button class="tab" role="tab" id="tab-postman" aria-controls="view-code" aria-selected="false" data-view="postman">Postman<span class="ext">v2.1</span></button>
+      </div>
+
+      <section id="view-cases" role="tabpanel" aria-labelledby="tab-cases" class="col">
+        <div class="runbar">
+          <button class="btn btn-primary" id="runBtn" type="button">
+            <svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1.8v10.4L12 7z" fill="currentColor"/></svg>
+            <span id="runLabel">ブラウザで実行</span>
+          </button>
+          <p class="run-note" id="runNote">選んだテストを、上から順にこのブラウザから送ります。API 側で CORS が許可されている必要があります。</p>
+        </div>
+        <div class="progress" id="progress" hidden><span></span></div>
+        <div class="filters" id="filters" role="group" aria-label="表示するテスト"></div>
+        <div class="groups" id="groups"></div>
+      </section>
+
+      <section id="view-code" role="tabpanel" class="col" hidden>
+        <div class="codebar">
+          <span class="fname" id="fname"></span>
+          <button class="btn btn-ghost" id="copyBtn" type="button">コピー</button>
+          <button class="btn btn-primary" id="dlBtn" type="button">ダウンロード</button>
+        </div>
+        <div class="howto" id="howto"></div>
+        <pre class="code" tabindex="0" aria-label="生成したコード"><code id="code"></code></pre>
+      </section>
+    </div>
+  </main>
+
+  <div class="about">
+    <section>
+      <h2>どんなテストを作るか</h2>
+      <ul>
+        <li><b>正常系</b>: 例や制約から正しいリクエストを作り、ステータスとレスポンスの形を仕様と照らします</li>
+        <li><b>境界値</b>: <code>minimum</code>・<code>maxLength</code> などのちょうどの値は受け付けるか</li>
+        <li><b>異常系</b>: 必須の欠落、型ちがい、範囲外、<code>enum</code> にない値、形式ちがいは拒否するか</li>
+        <li><b>認証・404</b>: 認証なしで拒否するか、存在しないIDで 404 を返すか</li>
+      </ul>
+    </section>
+    <section>
+      <h2>使うときの注意</h2>
+      <ul>
+        <li>POST / PUT / DELETE はデータを変えます。テスト用の環境で実行してください</li>
+        <li>パスの値（ID など）は、実在するデータに合わせて書きかえてください</li>
+        <li>対応: OpenAPI 3.0 / 3.1、Swagger 2.0（1つのファイルにまとめたもの）</li>
+      </ul>
+    </section>
+    <section>
+      <h2>コマンドでも使えます</h2>
+      <p>CI で動かすときは <code>node api-test-gen/cli.js 仕様書.yaml</code> でファイルを書き出すか、<code>--run</code> でその場で実行できます。Node.js 18 以上だけで動きます。</p>
+    </section>
+  </div>
+</div>
+
+<script src="src/vendor/js-yaml.min.js"></script>
+<script src="src/spec.js"></script>
+<script src="src/sample.js"></script>
+<script src="src/cases.js"></script>
+<script src="src/runtime.js"></script>
+<script src="src/emit/common.js"></script>
+<script src="src/emit/javascript.js"></script>
+<script src="src/emit/python.js"></script>
+<script src="src/emit/postman.js"></script>
+<script src="src/runner.js"></script>
+<script src="src/examples.js"></script>
+<script src="src/app.js"></script>
+</body>
+</html>
