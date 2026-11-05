@@ -1,0 +1,596 @@
+{
+  "id": "java",
+  "title": "Java の基本",
+  "tags": {
+    "var": "変数と型",
+    "op": "演算子",
+    "if": "条件分岐",
+    "loop": "くり返し",
+    "array": "配列",
+    "string": "文字列",
+    "method": "メソッド",
+    "class": "クラス",
+    "exception": "例外"
+  },
+  "items": [
+    {
+      "id": "var-double",
+      "tag": "var",
+      "type": "choice",
+      "level": 1,
+      "prompt": "3.14 のような小数を入れるのに、いちばんふさわしい型はどれ？",
+      "choices": [
+        "int",
+        "double",
+        "boolean",
+        "char"
+      ],
+      "answer": 1,
+      "explanation": "小数は double（または float）に入れます。int は整数だけ、boolean は true/false、char は1文字です。"
+    },
+    {
+      "id": "var-intdiv",
+      "tag": "var",
+      "type": "input",
+      "level": 2,
+      "prompt": "表示される値を書いてください。",
+      "code": "int x = 7 / 2;\nSystem.out.println(x);",
+      "answers": [
+        "3"
+      ],
+      "hint": "int どうしの割り算の結果は、int になります。",
+      "explanation": "int どうしの割り算は小数点以下を切りすてます。7 / 2 は 3.5 ではなく 3 です。"
+    },
+    {
+      "id": "var-lossy",
+      "tag": "var",
+      "type": "choice",
+      "level": 2,
+      "prompt": "このコードはどうなる？",
+      "code": "int n = 3.5;\nSystem.out.println(n);",
+      "choices": [
+        "3 と表示される",
+        "4 と表示される",
+        "コンパイルエラーになる",
+        "3.5 と表示される"
+      ],
+      "answer": 2,
+      "explanation": "double の値を int に入れると小数部分が失われるので、Java はコンパイルエラー（精度が失われる可能性がある変換）にします。どうしても入れたいときは (int) 3.5 のようにキャストします。"
+    },
+    {
+      "id": "var-char",
+      "tag": "var",
+      "type": "choice",
+      "level": 1,
+      "prompt": "char 型の変数に文字 A を入れる、正しい書き方はどれ？",
+      "choices": [
+        "char c = \"A\";",
+        "char c = 'A';",
+        "char c = A;",
+        "char c = 'AB';"
+      ],
+      "answer": 1,
+      "explanation": "char は1文字で、シングルクォート ' ' でかこみます。ダブルクォート \" \" は String（文字列）です。"
+    },
+    {
+      "id": "var-doublediv",
+      "tag": "var",
+      "type": "input",
+      "level": 3,
+      "prompt": "表示される値を書いてください。",
+      "code": "double d = 10 / 4;\nSystem.out.println(d);",
+      "answers": [
+        "2.0"
+      ],
+      "hint": "右側の計算が先に、int どうしで行われます。",
+      "explanation": "10 / 4 は int どうしなので先に 2 になり、それが double に入って 2.0 になります。2.5 にしたいときは 10.0 / 4 と書きます。"
+    },
+    {
+      "id": "op-mod",
+      "tag": "op",
+      "type": "input",
+      "level": 1,
+      "prompt": "表示される値を書いてください。",
+      "code": "System.out.println(10 % 3);",
+      "answers": [
+        "1"
+      ],
+      "explanation": "% は割り算のあまりです。10 ÷ 3 = 3 あまり 1 なので 1 です。"
+    },
+    {
+      "id": "op-compound",
+      "tag": "op",
+      "type": "input",
+      "level": 2,
+      "prompt": "表示される値を書いてください。",
+      "code": "int i = 5;\ni += 3;\ni++;\nSystem.out.println(i);",
+      "answers": [
+        "9"
+      ],
+      "explanation": "i += 3 で 8、i++ で 1 ふえて 9 になります。"
+    },
+    {
+      "id": "op-concat1",
+      "tag": "op",
+      "type": "choice",
+      "level": 3,
+      "prompt": "表示されるのはどれ？",
+      "code": "System.out.println(\"1\" + 2 + 3);",
+      "choices": [
+        "6",
+        "123",
+        "15",
+        "コンパイルエラー"
+      ],
+      "answer": 1,
+      "explanation": "+ は左から順に計算します。\"1\" + 2 は文字列 \"12\"、それに 3 をつなげて \"123\" です。"
+    },
+    {
+      "id": "op-concat2",
+      "tag": "op",
+      "type": "input",
+      "level": 3,
+      "prompt": "表示される値を書いてください。",
+      "code": "System.out.println(1 + 2 + \"3\");",
+      "answers": [
+        "33"
+      ],
+      "hint": "+ は左から順に計算します。",
+      "explanation": "左から計算するので、まず 1 + 2 = 3（数の足し算）、次に 3 + \"3\" で文字列の \"33\" になります。"
+    },
+    {
+      "id": "op-eq",
+      "tag": "op",
+      "type": "choice",
+      "level": 1,
+      "prompt": "2つの int の値が等しいかどうかを比べる演算子はどれ？",
+      "choices": [
+        "=",
+        "==",
+        "===",
+        "=>"
+      ],
+      "answer": 1,
+      "explanation": "== は比べる、= は代入（入れる）です。=== は Java にはありません。"
+    },
+    {
+      "id": "if-elseif",
+      "tag": "if",
+      "type": "input",
+      "level": 1,
+      "prompt": "表示される文字を書いてください。",
+      "code": "int score = 75;\nif (score >= 80) {\n    System.out.println(\"A\");\n} else if (score >= 60) {\n    System.out.println(\"B\");\n} else {\n    System.out.println(\"C\");\n}",
+      "answers": [
+        "B"
+      ],
+      "explanation": "上から順に調べて、最初に当てはまった1つだけを実行します。75 は 80 以上ではないが 60 以上なので B です。"
+    },
+    {
+      "id": "if-and",
+      "tag": "if",
+      "type": "choice",
+      "level": 2,
+      "prompt": "「x が 0 より大きく、かつ 10 より小さい」を正しく表す条件はどれ？",
+      "choices": [
+        "0 < x < 10",
+        "x > 0 && x < 10",
+        "x > 0 || x < 10",
+        "x > 0 & < 10"
+      ],
+      "answer": 1,
+      "explanation": "「かつ」は && です。0 < x < 10 のような書き方は Java ではコンパイルエラーになります。|| は「または」です。"
+    },
+    {
+      "id": "if-switch",
+      "tag": "if",
+      "type": "input",
+      "level": 4,
+      "prompt": "表示される文字を書いてください。",
+      "code": "int n = 1;\nswitch (n) {\n    case 1:\n        System.out.print(\"a\");\n    case 2:\n        System.out.print(\"b\");\n        break;\n    default:\n        System.out.print(\"c\");\n}",
+      "answers": [
+        "ab"
+      ],
+      "hint": "case 1 の最後に break がありません。",
+      "explanation": "break がないと、次の case の中身もつづけて実行します（フォールスルー）。case 1 → case 2 と進み、break で止まるので ab です。"
+    },
+    {
+      "id": "if-assign",
+      "tag": "if",
+      "type": "choice",
+      "level": 3,
+      "prompt": "このコードはどうなる？",
+      "code": "int x = 3;\nif (x = 5) {\n    System.out.println(\"five\");\n}",
+      "choices": [
+        "five と表示される",
+        "何も表示されない",
+        "コンパイルエラーになる",
+        "実行時エラーになる"
+      ],
+      "answer": 2,
+      "explanation": "if の ( ) には boolean が必要です。x = 5 は代入で、結果は int なのでコンパイルエラーになります。比べるなら x == 5 です。"
+    },
+    {
+      "id": "loop-for",
+      "tag": "loop",
+      "type": "input",
+      "level": 1,
+      "prompt": "表示される文字を書いてください。",
+      "code": "for (int i = 0; i < 3; i++) {\n    System.out.print(i);\n}",
+      "answers": [
+        "012"
+      ],
+      "explanation": "i は 0 から始まり、i < 3 のあいだ（0, 1, 2）くり返します。print は改行しないので 012 です。"
+    },
+    {
+      "id": "loop-count",
+      "tag": "loop",
+      "type": "input",
+      "level": 2,
+      "prompt": "Hello は何回表示されますか。数字で答えてください。",
+      "code": "for (int i = 1; i <= 10; i += 2) {\n    System.out.println(\"Hello\");\n}",
+      "answers": [
+        "5",
+        "5回"
+      ],
+      "explanation": "i は 1, 3, 5, 7, 9 と2ずつふえます。11 で i <= 10 が成り立たなくなるので 5 回です。"
+    },
+    {
+      "id": "loop-sum",
+      "tag": "loop",
+      "type": "input",
+      "level": 2,
+      "prompt": "表示される値を書いてください。",
+      "code": "int sum = 0;\nfor (int i = 1; i <= 4; i++) {\n    sum += i;\n}\nSystem.out.println(sum);",
+      "answers": [
+        "10"
+      ],
+      "explanation": "1 + 2 + 3 + 4 = 10 です。"
+    },
+    {
+      "id": "loop-infinite",
+      "tag": "loop",
+      "type": "choice",
+      "level": 2,
+      "prompt": "このコードはどうなる？",
+      "code": "int i = 0;\nwhile (i < 3) {\n    System.out.println(i);\n}",
+      "choices": [
+        "0 1 2 と表示して終わる",
+        "0 をずっと表示しつづける（無限ループ）",
+        "コンパイルエラーになる",
+        "何も表示されない"
+      ],
+      "answer": 1,
+      "explanation": "ループの中で i をふやしていないので、i < 3 がずっと true のままです。i++; を足すと 0 1 2 で終わります。"
+    },
+    {
+      "id": "loop-break",
+      "tag": "loop",
+      "type": "input",
+      "level": 4,
+      "prompt": "表示される文字を書いてください。",
+      "code": "for (int i = 0; i < 5; i++) {\n    if (i == 1) continue;\n    if (i == 3) break;\n    System.out.print(i);\n}",
+      "answers": [
+        "02"
+      ],
+      "hint": "continue は「今回はここまで、次へ」、break は「ループを終わる」です。",
+      "explanation": "i=0 は表示、i=1 は continue でとばす、i=2 は表示、i=3 で break して終わり。なので 02 です。"
+    },
+    {
+      "id": "array-length",
+      "tag": "array",
+      "type": "input",
+      "level": 1,
+      "prompt": "表示される値を書いてください。",
+      "code": "int[] a = {4, 8, 15};\nSystem.out.println(a.length);",
+      "answers": [
+        "3"
+      ],
+      "explanation": "length は要素の数です。配列の length にはかっこ () をつけません（String は length() です）。"
+    },
+    {
+      "id": "array-index",
+      "tag": "array",
+      "type": "input",
+      "level": 1,
+      "prompt": "表示される値を書いてください。",
+      "code": "int[] a = {4, 8, 15};\nSystem.out.println(a[1]);",
+      "answers": [
+        "8"
+      ],
+      "explanation": "添字（番号）は 0 から始まります。a[0] が 4、a[1] が 8 です。"
+    },
+    {
+      "id": "array-oob",
+      "tag": "array",
+      "type": "choice",
+      "level": 2,
+      "prompt": "このコードはどうなる？",
+      "code": "int[] a = new int[3];\nSystem.out.println(a[3]);",
+      "choices": [
+        "0 と表示される",
+        "コンパイルエラーになる",
+        "実行時に ArrayIndexOutOfBoundsException が起きる",
+        "null と表示される"
+      ],
+      "answer": 2,
+      "explanation": "要素が3個なら、使える添字は 0, 1, 2 です。a[3] は範囲の外なので、実行したときに例外が起きます（コンパイルでは見つかりません）。"
+    },
+    {
+      "id": "array-default",
+      "tag": "array",
+      "type": "input",
+      "level": 2,
+      "prompt": "表示される値を書いてください。",
+      "code": "int[] a = new int[3];\nSystem.out.println(a[0]);",
+      "answers": [
+        "0"
+      ],
+      "explanation": "new で作った int の配列は、最初はすべて 0 が入っています（boolean なら false、String などは null）。"
+    },
+    {
+      "id": "array-last",
+      "tag": "array",
+      "type": "free",
+      "level": 2,
+      "prompt": "配列 a の最後の要素を取り出すには、添字をどう書けばよいですか。理由もあわせて説明してください。",
+      "model": "a[a.length - 1] と書く。添字は 0 から始まるので、要素が n 個なら最後の添字は n - 1 になるから。",
+      "rubric": "a.length - 1 を使っていること／添字が 0 から始まることにふれていること",
+      "explanation": "a[a.length] と書くと範囲外になります。最後は a.length - 1 です。"
+    },
+    {
+      "id": "string-equals",
+      "tag": "string",
+      "type": "choice",
+      "level": 2,
+      "prompt": "2つの文字列 s と t の中身が同じかどうかを調べる、正しい書き方はどれ？",
+      "choices": [
+        "s == t",
+        "s.equals(t)",
+        "s = t",
+        "s.equal(t)"
+      ],
+      "answer": 1,
+      "explanation": "String の中身を比べるときは equals を使います。== は「同じオブジェクトかどうか」を比べるので、中身が同じでも false になることがあります。"
+    },
+    {
+      "id": "string-length",
+      "tag": "string",
+      "type": "input",
+      "level": 1,
+      "prompt": "表示される値を書いてください。",
+      "code": "String s = \"Java\";\nSystem.out.println(s.length());",
+      "answers": [
+        "4"
+      ],
+      "explanation": "length() は文字数です。String は length()、配列は length（かっこなし）です。"
+    },
+    {
+      "id": "string-charat",
+      "tag": "string",
+      "type": "input",
+      "level": 2,
+      "prompt": "表示される文字を書いてください。",
+      "code": "String s = \"Hello\";\nSystem.out.println(s.charAt(1));",
+      "answers": [
+        "e"
+      ],
+      "explanation": "charAt も 0 から数えます。H が 0、e が 1 です。"
+    },
+    {
+      "id": "string-substring",
+      "tag": "string",
+      "type": "input",
+      "level": 3,
+      "prompt": "表示される文字を書いてください。",
+      "code": "String s = \"programming\";\nSystem.out.println(s.substring(3, 7));",
+      "answers": [
+        "gram"
+      ],
+      "hint": "substring(開始, 終わり) の「終わり」の文字は含みません。",
+      "explanation": "substring(3, 7) は 3 文字目から 6 文字目まで（7 は含まない）です。p0 r1 o2 g3 r4 a5 m6 なので gram です。"
+    },
+    {
+      "id": "string-parse",
+      "tag": "string",
+      "type": "choice",
+      "level": 2,
+      "prompt": "文字列 \"42\" を int の 42 に変換する、正しい書き方はどれ？",
+      "choices": [
+        "(int) \"42\"",
+        "Integer.parseInt(\"42\")",
+        "\"42\".toInt()",
+        "int.parse(\"42\")"
+      ],
+      "answer": 1,
+      "explanation": "Integer.parseInt を使います。String を (int) でキャストすることはできません。"
+    },
+    {
+      "id": "method-void",
+      "tag": "method",
+      "type": "choice",
+      "level": 1,
+      "prompt": "メソッドの戻り値の型に書く void の意味はどれ？",
+      "choices": [
+        "どんな型でも返せる",
+        "値を返さない",
+        "null を返す",
+        "0 を返す"
+      ],
+      "answer": 1,
+      "explanation": "void は「何も返さない」という意味です。return; だけで終わることはできますが、値は返せません。"
+    },
+    {
+      "id": "method-nested",
+      "tag": "method",
+      "type": "input",
+      "level": 2,
+      "prompt": "表示される値を書いてください。",
+      "code": "public class Main {\n    static int twice(int x) {\n        return x * 2;\n    }\n    public static void main(String[] args) {\n        System.out.println(twice(twice(3)));\n    }\n}",
+      "answers": [
+        "12"
+      ],
+      "explanation": "内側から計算します。twice(3) が 6、twice(6) が 12 です。"
+    },
+    {
+      "id": "method-byvalue",
+      "tag": "method",
+      "type": "input",
+      "level": 4,
+      "prompt": "表示される値を書いてください。",
+      "code": "public class Main {\n    static void addOne(int n) {\n        n = n + 1;\n    }\n    public static void main(String[] args) {\n        int x = 5;\n        addOne(x);\n        System.out.println(x);\n    }\n}",
+      "answers": [
+        "5"
+      ],
+      "hint": "メソッドに渡されるのは x そのもの？それとも値のコピー？",
+      "explanation": "int などの基本型は、値のコピーが渡されます。addOne の中で n を変えても、main の x は 5 のままです。変えたいときは return で返して x = addOne(x); のようにします。"
+    },
+    {
+      "id": "method-overload",
+      "tag": "method",
+      "type": "choice",
+      "level": 3,
+      "prompt": "引数の数や型がちがえば、同じ名前のメソッドをいくつも作れます。これを何という？",
+      "choices": [
+        "オーバーロード",
+        "オーバーライド",
+        "カプセル化",
+        "継承"
+      ],
+      "answer": 0,
+      "explanation": "同じ名前で引数がちがうメソッドを作るのがオーバーロードです。オーバーライドは、親クラスのメソッドを子クラスで書きなおすことです。"
+    },
+    {
+      "id": "method-static",
+      "tag": "method",
+      "type": "free",
+      "level": 4,
+      "prompt": "static メソッド（たとえば main）から、static でないメソッドをそのまま呼べないのはなぜですか。",
+      "model": "static でないメソッドはオブジェクト（インスタンス）ごとのもので、どのオブジェクトのメソッドかが決まらないと呼べない。static メソッドはオブジェクトがなくても動くので、new でオブジェクトを作ってから、そのオブジェクトのメソッドとして呼ぶ必要がある。",
+      "rubric": "static でないメソッドはオブジェクトに属すること／new でオブジェクトを作れば呼べること",
+      "explanation": "エラー「static でないメソッドを static コンテキストから参照できません」の原因です。"
+    },
+    {
+      "id": "class-constructor",
+      "tag": "class",
+      "type": "choice",
+      "level": 1,
+      "prompt": "クラスと同じ名前で、戻り値の型を書かない、new したときに動く特別なメソッドは？",
+      "choices": [
+        "コンストラクタ",
+        "ゲッター",
+        "main メソッド",
+        "インターフェース"
+      ],
+      "answer": 0,
+      "explanation": "コンストラクタは、オブジェクトを作るとき（new のとき）に1回動き、フィールドの初期値を決めるのに使います。"
+    },
+    {
+      "id": "class-instances",
+      "tag": "class",
+      "type": "input",
+      "level": 3,
+      "prompt": "表示される値を書いてください。",
+      "code": "class Counter {\n    int count = 0;\n    void up() { count++; }\n}\npublic class Main {\n    public static void main(String[] args) {\n        Counter a = new Counter();\n        Counter b = new Counter();\n        a.up();\n        a.up();\n        b.up();\n        System.out.println(a.count + b.count);\n    }\n}",
+      "answers": [
+        "3"
+      ],
+      "explanation": "a と b は別々のオブジェクトで、それぞれ自分の count を持っています。a.count が 2、b.count が 1 なので 3 です。"
+    },
+    {
+      "id": "class-private",
+      "tag": "class",
+      "type": "choice",
+      "level": 2,
+      "prompt": "フィールドに private をつける、主な目的はどれ？",
+      "choices": [
+        "処理を速くする",
+        "クラスの外から直接読み書きできないようにする",
+        "メモリを節約する",
+        "継承できるようにする"
+      ],
+      "answer": 1,
+      "explanation": "private にすると、クラスの外からは直接さわれなくなります。値の変え方をメソッドにまとめて、まちがった値が入らないようにできます（カプセル化）。"
+    },
+    {
+      "id": "class-static",
+      "tag": "class",
+      "type": "input",
+      "level": 4,
+      "prompt": "表示される値を書いてください。",
+      "code": "class Counter {\n    static int total = 0;\n    Counter() { total++; }\n}\npublic class Main {\n    public static void main(String[] args) {\n        new Counter();\n        new Counter();\n        new Counter();\n        System.out.println(Counter.total);\n    }\n}",
+      "answers": [
+        "3"
+      ],
+      "hint": "static なフィールドは、オブジェクトごと？それともクラスに1つ？",
+      "explanation": "static なフィールドはクラスに1つだけで、すべてのオブジェクトで共有します。コンストラクタが3回動いたので 3 です。"
+    },
+    {
+      "id": "class-extends",
+      "tag": "class",
+      "type": "choice",
+      "level": 2,
+      "prompt": "クラス Dog がクラス Animal を継承するときの、正しい書き方はどれ？",
+      "choices": [
+        "class Dog extends Animal",
+        "class Dog implements Animal",
+        "class Dog : Animal",
+        "class Dog inherits Animal"
+      ],
+      "answer": 0,
+      "explanation": "クラスの継承は extends です。implements はインターフェースを実装するときに使います。"
+    },
+    {
+      "id": "ex-npe",
+      "tag": "exception",
+      "type": "choice",
+      "level": 2,
+      "prompt": "このコードはどうなる？",
+      "code": "String s = null;\nSystem.out.println(s.length());",
+      "choices": [
+        "0 と表示される",
+        "null と表示される",
+        "NullPointerException が起きる",
+        "コンパイルエラーになる"
+      ],
+      "answer": 2,
+      "explanation": "s は何のオブジェクトも指していない（null）ので、メソッドを呼ぶと NullPointerException が起きます。"
+    },
+    {
+      "id": "ex-finally",
+      "tag": "exception",
+      "type": "input",
+      "level": 3,
+      "prompt": "表示される文字を書いてください。",
+      "code": "try {\n    int x = 10 / 0;\n    System.out.print(\"A\");\n} catch (ArithmeticException e) {\n    System.out.print(\"B\");\n} finally {\n    System.out.print(\"C\");\n}",
+      "answers": [
+        "BC"
+      ],
+      "explanation": "10 / 0 で例外が起きるので、その下の A はとばして catch へ（B）。finally は必ず実行するので C。合わせて BC です。"
+    },
+    {
+      "id": "ex-nfe",
+      "tag": "exception",
+      "type": "choice",
+      "level": 2,
+      "prompt": "Integer.parseInt(\"abc\") を実行すると、どうなる？",
+      "choices": [
+        "NumberFormatException が起きる",
+        "NullPointerException が起きる",
+        "ArithmeticException が起きる",
+        "0 が返る"
+      ],
+      "answer": 0,
+      "explanation": "数字として読めない文字列を変換しようとすると NumberFormatException になります。"
+    },
+    {
+      "id": "ex-finally-use",
+      "tag": "exception",
+      "type": "free",
+      "level": 3,
+      "prompt": "try-catch の finally ブロックには、どんな処理を書くとよいですか。",
+      "model": "例外が起きても起きなくても必ず実行したい後かたづけ（ファイルやネットワーク接続を閉じるなど）を書く。",
+      "rubric": "必ず実行されること／後かたづけ（close など）に使うこと",
+      "explanation": "最近の Java では、閉じる必要があるものは try-with-resources（try (...) { }）を使うと自動で閉じてくれます。"
+    }
+  ]
+}

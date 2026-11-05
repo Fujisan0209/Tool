@@ -1,0 +1,17 @@
+{
+  "name": "study-coach",
+  "version": "1.0.0",
+  "description": "自分専用の学習AIコーチ（間隔反復＋苦手分析＋Claudeで問題づくり）",
+  "private": true,
+  "bin": { "coach": "bin/coach.js" },
+  "scripts": {
+    "start": "node bin/coach.js serve",
+    "daily": "node bin/coach.js daily",
+    "test": "node --test test/*.test.js"
+  },
+  "engines": { "node": ">=18" },
+  "optionalDependencies": {
+    "@anthropic-ai/sdk": "^1.5.0"
+  },
+  "license": "MIT"
+}

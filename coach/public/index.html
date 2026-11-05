@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>学習コーチ</title>
+<style>
+  :root {
+    --bg: #f4f2ee; --surface: #ffffff; --ink: #1d1f24; --muted: #646a75; --line: #e2ded6;
+    --accent: #1f6f5c; --accent-ink: #ffffff; --accent-soft: #e2f1ec;
+    --good: #1f7a4a; --good-bg: #e6f4ec; --bad: #b9352c; --bad-bg: #fbeae8; --warn: #9a5b00; --warn-bg: #fdf1dc;
+    --code-bg: #1e232b; --code-ink: #e3e8ef; --bar: #1f6f5c; --bar-2: #c9c3b6;
+    --f-body: "Hiragino Sans", "Yu Gothic UI", "Meiryo", "Noto Sans JP", system-ui, sans-serif;
+    --f-mono: ui-monospace, "SFMono-Regular", "Menlo", "Consolas", "MS Gothic", monospace;
+    --r: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #13161b; --surface: #1b1f26; --ink: #e8eaee; --muted: #9aa1ad; --line: #2c323c;
+      --accent: #5cc4a6; --accent-ink: #0d1714; --accent-soft: #183029;
+      --good: #6fd39b; --good-bg: #16301f; --bad: #ff8a80; --bad-bg: #3a1f22; --warn: #ffbf5e; --warn-bg: #3a2b14;
+      --code-bg: #0e1116; --bar: #5cc4a6; --bar-2: #3a414c;
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.7 var(--f-body); }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 24px 16px 64px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 16px; margin-bottom: 20px; }
+  h1 { font-size: 22px; margin: 0; letter-spacing: .02em; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font-size: 13px; padding: 2px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); color: var(--muted); }
+  .chip b { color: var(--ink); }
+  .grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 20px; }
+  .side { display: grid; gap: 20px; }
+  h2 { font-size: 15px; margin: 0 0 12px; color: var(--muted); font-weight: 600; }
+
+  /* question */
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; font-size: 13px; }
+  .tag { padding: 1px 8px; border-radius: 6px; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .reason { color: var(--muted); }
+  .kind-due .tag, .kind-relearn .tag { background: var(--warn-bg); color: var(--warn); }
+  .ai-badge { font-size: 11px; padding: 0 6px; border: 1px solid var(--line); border-radius: 4px; color: var(--muted); }
+  .prompt { font-size: 18px; font-weight: 600; margin: 4px 0 12px; white-space: pre-wrap; }
+  pre { background: var(--code-bg); color: var(--code-ink); padding: 14px 16px; border-radius: 10px; overflow-x: auto; font: 14px/1.6 var(--f-mono); margin: 0 0 14px; }
+  .choices { display: grid; gap: 8px; }
+  .choice { text-align: left; font: inherit; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; display: flex; gap: 10px; }
+  .choice:hover:not(:disabled) { border-color: var(--accent); }
+  .choice .k { font: 600 13px/1.9 var(--f-mono); color: var(--muted); min-width: 1.2em; }
+  .choice.right { border-color: var(--good); background: var(--good-bg); }
+  .choice.wrong { border-color: var(--bad); background: var(--bad-bg); }
+  .choice:disabled { cursor: default; }
+  input[type=text], textarea { width: 100%; font: 16px/1.5 var(--f-mono); padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+  textarea { min-height: 120px; font-family: var(--f-body); }
+  input:focus, textarea:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; align-items: center; }
+  .btn { font: 600 15px var(--f-body); padding: 9px 18px; border-radius: 10px; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); cursor: pointer; }
+  .btn.ghost { background: transparent; color: var(--accent); }
+  .btn.small { font-size: 13px; padding: 5px 12px; font-weight: 500; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .hint { margin-top: 10px; padding: 8px 12px; border-radius: 8px; background: var(--warn-bg); color: var(--warn); font-size: 14px; }
+  .result { margin-top: 16px; padding: 14px 16px; border-radius: 10px; }
+  .result.ok { background: var(--good-bg); }
+  .result.ng { background: var(--bad-bg); }
+  .result h3 { margin: 0 0 6px; font-size: 18px; }
+  .result.ok h3 { color: var(--good); } .result.ng h3 { color: var(--bad); }
+  .result p { margin: 6px 0; }
+  .sched { font-size: 13px; color: var(--muted); }
+  .ai-text { white-space: pre-wrap; border-left: 3px solid var(--accent); padding-left: 10px; }
+  .empty { text-align: center; padding: 40px 10px; }
+  .empty .big { font-size: 40px; }
+  .kbd { font: 12px var(--f-mono); color: var(--muted); }
+
+  /* dashboard */
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .stat { background: var(--bg); border-radius: 10px; padding: 8px 10px; }
+  .stat .v { font-size: 24px; font-weight: 700; line-height: 1.2; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--muted); }
+  .tags { display: grid; gap: 8px; }
+  .t { display: grid; grid-template-columns: 6.5em 1fr 3em; gap: 8px; align-items: center; font-size: 13px; }
+  .t .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .t .weak { color: var(--bad); font-weight: 700; }
+  .meter { height: 8px; border-radius: 4px; background: var(--bar-2); overflow: hidden; }
+  .meter i { display: block; height: 100%; background: var(--bar); border-radius: 4px; }
+  .t .pct { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+  .bars { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; align-items: end; height: 90px; }
+  .bars.h14 { grid-template-columns: repeat(14, 1fr); gap: 3px; }
+  .bar { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; font-size: 11px; color: var(--muted); }
+  .bar i { display: block; width: 100%; background: var(--bar); border-radius: 3px 3px 0 0; min-height: 2px; }
+  .bar i.zero { background: var(--bar-2); }
+  .note { font-size: 12px; color: var(--muted); margin-top: 8px; }
+  .report { white-space: pre-wrap; font-size: 13px; max-height: 260px; overflow: auto; background: var(--bg); padding: 10px; border-radius: 8px; }
+  .err { color: var(--bad); font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>学習コーチ</h1>
+    <div class="chips" id="chips"></div>
+  </header>
+  <div class="grid">
+    <main class="card" id="quiz" aria-live="polite"><p class="reason">読みこみ中…</p></main>
+    <aside class="side">
+      <section class="card">
+        <h2>今日</h2>
+        <div class="stats" id="today"></div>
+      </section>
+      <section class="card">
+        <h2>分野ごとの習熟度（低い順）</h2>
+        <div class="tags" id="tags"></div>
+        <p class="note">習熟度 = ふつうの難しさの問題に正解できそうな確率。<span class="weak">⚠</span> は苦手。</p>
+      </section>
+      <section class="card">
+        <h2>これから7日の復習</h2>
+        <div class="bars" id="forecast"></div>
+      </section>
+      <section class="card">
+        <h2>14日間の解答数</h2>
+        <div class="bars h14" id="history"></div>
+      </section>
+      <section class="card">
+        <h2>定期実行のまとめ</h2>
+        <div id="report"></div>
+        <div class="row"><button class="btn small ghost" id="runDaily">今すぐ実行</button></div>
+      </section>
+    </aside>
+  </div>
+</div>
+<script>
+"use strict";
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const pct = (x) => (x === null || x === undefined ? "-" : Math.round(x * 100) + "%");
+const session = "web-" + Date.now().toString(36);
+let state = { q: null, t0: 0, hintUsed: false, result: null, dash: null, answered: false };
+
+async function api(path, body) {
+  const res = await fetch(path, body === undefined ? {} : { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || res.statusText);
+  return data;
+}
+
+function days(d) {
+  if (d < 1 / 24) return Math.max(1, Math.round(d * 1440)) + " 分後";
+  if (d < 1) return Math.round(d * 24) + " 時間後";
+  if (d < 60) return Math.round(d) + " 日後";
+  return Math.round(d / 30) + " か月後";
+}
+
+function renderDash(d) {
+  state.dash = d;
+  $("#chips").innerHTML = [
+    `<span class="chip">連続 <b>${d.streak}</b> 日</span>`,
+    `<span class="chip">問題 <b>${d.totals.items}</b>（解いた ${d.totals.seen}）</span>`,
+    `<span class="chip">AI ${d.ai.enabled ? "<b>オン</b>" : "オフ"}</span>`,
+    d.tuned ? `<span class="chip">自分用に調整ずみ</span>` : "",
+  ].join("");
+  const acc = d.today.answered ? pct(d.today.correct / d.today.answered) : "-";
+  $("#today").innerHTML = [
+    [d.dueNow, "復習待ち"], [d.today.newLeft, "新しい問題 残り"], [d.today.answered, `解いた（正解率 ${acc}）`],
+  ].map(([v, l]) => `<div class="stat"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
+  $("#tags").innerHTML = d.tags.map((t) => `<div class="t"><span class="name ${t.weak ? "weak" : ""}" title="${esc(t.label)}">${t.weak ? "⚠ " : ""}${esc(t.label)}</span>
+    <span class="meter" role="img" aria-label="${esc(t.label)} ${t.attempts ? pct(t.mastery) : "未着手"}"><i style="width:${t.attempts ? Math.round(t.mastery * 100) : 0}%"></i></span>
+    <span class="pct">${t.attempts ? pct(t.mastery) : "未"}</span></div>`).join("");
+  const bars = (arr, key, label) => {
+    const max = Math.max(1, ...arr.map((x) => x[key]));
+    return arr.map((x) => `<div class="bar" title="${x.day}: ${x[key]}"><span>${x[key] || ""}</span><i class="${x[key] ? "" : "zero"}" style="height:${(x[key] / max) * 60}px"></i><span>${label(x)}</span></div>`).join("");
+  };
+  $("#forecast").innerHTML = bars(d.forecast, "count", (x, i) => x.day === d.today.day ? "今日中" : x.day.slice(8));
+  $("#history").innerHTML = bars(d.history, "answered", (x) => (Number(x.day.slice(8)) % 2 ? "" : x.day.slice(8)));
+}
+
+function renderQuestion(q) {
+  state = { ...state, q, t0: performance.now(), hintUsed: false, result: null, answered: false };
+  const el = $("#quiz");
+  if (!q) {
+    el.innerHTML = `<div class="empty"><div class="big">🎉</div><p><b>今日の分はおわりです。</b></p><p class="reason">忘れかけたころに、また復習を出します。</p></div>`;
+    return;
+  }
+  const it = q.item;
+  let body = "";
+  if (it.type === "choice") {
+    body = `<div class="choices">${it.choices.map((c, i) => `<button class="choice" data-i="${i}"><span class="k">${i + 1}</span><span>${esc(c)}</span></button>`).join("")}</div>`;
+  } else if (it.type === "input") {
+    body = `<input type="text" id="ans" autocomplete="off" spellcheck="false" placeholder="答えを入力して Enter"><div class="row"><button class="btn" id="submit">答える</button></div>`;
+  } else {
+    body = `<textarea id="ans" placeholder="自分のことばで説明してください"></textarea><div class="row"><button class="btn" id="submit">答える</button><span class="kbd">Ctrl+Enter</span></div>`;
+  }
+  el.className = "card kind-" + q.kind;
+  el.innerHTML = `<div class="meta"><span class="tag">${esc(it.tagLabel)}</span><span class="reason">${esc(q.reason)}</span>${it.source === "ai" ? '<span class="ai-badge">AIが作った問題</span>' : ""}</div>
+    <div class="prompt">${esc(it.prompt)}</div>
+    ${it.code ? `<pre><code>${esc(it.code)}</code></pre>` : ""}
+    ${body}
+    ${it.hint ? `<div class="row"><button class="btn small ghost" id="hintBtn">ヒントを見る</button></div><div id="hint"></div>` : ""}
+    <div id="result"></div>`;
+  el.querySelectorAll(".choice").forEach((b) => b.addEventListener("click", () => submit(Number(b.dataset.i))));
+  const input = $("#ans");
+  if (input) {
+    input.focus();
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && (it.type === "input" || e.ctrlKey || e.metaKey)) { e.preventDefault(); submit(input.value); }
+    });
+    $("#submit").addEventListener("click", () => submit(input.value));
+  }
+  if (it.hint) $("#hintBtn").addEventListener("click", () => { state.hintUsed = true; $("#hint").innerHTML = `<div class="hint">💡 ${esc(it.hint)}</div>`; $("#hintBtn").remove(); });
+}
+
+async function submit(answer, selfScore) {
+  if (state.answered) return;
+  if (state.q.item.type !== "choice" && !String(answer).trim()) return;
+  state.answered = true;
+  document.querySelectorAll("#quiz button, #ans").forEach((b) => (b.disabled = true));
+  const it = state.q.item;
+  const res = $("#result");
+  if (it.type === "free" && selfScore === undefined) res.innerHTML = `<p class="reason">${state.dash && state.dash.ai.enabled ? "AI が採点しています…" : ""}</p>`;
+  try {
+    const r = await api("/api/answer", { session, itemId: it.id, answer, latencyMs: performance.now() - state.t0, hintUsed: state.hintUsed, selfScore });
+    if (r.needsSelf) return renderSelfGrade(answer, r);
+    state.result = r;
+    renderResult(answer, r);
+    loadDash();
+  } catch (e) {
+    state.answered = false;
+    document.querySelectorAll("#quiz button, #ans").forEach((b) => (b.disabled = false));
+    res.innerHTML = `<p class="err">${esc(e.message)}</p>`;
+  }
+}
+
+function renderSelfGrade(answer, r) {
+  $("#result").innerHTML = `<div class="result">
+    ${r.aiError ? `<p class="err">AI で採点できませんでした: ${esc(r.aiError)}</p>` : ""}
+    <p><b>模範解答</b></p><p class="ai-text">${esc(r.model)}</p>
+    <p>自分の答えとくらべて、採点してください。</p>
+    <div class="row"><button class="btn small" data-s="1">○ できた</button><button class="btn small ghost" data-s="0.5">△ 半分くらい</button><button class="btn small ghost" data-s="0">× できなかった</button></div></div>`;
+  $("#result").querySelectorAll("[data-s]").forEach((b) => b.addEventListener("click", () => { state.answered = false; submit(answer, Number(b.dataset.s)); }));
+}
+
+function renderResult(answer, r) {
+  const it = state.q.item;
+  if (it.type === "choice") {
+    document.querySelectorAll(".choice").forEach((b) => {
+      const i = Number(b.dataset.i);
+      if (i === r.answerIndex) b.classList.add("right");
+      else if (i === Number(answer)) b.classList.add("wrong");
+    });
+  }
+  const ai = state.dash && state.dash.ai.enabled;
+  $("#result").innerHTML = `<div class="result ${r.correct ? "ok" : "ng"}">
+    <h3>${r.correct ? (r.score < 1 ? "△ おしい！" : "○ 正解！") : "× ざんねん"}</h3>
+    ${!r.correct && it.type !== "choice" ? `<p>正解: <code>${esc(r.correctAnswer)}</code></p>` : ""}
+    ${r.feedback ? `<p class="ai-text">${esc(r.feedback)}</p>` : ""}
+    ${r.explanation ? `<p>${esc(r.explanation)}</p>` : ""}
+    <div id="explain"></div>
+    <p class="sched" id="sched">評価「${esc(r.gradeLabel)}」→ 次の復習は約 ${days(r.nextReviewDays)}</p>
+    <div class="row">
+      <button class="btn" id="next">次へ</button><span class="kbd">Enter</span>
+      ${r.correct ? `<button class="btn small ghost" id="lucky" title="まぐれで当たったときは「だめ」として記録しなおします">まぐれだった</button>` : ""}
+      ${ai ? `<button class="btn small ghost" id="ask">AIにくわしく聞く</button>` : ""}
+      <button class="btn small ghost" id="suspend" title="この問題をもう出さない">この問題はおかしい</button>
+    </div></div>`;
+  $("#next").addEventListener("click", next);
+  $("#next").focus();
+  const lucky = $("#lucky");
+  if (lucky) lucky.addEventListener("click", async () => {
+    lucky.disabled = true;
+    const o = await api("/api/override", { attemptId: r.attemptId, grade: 1 });
+    $("#sched").textContent = `評価を「だめ」になおしました → 次の復習は約 ${days(o.nextReviewDays)}（このあともう一度出ます）`;
+    loadDash();
+  });
+  const ask = $("#ask");
+  if (ask) ask.addEventListener("click", async () => {
+    ask.disabled = true;
+    $("#explain").innerHTML = `<p class="reason">AI が考えています…</p>`;
+    try {
+      const x = await api("/api/explain", { attemptId: r.attemptId });
+      $("#explain").innerHTML = `<p class="ai-text">${esc(x.explanation)}</p>`;
+    } catch (e) { $("#explain").innerHTML = `<p class="err">${esc(e.message)}</p>`; ask.disabled = false; }
+  });
+  $("#suspend").addEventListener("click", async () => {
+    await api("/api/suspend", { itemId: it.id, on: true });
+    $("#suspend").textContent = "もう出しません";
+    $("#suspend").disabled = true;
+  });
+}
+
+async function next() {
+  try {
+    const { next, dashboard } = await api("/api/next?session=" + session);
+    renderDash(dashboard);
+    renderQuestion(next);
+  } catch (e) {
+    $("#quiz").innerHTML = `<p class="err">${esc(e.message)}</p>`;
+  }
+}
+
+async function loadDash() { renderDash(await api("/api/dashboard")); }
+
+async function loadReport() {
+  const r = await api("/api/report");
+  $("#report").innerHTML = r.date ? `<div class="report">${esc(r.markdown)}</div>` : `<p class="note">まだありません。毎日 ${esc(state.dash ? state.dash.config.dailyAt : "07:00")} すぎに自動で作ります。</p>`;
+}
+
+$("#runDaily").addEventListener("click", async (e) => {
+  e.target.disabled = true;
+  e.target.textContent = "実行中…";
+  try { await api("/api/daily", { force: true }); await loadReport(); await loadDash(); }
+  catch (err) { $("#report").innerHTML = `<p class="err">${esc(err.message)}</p>`; }
+  e.target.disabled = false;
+  e.target.textContent = "今すぐ実行";
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.target.matches("input, textarea")) return;
+  if (state.answered && state.result && e.key === "Enter") { e.preventDefault(); next(); return; }
+  if (!state.answered && state.q && state.q.item.type === "choice" && /^[1-9]$/.test(e.key)) {
+    const i = Number(e.key) - 1;
+    if (i < state.q.item.choices.length) submit(i);
+  }
+});
+
+next().then(loadReport);
+</script>
+</body>
+</html>
