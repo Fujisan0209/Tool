@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- artifact:start -->
+<title>Javaその場チェック</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  /* Layout: エディタ（左・主役）と、指摘の一覧（右）。スマホでは縦に並ぶ。エディタの各行の右端にも短い指摘が出る */
+  :root {
+    --bg: #eef1f5;
+    --surface: #ffffff;
+    --ink: #1a2230;
+    --muted: #5b6577;
+    --line: #d9dee7;
+    --accent: #2853c4;
+    --accent-ink: #ffffff;
+    --err: #c2362f;  --err-bg: #fcecea;
+    --warn: #a65307; --warn-bg: #fdf0e2;
+    --ok: #1f7a4a;   --ok-bg: #e7f5ec;
+    --hover: #f4f6fa;
+
+    /* エディタは明暗どちらのテーマでも暗い板 */
+    --ed-bg: #161d28;
+    --ed-gutter: #121821;
+    --ed-ink: #d9e1ec;
+    --ed-dim: #5f6c80;
+    --ed-num: #4f5b6e;
+    --ed-cur: rgba(255, 255, 255, 0.045);
+    --ed-sel: rgba(120, 152, 245, 0.38);
+    --ed-caret: #ffd27a;
+    --ed-err: #ff7b72;
+    --ed-err-bg: rgba(255, 123, 114, 0.11);
+    --ed-warn: #f2b84b;
+    --ed-warn-bg: rgba(242, 184, 75, 0.1);
+    --sx-kw: #93b1ff;
+    --sx-type: #5fd0c0;
+    --sx-str: #a9d98c;
+    --sx-num: #f3a57f;
+    --sx-cmt: #6c7a90;
+    --sx-fn: #e9dcae;
+    --sx-anno: #c4a0ff;
+
+    --f-display: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif;
+    --f-body: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif;
+    --f-mono: "JetBrains Mono", "Noto Sans Mono CJK JP", "Osaka-Mono", "MS Gothic", ui-monospace, monospace;
+
+    --fs-code: 14px;
+    --lh: 22px;
+    --r: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e131a; --surface: #161d27; --ink: #e4e9f1; --muted: #98a3b6; --line: #273141;
+      --accent: #86a4f7; --accent-ink: #0d1320;
+      --err: #ff8a80; --err-bg: #3a1f22; --warn: #ffbf6b; --warn-bg: #3a2a18; --ok: #6fd39b; --ok-bg: #16301f;
+      --hover: #1c2431;
+      --ed-bg: #111720; --ed-gutter: #0d1219;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e131a; --surface: #161d27; --ink: #e4e9f1; --muted: #98a3b6; --line: #273141;
+    --accent: #86a4f7; --accent-ink: #0d1320;
+    --err: #ff8a80; --err-bg: #3a1f22; --warn: #ffbf6b; --warn-bg: #3a2a18; --ok: #6fd39b; --ok-bg: #16301f;
+    --hover: #1c2431;
+    --ed-bg: #111720; --ed-gutter: #0d1219;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--f-body);
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  button, select, input { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  .app {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-block: 14px 16px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    max-width: 1480px;
+    margin: 0 auto;
+  }
+
+  /* ---------- ヘッダー ---------- */
+  .top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
+  .brand { display: flex; align-items: center; gap: 10px; margin-right: auto; min-width: 0; }
+  .logo {
+    flex: none; width: 36px; height: 36px; border-radius: 9px;
+    background: var(--ed-bg); color: var(--ed-caret);
+    display: grid; place-items: center;
+  }
+  .logo svg { display: block; }
+  h1 { font-family: var(--f-display); font-weight: 700; font-size: 21px; line-height: 1.25; margin: 0; letter-spacing: .01em; }
+  .tagline { margin: 0; font-size: 13px; color: var(--muted); }
+  .tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+    border-radius: 8px; padding: 6px 12px; font-size: 14px; font-weight: 500; cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--hover); }
+  .btn svg { flex: none; }
+  .select-wrap { position: relative; }
+  .select-wrap select {
+    appearance: none; -webkit-appearance: none;
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+    border-radius: 8px; padding: 6px 32px 6px 12px; font-size: 14px; font-weight: 500; cursor: pointer;
+    max-width: 62vw;
+  }
+  .select-wrap::after {
+    content: ""; position: absolute; right: 12px; top: 50%; width: 7px; height: 7px; margin-top: -5px;
+    border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg); pointer-events: none;
+  }
+
+  /* ---------- 本体 ---------- */
+  .main { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 380px); gap: 14px; }
+  @media (pointer: coarse) { :root { --fs-code: 16px; --lh: 24px; } }
+  @media (max-width: 600px) {
+    .tagline { display: none; }
+    .tools { width: 100%; flex-wrap: nowrap; }
+    .select-wrap { flex: 1; min-width: 0; }
+    .select-wrap select { width: 100%; max-width: none; }
+    .btn { padding: 6px 10px; }
+  }
+  @media (max-width: 900px) {
+    html, body { height: auto; }
+    .app { height: auto; }
+    .main { grid-template-columns: minmax(0, 1fr); }
+    .editor { height: 62vh; min-height: 360px; }
+    .panel { max-height: none; }
+  }
+
+  /* ---------- エディタ ---------- */
+  .editor {
+    min-width: 0; min-height: 0;
+    display: flex; flex-direction: column;
+    background: var(--ed-bg); color: var(--ed-ink);
+    border-radius: var(--r); overflow: hidden;
+    box-shadow: 0 1px 0 rgba(0,0,0,.05), 0 14px 34px -22px rgba(10, 20, 40, .55);
+  }
+  .editor:focus-within { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 55%, transparent), 0 14px 34px -22px rgba(10, 20, 40, .55); }
+  .tabbar {
+    display: flex; align-items: center; gap: 10px; flex: none;
+    padding: 0 12px 0 0; height: 38px;
+    background: var(--ed-gutter); border-bottom: 1px solid rgba(255,255,255,.06);
+    font-family: var(--f-mono); font-size: 12.5px; color: var(--ed-dim);
+  }
+  .tab {
+    display: flex; align-items: center; gap: 8px; height: 100%;
+    padding: 0 14px; background: var(--ed-bg); color: var(--ed-ink);
+    border-right: 1px solid rgba(255,255,255,.06);
+  }
+  .tab .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); flex: none; }
+  .tab .dot.err { background: var(--ed-err); }
+  .tab .dot.warn { background: var(--ed-warn); }
+  .fname {
+    font: inherit; color: inherit; background: transparent; border: 0; padding: 2px 4px; margin: 0 -4px;
+    width: 14ch; min-width: 6ch; border-radius: 4px;
+  }
+  .fname:hover { background: rgba(255,255,255,.05); }
+  .fname:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; background: rgba(255,255,255,.06); }
+  .tabbar .spacer { flex: 1; }
+  .tabbar .java { white-space: nowrap; }
+
+  .scroller { flex: 1; min-height: 0; overflow: auto; position: relative; overscroll-behavior: contain; }
+  .canvas { display: grid; grid-template-columns: auto minmax(0, 1fr); min-height: 100%; width: max-content; min-width: 100%; }
+  .gutter {
+    position: sticky; left: 0; z-index: 3;
+    background: var(--ed-gutter); color: var(--ed-num);
+    font-family: var(--f-mono); font-size: 12.5px; line-height: var(--lh);
+    padding: 12px 0; text-align: right; user-select: none; -webkit-user-select: none;
+    font-variant-numeric: tabular-nums;
+  }
+  .gutter div { height: var(--lh); padding: 0 12px 0 22px; position: relative; cursor: default; }
+  .gutter div.cur { color: var(--ed-ink); }
+  .gutter div.g-err::before, .gutter div.g-warn::before {
+    content: ""; position: absolute; left: 8px; top: 50%; width: 8px; height: 8px; margin-top: -4px; border-radius: 50%;
+  }
+  .gutter div.g-err { color: var(--ed-err); cursor: pointer; }
+  .gutter div.g-err::before { background: var(--ed-err); }
+  .gutter div.g-warn { color: var(--ed-warn); cursor: pointer; }
+  .gutter div.g-warn::before { background: var(--ed-warn); border-radius: 2px; transform: rotate(45deg); width: 7px; height: 7px; margin-top: -3.5px; }
+
+  .code { position: relative; min-width: 0; }
+  .backdrop, .input {
+    font-family: var(--f-mono); font-size: var(--fs-code); line-height: var(--lh);
+    font-variant-ligatures: none; font-feature-settings: "liga" 0, "calt" 0;
+    tab-size: 4; -moz-tab-size: 4; letter-spacing: 0;
+    padding: 12px 0 12px 14px; margin: 0;
+  }
+  .input { padding-right: 24px; }
+  .backdrop { pointer-events: none; white-space: pre; color: var(--ed-ink); }
+  .backdrop .ln { height: var(--lh); position: relative; padding-right: 24px; }
+  .backdrop .ln.cur { background: var(--ed-cur); }
+  .backdrop .ln.l-err { background: linear-gradient(90deg, var(--ed-err-bg), transparent 85%); }
+  .backdrop .ln.l-warn { background: linear-gradient(90deg, var(--ed-warn-bg), transparent 85%); }
+  .backdrop .ln.flash { animation: flash 1s ease-out; }
+  @keyframes flash { from { background-color: rgba(255, 210, 122, .22); } to { background-color: transparent; } }
+  .input {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    resize: none; border: 0; outline: 0; overflow: hidden;
+    background: transparent; color: transparent; caret-color: var(--ed-caret);
+    white-space: pre; overflow-wrap: normal; word-break: normal;
+    -webkit-appearance: none; appearance: none; border-radius: 0;
+    -webkit-text-fill-color: transparent;
+    z-index: 2;
+  }
+  .input::selection { background: var(--ed-sel); color: transparent; -webkit-text-fill-color: transparent; }
+  .input::placeholder { color: var(--ed-dim); -webkit-text-fill-color: var(--ed-dim); }
+
+  /* 文字の色 */
+  .t-kw { color: var(--sx-kw); }
+  .t-ty { color: var(--sx-type); }
+  .t-st { color: var(--sx-str); }
+  .t-nu { color: var(--sx-num); }
+  .t-cm { color: var(--sx-cmt); }
+  .t-fn { color: var(--sx-fn); }
+  .t-an { color: var(--sx-anno); }
+  .t-bad { color: var(--ed-err); }
+  /* 波線 */
+  .u-err { text-decoration: underline wavy var(--ed-err); text-decoration-thickness: 1.5px; text-underline-offset: 4px; text-decoration-skip-ink: none; }
+  .u-warn { text-decoration: underline wavy var(--ed-warn); text-decoration-thickness: 1.5px; text-underline-offset: 4px; text-decoration-skip-ink: none; }
+  .u-err.blank, .u-warn.blank { background: rgba(255, 123, 114, .25); border-radius: 2px; }
+  .u-warn.blank { background: rgba(242, 184, 75, .25); }
+  /* 行の右に出る、短い指摘 */
+  .lens {
+    display: inline-block; height: var(--lh); vertical-align: top;
+    margin-left: 3ch; padding: 0 10px; border-radius: 5px;
+    font-family: var(--f-body); font-size: 12.5px; font-weight: 500; line-height: var(--lh);
+    white-space: pre;
+  }
+  .lens.err { color: var(--ed-err); background: var(--ed-err-bg); }
+  .lens.warn { color: var(--ed-warn); background: var(--ed-warn-bg); }
+  .lens .more { opacity: .7; margin-left: .6em; }
+  .lens.pending { opacity: .45; }
+
+  .statusbar {
+    flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px;
+    padding: 5px 14px; min-height: 30px;
+    background: var(--ed-gutter); border-top: 1px solid rgba(255,255,255,.06);
+    font-family: var(--f-mono); font-size: 12px; color: var(--ed-dim);
+    font-variant-numeric: tabular-nums;
+  }
+  .statusbar .grow { flex: 1; }
+  .statusbar kbd { font: inherit; border: 1px solid rgba(255,255,255,.14); border-radius: 4px; padding: 0 5px; color: var(--ed-ink); }
+
+  /* ---------- 指摘の一覧 ---------- */
+  .panel {
+    min-width: 0; min-height: 0;
+    display: flex; flex-direction: column;
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--r);
+    overflow: hidden;
+  }
+  .panel-head { flex: none; padding: 14px 16px 12px; border-bottom: 1px solid var(--line); display: grid; gap: 8px; }
+  .panel-title { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .panel-title h2 { margin: 0; font-size: 15px; font-weight: 700; letter-spacing: .04em; }
+  .counts { display: flex; gap: 6px; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .count { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 1px 9px 1px 7px; }
+  .count.err { color: var(--err); background: var(--err-bg); }
+  .count.warn { color: var(--warn); background: var(--warn-bg); }
+  .count.zero { opacity: .45; }
+  .summary { margin: 0; font-size: 13.5px; color: var(--muted); }
+  .summary.ok { color: var(--ok); font-weight: 700; }
+
+  .list { flex: 1; min-height: 0; overflow: auto; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+  .item { border: 1px solid transparent; border-radius: 8px; }
+  .item:hover { background: var(--hover); }
+  .item.active { border-color: var(--line); background: var(--hover); }
+  .item.flash { animation: itemflash 1.2s ease-out; }
+  @keyframes itemflash { from { background: color-mix(in srgb, var(--accent) 16%, transparent); } to { background: transparent; } }
+  .jump {
+    display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 2px 10px;
+    width: 100%; text-align: left; cursor: pointer; color: inherit;
+    border: 0; background: transparent; border-radius: 8px;
+    padding: 9px 10px 10px;
+  }
+  .ico { grid-row: 1 / span 3; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; margin-top: 1px; }
+  .item.err .ico { color: var(--err); background: var(--err-bg); }
+  .item.warn .ico { color: var(--warn); background: var(--warn-bg); border-radius: 6px; }
+  .where { font-family: var(--f-mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; display: flex; gap: 8px; align-items: baseline; }
+  .where .sev { font-family: var(--f-body); font-weight: 700; font-size: 11.5px; letter-spacing: .06em; }
+  .item.err .sev { color: var(--err); }
+  .item.warn .sev { color: var(--warn); }
+  .msg { font-weight: 700; font-size: 15px; line-height: 1.45; overflow-wrap: anywhere; }
+  .fix { font-size: 13.5px; color: var(--muted); line-height: 1.5; overflow-wrap: anywhere; }
+  .fix::before { content: "→ "; color: var(--ok); font-weight: 700; }
+  .actions { display: flex; gap: 8px; padding: 0 10px 10px 42px; margin-top: -2px; }
+  .qf {
+    display: inline-flex; align-items: center; gap: 5px;
+    border: 1px solid color-mix(in srgb, var(--ok) 40%, transparent); background: var(--ok-bg); color: var(--ok);
+    border-radius: 6px; padding: 2px 10px; font-size: 13px; font-weight: 700; cursor: pointer;
+  }
+  .qf:hover { filter: brightness(1.04); }
+  .qf code { font-family: var(--f-mono); font-size: 12px; font-weight: 600; }
+
+  .empty { padding: 26px 18px; text-align: center; display: grid; gap: 10px; justify-items: center; }
+  .empty .big { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: var(--ok-bg); color: var(--ok); }
+  .empty p { margin: 0; max-width: 26em; }
+  .empty .t { font-weight: 700; color: var(--ok); }
+  .empty .s { font-size: 13px; color: var(--muted); }
+
+  .panel-foot { flex: none; border-top: 1px solid var(--line); padding: 10px 16px 12px; font-size: 12.5px; color: var(--muted); display: grid; gap: 4px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+  .legend b { font-weight: 700; }
+  .legend .e { color: var(--err); }
+  .legend .w { color: var(--warn); }
+
+  .toast {
+    position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+    background: var(--ink); color: var(--surface); border-radius: 8px; padding: 7px 14px; font-size: 14px; z-index: 20;
+    box-shadow: 0 8px 24px -10px rgba(0,0,0,.5);
+  }
+
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .backdrop .ln.flash, .item.flash { animation: none; }
+  }
+</style>
+<!-- artifact:end -->
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 5h9M3 10h6M3 15h8" stroke="#d9e1ec" stroke-width="2" stroke-linecap="round"/><path d="M12.5 13.5c.8-.9 1.6-.9 2.4 0s1.6.9 2.4 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="16" cy="6" r="2.2" fill="currentColor"/></svg>
+      </div>
+      <div>
+        <h1>Javaその場チェック</h1>
+        <p class="tagline">書いているそばから、まちがいを横で教えます</p>
+      </div>
+    </div>
+    <div class="tools">
+      <label class="select-wrap">
+        <span class="sr-only">例のコードを開く</span>
+        <select id="samples"></select>
+      </label>
+      <button type="button" class="btn" id="btn-new">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        新しく書く
+      </button>
+      <button type="button" class="btn" id="btn-copy">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="5" y="5" width="8.5" height="8.5" rx="1.6" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 3.2V3a1.5 1.5 0 0 0-1.5-1.5H3.5A1.5 1.5 0 0 0 2 3v5.5A1.5 1.5 0 0 0 3.5 10h.3" stroke="currentColor" stroke-width="1.5"/></svg>
+        コピー
+      </button>
+    </div>
+  </header>
+
+  <main class="main">
+    <section class="editor" aria-label="コードエディタ">
+      <div class="tabbar">
+        <div class="tab">
+          <span class="dot" id="tab-dot" aria-hidden="true"></span>
+          <label class="sr-only" for="fname">ファイル名</label>
+          <input id="fname" class="fname" value="Main.java" spellcheck="false" autocomplete="off">
+        </div>
+        <span class="spacer"></span>
+        <span class="java">Java 21</span>
+      </div>
+      <div class="scroller" id="scroller">
+        <div class="canvas">
+          <div class="gutter" id="gutter" aria-hidden="true"></div>
+          <div class="code" id="code">
+            <div class="backdrop" id="backdrop" aria-hidden="true"></div>
+            <textarea id="input" class="input" wrap="off" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"
+              aria-label="Java のコード" aria-describedby="status-line"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="statusbar">
+        <span id="status-line">1 行 1 列</span>
+        <span id="status-ms"></span>
+        <span class="grow"></span>
+        <span><kbd>F8</kbd> 次の指摘へ</span>
+      </div>
+    </section>
+
+    <aside class="panel" aria-labelledby="panel-title">
+      <div class="panel-head">
+        <div class="panel-title">
+          <h2 id="panel-title">指摘</h2>
+          <div class="counts">
+            <span class="count err" id="count-err" title="エラー">
+              <svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <span>0</span>
+            </span>
+            <span class="count warn" id="count-warn" title="注意">
+              <svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 2.5v4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="6" cy="9.5" r="1.1" fill="currentColor"/></svg>
+              <span>0</span>
+            </span>
+          </div>
+        </div>
+        <p class="summary" id="summary" aria-live="polite">しらべています…</p>
+      </div>
+      <div class="list" id="list"></div>
+      <div class="panel-foot">
+        <div class="legend"><span><b class="e">エラー</b> このままではコンパイルできない</span><span><b class="w">注意</b> 動くけれど、まちがいかも</span></div>
+        <div>コードはこのページの中だけで調べます。どこにも送信しません。</div>
+      </div>
+    </aside>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="src/jdk-data.js"></script>
+<script src="src/lexer.js"></script>
+<script src="src/parser.js"></script>
+<script src="src/types.js"></script>
+<script src="src/checker.js"></script>
+<script src="src/editor.js"></script>
+</body>
+</html>
