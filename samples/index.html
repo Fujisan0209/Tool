@@ -1,0 +1,1018 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>言語くらべ帳</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=BIZ+UDGothic:wght@400;700&family=Zen+Maru+Gothic:wght@700;900&display=swap">
+<style>
+/* Layout: 方眼ノートの上に、2つの言語を左右にならべて同じプログラムを同時に動かす */
+:root {
+  --paper: #eef2ef;
+  --grid: #dfe6e1;
+  --panel: #ffffff;
+  --ink: #1b2822;
+  --muted: #5a6b62;
+  --rule: #d3dcd6;
+  --accent: #1d6b57;
+  --accent-ink: #ffffff;
+  --now: #ffe58a;
+  --now-ink: #1b2822;
+  --c-setup: #5a5f9a;
+  --c-comment: #7d8a83;
+  --c-output: #c24f27;
+  --c-var: #7b3fb2;
+  --c-loop: #17799f;
+  --c-if: #a87410;
+  --c-block: #9aa59f;
+  --ok: #1f8a4c;
+  --ng: #b23a3a;
+  --f-display: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "BIZ UDPGothic", sans-serif;
+  --f-body: "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif;
+  --f-code: "BIZ UDGothic", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #121815; --grid: #1a221e; --panel: #19211d; --ink: #e2eae5; --muted: #98a9a0;
+    --rule: #2c3833; --accent: #5cc4a6; --accent-ink: #0d1411; --now: #5c4b12; --now-ink: #fff3c4;
+    --c-setup: #a3a8e0; --c-comment: #8a968f; --c-output: #f08c63; --c-var: #c79df0;
+    --c-loop: #62c3e8; --c-if: #e6b84c; --c-block: #5d6963; --ok: #5fd08e; --ng: #f07c7c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #121815; --grid: #1a221e; --panel: #19211d; --ink: #e2eae5; --muted: #98a9a0;
+  --rule: #2c3833; --accent: #5cc4a6; --accent-ink: #0d1411; --now: #5c4b12; --now-ink: #fff3c4;
+  --c-setup: #a3a8e0; --c-comment: #8a968f; --c-output: #f08c63; --c-var: #c79df0;
+  --c-loop: #62c3e8; --c-if: #e6b84c; --c-block: #5d6963; --ok: #5fd08e; --ng: #f07c7c;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 15px;
+  line-height: 1.7;
+}
+body::before {
+  content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px);
+  z-index: 10; background: var(--paper);
+}
+.wrap {
+  max-width: 1180px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 64px;
+  display: grid; gap: 28px;
+}
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; line-height: 1.3; }
+h1 { font-size: clamp(28px, 5vw, 42px); font-weight: 900; letter-spacing: .02em; }
+h2 { font-size: 22px; font-weight: 700; }
+h3 { font-size: 17px; font-weight: 700; }
+p { margin: 0; }
+code { font-family: var(--f-code); font-size: .92em; background: color-mix(in srgb, var(--accent) 10%, transparent); padding: 1px 5px; border-radius: 4px; }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* header */
+.head { display: grid; gap: 10px; }
+.eyebrow { font-size: 12px; letter-spacing: .14em; color: var(--muted); font-weight: 700; }
+.lead { color: var(--muted); max-width: 62ch; }
+.lead b { color: var(--ink); }
+
+/* language chips */
+.picker { display: grid; gap: 8px; }
+.picker-label { font-size: 13px; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  border: 1.5px solid var(--rule); background: var(--panel); border-radius: 999px;
+  padding: 6px 14px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px;
+  transition: border-color .15s, background .15s, transform .15s;
+}
+.chip:hover { border-color: var(--accent); }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.chip .slot {
+  font-size: 11px; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--accent-ink); color: var(--accent);
+}
+.chip:not([aria-pressed="true"]) .slot { display: none; }
+
+/* player */
+.player {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--panel); border: 1.5px solid var(--rule); border-radius: 14px;
+  padding: 12px 14px; display: grid; gap: 10px;
+  box-shadow: 0 6px 20px -12px rgba(0,0,0,.35);
+}
+.p-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.p-btns { display: flex; gap: 6px; }
+.pbtn {
+  border: 1.5px solid var(--rule); background: var(--panel); border-radius: 10px;
+  min-width: 44px; height: 40px; padding: 0 12px; font-weight: 700;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+}
+.pbtn.main { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); min-width: 104px; }
+.pbtn svg { width: 16px; height: 16px; fill: currentColor; }
+.speed { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.speed input { width: 110px; accent-color: var(--accent); }
+.progress { flex: 1 1 160px; height: 6px; background: var(--rule); border-radius: 3px; overflow: hidden; min-width: 120px; }
+.progress i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+.stepno { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.p-stage { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(0, 1.1fr); gap: 12px; align-items: stretch; }
+.boxes { display: flex; gap: 8px; }
+.vbox {
+  border: 2px solid var(--c-var); border-radius: 10px; min-width: 70px; text-align: center;
+  padding: 4px 8px 6px; display: grid; align-content: center;
+}
+.vbox .vname { font-family: var(--f-code); font-size: 12px; color: var(--c-var); font-weight: 700; }
+.vbox .vval { font-family: var(--f-code); font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.vbox.pop .vval { animation: pop .45s ease; }
+@keyframes pop { 0% { transform: scale(1); } 35% { transform: scale(1.35); color: var(--c-var); } 100% { transform: scale(1); } }
+.say { display: grid; gap: 4px; align-content: center; min-width: 0; }
+.say .msg { font-weight: 700; }
+.check { font-family: var(--f-code); font-size: 13px; display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.check .res { padding: 0 8px; border-radius: 6px; font-weight: 700; color: var(--panel); }
+.check .res.yes { background: var(--ok); }
+.check .res.no { background: var(--ng); }
+.console {
+  background: #18201c; color: #d6f5e3; border: 1.5px solid var(--rule); border-radius: 10px; padding: 6px 10px;
+  font-family: var(--f-code); font-size: 13px; height: 82px; overflow: hidden;
+  display: flex; flex-direction: column; justify-content: flex-end; min-width: 0;
+}
+.console .cl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.console .cl.new { animation: slidein .35s ease; color: #ffe58a; }
+.console .cl.new::after { content: " ←"; color: #8fb5a2; }
+@keyframes slidein { from { transform: translateY(8px); opacity: .2; } to { transform: none; opacity: 1; } }
+.console-title { font-size: 11px; color: #8fb5a2; letter-spacing: .1em; }
+
+/* concept filter */
+.legend { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.legend .lt { font-size: 13px; color: var(--muted); margin-right: 4px; }
+.tag {
+  --c: var(--c-block);
+  border: 1.5px solid var(--c); color: var(--ink); background: var(--panel);
+  border-radius: 8px; padding: 2px 10px; font-size: 13px; font-weight: 700;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.tag::before { content: ""; width: 9px; height: 9px; border-radius: 2px; background: var(--c); }
+.tag[aria-pressed="true"] { background: var(--c); color: var(--panel); }
+.tag[aria-pressed="true"]::before { background: var(--panel); }
+.t-setup { --c: var(--c-setup); } .t-comment { --c: var(--c-comment); } .t-output { --c: var(--c-output); }
+.t-var { --c: var(--c-var); } .t-loop { --c: var(--c-loop); } .t-if { --c: var(--c-if); } .t-block { --c: var(--c-block); }
+
+/* panes */
+.panes { display: grid; grid-template-columns: repeat(var(--n, 2), minmax(0, 1fr)); gap: 16px; }
+.pane { background: var(--panel); border: 1.5px solid var(--rule); border-radius: 14px; overflow: hidden; display: grid; align-content: start; min-width: 0; }
+.pane-head { padding: 14px 16px 12px; display: grid; gap: 8px; border-bottom: 1.5px solid var(--rule); }
+.pane-title { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.pane-title h2 { font-size: 26px; }
+.badges { display: flex; gap: 6px; flex-wrap: wrap; }
+.badge { font-size: 12px; border-radius: 6px; padding: 1px 8px; border: 1px solid var(--rule); color: var(--muted); font-weight: 700; }
+.badge.static { border-color: var(--c-loop); color: var(--c-loop); }
+.badge.dynamic { border-color: var(--c-output); color: var(--c-output); }
+.run { display: flex; align-items: center; gap: 8px; font-size: 13px; flex-wrap: wrap; }
+.run code { white-space: normal; word-break: break-all; }
+.copy { border: 1px solid var(--rule); background: transparent; border-radius: 6px; font-size: 12px; padding: 1px 8px; color: var(--muted); }
+.code { font-family: var(--f-code); font-size: 13.5px; line-height: 1.65; padding: 8px 0 10px; }
+.ln {
+  --c: transparent;
+  display: grid; grid-template-columns: 2.6em minmax(0, 1fr); align-items: start;
+  border-left: 4px solid var(--c); cursor: pointer; position: relative;
+  transition: background .2s, opacity .2s;
+}
+.ln:hover { background: color-mix(in srgb, var(--c) 12%, transparent); }
+.ln .no { color: var(--muted); text-align: right; padding-right: 12px; user-select: none; font-size: 12px; padding-top: 1px; }
+.ln .tx { white-space: pre-wrap; overflow-wrap: anywhere; padding-right: 12px; }
+.ln.blank { cursor: default; }
+.ln.sel { background: color-mix(in srgb, var(--c) 18%, transparent); }
+.ln.dim { opacity: .28; }
+.ln.now { background: var(--now); color: var(--now-ink); }
+.ln.now .no { color: var(--now-ink); font-weight: 700; }
+.ln.now .no::before { content: "▶"; position: absolute; left: 4px; font-size: 10px; animation: blink 1s steps(2) infinite; }
+@keyframes blink { 50% { opacity: .3; } }
+.note {
+  margin: 4px 12px 8px 2.6em; padding: 10px 12px; border-radius: 10px;
+  background: var(--paper); border: 1.5px solid var(--c, var(--rule)); font-family: var(--f-body); font-size: 14px;
+  display: grid; gap: 4px; animation: unfold .25s ease;
+}
+.note .nt { font-size: 12px; font-weight: 700; color: var(--c); }
+@keyframes unfold { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+/* pipeline diagram */
+.flow { border-top: 1.5px solid var(--rule); padding: 12px 16px 16px; display: grid; gap: 10px; }
+.flow-title { font-size: 12px; letter-spacing: .1em; color: var(--muted); font-weight: 700; }
+.flow-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.fstep {
+  border: 1.5px solid var(--rule); border-radius: 10px; padding: 6px 10px; font-size: 13px; line-height: 1.4;
+  background: var(--panel); text-align: center; animation: lit var(--dur) linear infinite; animation-delay: var(--d);
+}
+.fstep small { display: block; color: var(--muted); font-size: 11px; }
+.fstep.kind-tool { border-style: dashed; }
+.farrow { width: 26px; height: 12px; position: relative; flex: none; }
+.farrow::before { content: ""; position: absolute; left: 0; right: 4px; top: 5px; height: 2px; background: var(--rule); }
+.farrow::after { content: ""; position: absolute; right: 0; top: 1px; border: 5px solid transparent; border-left: 7px solid var(--rule); border-right: 0; }
+.farrow i { position: absolute; top: 3px; left: 0; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: travel var(--dur) linear infinite; animation-delay: var(--d); opacity: 0; }
+@keyframes lit { 0% { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); } 18%, 100% { border-color: var(--rule); box-shadow: none; } }
+@keyframes travel { 0% { left: 0; opacity: 1; } 15% { left: 18px; opacity: 1; } 16%, 100% { opacity: 0; } }
+.flow-note { font-size: 13px; color: var(--muted); }
+
+/* table */
+section.block { display: grid; gap: 12px; }
+.sub { color: var(--muted); font-size: 14px; }
+.tablebox { overflow-x: auto; background: var(--panel); border: 1.5px solid var(--rule); border-radius: 14px; }
+table { border-collapse: collapse; width: 100%; min-width: 980px; font-size: 13px; }
+th, td { padding: 9px 10px; border-bottom: 1px solid var(--rule); text-align: left; vertical-align: top; }
+thead th { font-family: var(--f-display); font-size: 15px; background: var(--panel); position: sticky; top: 0; }
+tbody th { white-space: nowrap; color: var(--muted); font-weight: 700; position: sticky; left: 0; background: var(--panel); z-index: 1; }
+td code { background: none; padding: 0; white-space: pre-wrap; }
+.hl { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+thead th.hl { background: color-mix(in srgb, var(--accent) 18%, var(--panel)); }
+
+/* cards */
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+.card { background: var(--panel); border: 1.5px solid var(--rule); border-radius: 14px; padding: 14px 16px; display: grid; gap: 8px; align-content: start; }
+.card.hl { border-color: var(--accent); }
+.card h3 { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.card dl { margin: 0; display: grid; gap: 6px; font-size: 14px; }
+.card dt { font-size: 12px; color: var(--muted); font-weight: 700; }
+.card dd { margin: 0; }
+.card .pick { font-size: 12px; border: 1px solid var(--rule); background: transparent; border-radius: 6px; padding: 1px 8px; color: var(--muted); }
+
+footer { font-size: 13px; color: var(--muted); }
+
+@media (max-width: 860px) {
+  .panes { grid-template-columns: minmax(0, 1fr); }
+  .p-stage { grid-template-columns: auto minmax(0, 1fr); }
+  .console { grid-column: 1 / -1; height: 80px; }
+}
+@media (max-width: 520px) {
+  .speed input { width: 80px; }
+  .pbtn.main { min-width: 88px; }
+  .vbox { min-width: 56px; }
+  .vbox .vval { font-size: 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="head">
+  <div class="eyebrow">9つの言語 × 同じプログラム</div>
+  <h1>言語くらべ帳</h1>
+  <p class="lead">あいさつ、1から10の合計、FizzBuzz。<b>同じことをする</b>プログラムを、2つの言語でならべて動かします。
+  <b>再生</b>を押すと、両方の言語で「いま動いている行」が同時に光ります。行をタップすると、その行の意味がわかります。</p>
+</header>
+
+<div class="picker">
+  <div class="picker-label">くらべる言語を2つえらぶ（3つ目をえらぶと、先にえらんだほうと入れかわります）</div>
+  <div class="chips" id="chips"></div>
+</div>
+
+<div class="player" id="player" aria-label="プログラムの再生">
+  <div class="p-row">
+    <div class="p-btns">
+      <button class="pbtn" id="b-reset" title="はじめから" aria-label="はじめから"><svg viewBox="0 0 16 16"><path d="M3 2h2v12H3zM14 2v12L6 8z"/></svg></button>
+      <button class="pbtn main" id="b-play"><svg viewBox="0 0 16 16" id="i-play"><path d="M4 2l10 6-10 6z"/></svg><span id="t-play">再生</span></button>
+      <button class="pbtn" id="b-step" title="1つ進む" aria-label="1つ進む"><svg viewBox="0 0 16 16"><path d="M2 2l9 6-9 6zM11 2h2v12h-2z"/></svg></button>
+    </div>
+    <label class="speed" for="speed">はやさ <input type="range" id="speed" min="1" max="5" value="2"></label>
+    <div class="progress" aria-hidden="true"><i id="bar"></i></div>
+    <span class="stepno" id="stepno"></span>
+  </div>
+  <div class="p-stage">
+    <div class="boxes" aria-label="変数の箱">
+      <div class="vbox" id="vb-i"><span class="vname">i</span><span class="vval" id="v-i">-</span></div>
+      <div class="vbox" id="vb-s"><span class="vname" id="n-s">sum</span><span class="vval" id="v-s">-</span></div>
+    </div>
+    <div class="say" aria-live="polite">
+      <div class="msg" id="msg"></div>
+      <div class="check" id="check"></div>
+    </div>
+    <div class="console" id="console" aria-label="画面に出た文字"><div class="console-title">画面</div></div>
+  </div>
+</div>
+
+<div class="legend" id="legend"><span class="lt">行の色:</span></div>
+
+<div class="panes" id="panes"></div>
+
+<section class="block">
+  <h2>ちがい早見表</h2>
+  <p class="sub">同じことを、それぞれの言語でどう書くか。えらんでいる言語の列に色がつきます。表は横にスクロールできます。</p>
+  <div class="tablebox"><table id="table"></table></div>
+</section>
+
+<section class="block">
+  <h2>どんな言語？</h2>
+  <div class="cards" id="cards"></div>
+</section>
+
+<footer>サンプルのファイルは、このページと同じ <code>samples/</code> フォルダにあります。どれも同じ結果を表示することを確かめてあります。</footer>
+</div>
+
+<!-- サンプルのコード（samples/ のファイルと同じ内容。test/samples.test.js で確かめています） -->
+<script type="text/plain" id="src-c" data-file="hello.c">
+/* C言語: あいさつ・合計・FizzBuzz
+ * 実行: gcc hello.c -o hello && ./hello
+ */
+#include <stdio.h>
+
+int main(void) {
+    printf("こんにちは、C!\n");
+
+    int sum = 0;
+    for (int i = 1; i <= 10; i++) {
+        sum += i;
+    }
+    printf("1から10の合計: %d\n", sum);
+
+    for (int i = 1; i <= 15; i++) {
+        if (i % 15 == 0) {
+            printf("FizzBuzz\n");
+        } else if (i % 3 == 0) {
+            printf("Fizz\n");
+        } else if (i % 5 == 0) {
+            printf("Buzz\n");
+        } else {
+            printf("%d\n", i);
+        }
+    }
+    return 0;
+}
+</script>
+<script type="text/plain" id="src-python" data-file="hello.py">
+# Python: あいさつ・合計・FizzBuzz
+# 実行: python3 hello.py
+
+print("こんにちは、Python!")
+
+total = sum(range(1, 11))
+print(f"1から10の合計: {total}")
+
+for i in range(1, 16):
+    if i % 15 == 0:
+        print("FizzBuzz")
+    elif i % 3 == 0:
+        print("Fizz")
+    elif i % 5 == 0:
+        print("Buzz")
+    else:
+        print(i)
+</script>
+<script type="text/plain" id="src-java" data-file="Hello.java">
+// Java: あいさつ・合計・FizzBuzz
+// 実行: javac Hello.java && java Hello
+// （public クラスの名前とファイル名は同じにします）
+
+public class Hello {
+    public static void main(String[] args) {
+        System.out.println("こんにちは、Java!");
+
+        int sum = 0;
+        for (int i = 1; i <= 10; i++) {
+            sum += i;
+        }
+        System.out.println("1から10の合計: " + sum);
+
+        for (int i = 1; i <= 15; i++) {
+            if (i % 15 == 0) {
+                System.out.println("FizzBuzz");
+            } else if (i % 3 == 0) {
+                System.out.println("Fizz");
+            } else if (i % 5 == 0) {
+                System.out.println("Buzz");
+            } else {
+                System.out.println(i);
+            }
+        }
+    }
+}
+</script>
+<script type="text/plain" id="src-js" data-file="hello.js">
+// JavaScript (Node.js): あいさつ・合計・FizzBuzz
+// 実行: node hello.js
+
+console.log("こんにちは、JavaScript!");
+
+let sum = 0;
+for (let i = 1; i <= 10; i++) {
+  sum += i;
+}
+console.log(`1から10の合計: ${sum}`);
+
+for (let i = 1; i <= 15; i++) {
+  if (i % 15 === 0) {
+    console.log("FizzBuzz");
+  } else if (i % 3 === 0) {
+    console.log("Fizz");
+  } else if (i % 5 === 0) {
+    console.log("Buzz");
+  } else {
+    console.log(i);
+  }
+}
+</script>
+<script type="text/plain" id="src-ts" data-file="hello.ts">
+// TypeScript: あいさつ・合計・FizzBuzz
+// 実行: npx tsx hello.ts
+
+const greeting: string = "こんにちは、TypeScript!";
+console.log(greeting);
+
+let sum: number = 0;
+for (let i: number = 1; i <= 10; i++) {
+  sum += i;
+}
+console.log(`1から10の合計: ${sum}`);
+
+function fizzBuzz(n: number): string {
+  if (n % 15 === 0) return "FizzBuzz";
+  if (n % 3 === 0) return "Fizz";
+  if (n % 5 === 0) return "Buzz";
+  return String(n);
+}
+
+for (let i = 1; i <= 15; i++) {
+  console.log(fizzBuzz(i));
+}
+</script>
+<script type="text/plain" id="src-php" data-file="hello.php">
+<?php
+// PHP: あいさつ・合計・FizzBuzz
+// 実行: php hello.php
+
+echo "こんにちは、PHP!\n";
+
+$sum = 0;
+for ($i = 1; $i <= 10; $i++) {
+    $sum += $i;
+}
+echo "1から10の合計: {$sum}\n";
+
+for ($i = 1; $i <= 15; $i++) {
+    if ($i % 15 === 0) {
+        echo "FizzBuzz\n";
+    } elseif ($i % 3 === 0) {
+        echo "Fizz\n";
+    } elseif ($i % 5 === 0) {
+        echo "Buzz\n";
+    } else {
+        echo $i . "\n";
+    }
+}
+</script>
+<script type="text/plain" id="src-ruby" data-file="hello.rb">
+# Ruby: あいさつ・合計・FizzBuzz
+# 実行: ruby hello.rb
+
+puts "こんにちは、Ruby!"
+
+sum = (1..10).sum
+puts "1から10の合計: #{sum}"
+
+(1..15).each do |i|
+  if i % 15 == 0
+    puts "FizzBuzz"
+  elsif i % 3 == 0
+    puts "Fizz"
+  elsif i % 5 == 0
+    puts "Buzz"
+  else
+    puts i
+  end
+end
+</script>
+<script type="text/plain" id="src-go" data-file="hello.go">
+// Go: あいさつ・合計・FizzBuzz
+// 実行: go run hello.go
+
+package main
+
+import "fmt"
+
+func main() {
+	fmt.Println("こんにちは、Go!")
+
+	sum := 0
+	for i := 1; i <= 10; i++ {
+		sum += i
+	}
+	fmt.Printf("1から10の合計: %d\n", sum)
+
+	for i := 1; i <= 15; i++ {
+		switch {
+		case i%15 == 0:
+			fmt.Println("FizzBuzz")
+		case i%3 == 0:
+			fmt.Println("Fizz")
+		case i%5 == 0:
+			fmt.Println("Buzz")
+		default:
+			fmt.Println(i)
+		}
+	}
+}
+</script>
+<script type="text/plain" id="src-rust" data-file="hello.rs">
+// Rust: あいさつ・合計・FizzBuzz
+// 実行: rustc hello.rs && ./hello
+
+fn main() {
+    println!("こんにちは、Rust!");
+
+    let sum: i32 = (1..=10).sum();
+    println!("1から10の合計: {}", sum);
+
+    for i in 1..=15 {
+        if i % 15 == 0 {
+            println!("FizzBuzz");
+        } else if i % 3 == 0 {
+            println!("Fizz");
+        } else if i % 5 == 0 {
+            println!("Buzz");
+        } else {
+            println!("{}", i);
+        }
+    }
+}
+</script>
+
+<script>
+'use strict';
+
+const TAGS = {
+  setup: '入口・準備', comment: 'コメント', output: '表示', var: '変数',
+  loop: 'くりかえし', if: '条件分岐', block: 'まとまり'
+};
+
+/* notes: [行にふくまれる文字, 種類, 説明]。上から順に調べて、最初に当てはまったものを使います */
+const LANGS = [
+  {
+    id: 'c', name: 'C', type: '静的型', exec: 'コンパイル', comment: ['/*', '*'], sumName: 'sum',
+    run: 'gcc hello.c -o hello && ./hello',
+    flow: [['hello.c', 'あなたが書く'], ['gcc', 'コンパイラ', 'tool'], ['hello', '機械語のファイル'], ['CPU', 'が直接実行']],
+    flowNote: '前もって機械語に翻訳するので、とても速く動きます。',
+    roles: { greet: 'こんにちは', sumInit: 'int sum', loop1: 'i <= 10', add: 'sum += i', printSum: '1から10', loop2: 'i <= 15', c15: '% 15', c3: '% 3', c5: '% 5', els: '} else {', oFB: '"FizzBuzz', oF: '"Fizz\\n', oB: '"Buzz', oN: '"%d\\n", i' },
+    uses: 'OS、家電やロボットの中のプログラム、速さが大事なソフト',
+    hint: 'メモリを自分で管理するので、コンピュータのしくみがよくわかります。そのぶん、まちがえるとこわれやすいです。',
+    tbl: { comment: '// 1行\n/* 何行でも */', print: 'printf("%d\\n", x);', var: 'int x = 1;', loop: 'for (int i = 0; i < n; i++) { }', if: 'if (x > 0) { } else if … else { }', str: 'printf("%d", x)', end: '必要', block: '{ }' },
+    notes: [
+      ['#include', 'setup', '`printf` を使うために、入出力の道具（stdio.h）を読みこみます。Java の `import` に近いものです。'],
+      ['int main', 'setup', 'プログラムの入口です。ここから動きはじめます。`int` は「終わったら整数を返す」という意味です。'],
+      ['printf("こんにちは', 'output', '`printf` で文字を表示します。`\\n` は改行です。C は自動では改行しません。'],
+      ['int sum', 'var', '整数（`int`）の変数 `sum` を作って、0 を入れます。C は変数を作るとき、型を先に書きます。'],
+      ['i <= 10', 'loop', '`i` を 1 から 10 まで、1 ずつ増やしてくりかえします。`( )` の中は「はじめ; 続ける条件; 毎回すること」の3つです。'],
+      ['sum += i', 'var', '`sum = sum + i` の短い書き方です。`sum` に `i` を足します。'],
+      ['printf("1から10', 'output', '`%d` の場所に `sum` の値が入ります。整数は `%d`、文字列は `%s` のように、型で書き方が変わります。'],
+      ['i <= 15', 'loop', '1 から 15 までくりかえします。'],
+      ['% 15', 'if', '`%` は割り算のあまりです。15 で割ってあまりが 0、つまり 15 で割り切れたら、次の行に進みます。'],
+      ['} else if', 'if', '前の条件に当てはまらなかったときだけ、この条件を調べます。'],
+      ['} else {', 'if', 'どの条件にも当てはまらなかったときに動きます。'],
+      ['"%d\\n", i', 'output', '数字 `i` をそのまま表示します。'],
+      ['printf("', 'output', '文字を表示します。'],
+      ['return 0', 'setup', '0 を返して、「問題なく終わった」と OS に知らせます。']
+    ]
+  },
+  {
+    id: 'python', name: 'Python', type: '動的型', exec: 'インタプリタ', comment: ['#'], sumName: 'total',
+    run: 'python3 hello.py',
+    flow: [['hello.py', 'あなたが書く'], ['python3', 'インタプリタ', 'tool'], ['その場で実行', '上から順に']],
+    flowNote: 'インタプリタがコードを読みながら実行します。コンパイルの手間がなく、すぐ試せます。',
+    roles: { greet: 'こんにちは', sumInit: 'total = sum', loop1: 'total = sum', add: 'total = sum', printSum: '1から10', loop2: 'range(1, 16)', c15: '% 15', c3: '% 3', c5: '% 5', els: 'else:', oFB: '"FizzBuzz"', oF: '"Fizz"', oB: '"Buzz"', oN: 'print(i)' },
+    uses: 'AI やデータ分析、作業の自動化、学校の授業',
+    hint: '書く量が少なく、英語の文のように読めます。字下げ（インデント）がそのまま文法になっているのが大きな特ちょうです。',
+    tbl: { comment: '# 1行', print: 'print(x)', var: 'x = 1', loop: 'for i in range(n):', if: 'if x > 0:\nelif …:\nelse:', str: 'f"{x}"', end: 'いらない', block: '字下げ（インデント）' },
+    notes: [
+      ['print("こんにちは', 'output', '`print` で表示します。最後に自動で改行します。行の終わりに `;` はいりません。'],
+      ['total = sum', 'var', '`range(1, 11)` は 1〜10 の数です（11 は入りません）。`sum` で合計して、変数 `total` に入れます。型は書きません。'],
+      ['print(f"', 'output', '文字列の前に `f` をつけると、`{total}` の場所に値が入ります。これを f文字列 といいます。'],
+      ['for i in', 'loop', '`i` に 1〜15 を順番に入れてくりかえします。行の最後の `:` と、次の行からの字下げで「くりかえす範囲」を表します。'],
+      ['if i % 15', 'if', '`%` は割り算のあまり。`if 条件:` の形で、条件を `( )` で囲む必要はありません。'],
+      ['elif', 'if', '`elif` は else if を短くしたものです。前の条件に当てはまらなかったときに調べます。'],
+      ['else:', 'if', 'どの条件にも当てはまらなかったときに動きます。'],
+      ['print(i)', 'output', '数字 `i` をそのまま表示します。'],
+      ['print("', 'output', '文字を表示します。']
+    ]
+  },
+  {
+    id: 'java', name: 'Java', type: '静的型', exec: 'コンパイル + JVM', comment: ['//'], sumName: 'sum',
+    run: 'javac Hello.java && java Hello',
+    flow: [['Hello.java', 'あなたが書く'], ['javac', 'コンパイラ', 'tool'], ['Hello.class', 'バイトコード'], ['JVM', 'が実行']],
+    flowNote: 'どのパソコンでも動く「バイトコード」に翻訳して、JVM という実行役が動かします。',
+    roles: { greet: 'こんにちは', sumInit: 'int sum', loop1: 'i <= 10', add: 'sum += i', printSum: '1から10', loop2: 'i <= 15', c15: '% 15', c3: '% 3', c5: '% 5', els: '} else {', oFB: '"FizzBuzz"', oF: '"Fizz"', oB: '"Buzz"', oN: 'println(i)' },
+    uses: '会社の業務システム、Android アプリ、大きなサーバー',
+    hint: '書くことは多めですが、型とクラスのおかげで、まちがいを早く見つけられます。大人数での開発に向いています。',
+    tbl: { comment: '// 1行\n/* 何行でも */', print: 'System.out.println(x);', var: 'int x = 1;\nvar x = 1;', loop: 'for (int i = 0; i < n; i++) { }', if: 'if (x > 0) { } else if … else { }', str: '"x = " + x', end: '必要', block: '{ }' },
+    notes: [
+      ['public class', 'setup', 'Java では、コードはすべてクラスの中に書きます。public クラスの名前とファイル名（`Hello.java`）はそろえます。'],
+      ['public static void main', 'setup', 'プログラムの入口です。`java Hello` で実行すると、ここから動きはじめます。'],
+      ['println("こんにちは', 'output', '`System.out.println` で表示して、最後に自動で改行します。'],
+      ['int sum', 'var', '整数（`int`）の変数 `sum` を作って、0 を入れます。Java は型を先に書きます。'],
+      ['i <= 10', 'loop', '`i` を 1 から 10 まで、1 ずつ増やしてくりかえします。`( )` の中は「はじめ; 続ける条件; 毎回すること」です。'],
+      ['sum += i', 'var', '`sum = sum + i` の短い書き方です。'],
+      ['println("1から10', 'output', '`+` で文字列と数字をつなげてから表示します。'],
+      ['i <= 15', 'loop', '1 から 15 までくりかえします。'],
+      ['% 15', 'if', '`%` は割り算のあまり。15 で割り切れたら（あまりが 0 なら）次の行に進みます。'],
+      ['} else if', 'if', '前の条件に当てはまらなかったときだけ、この条件を調べます。'],
+      ['} else {', 'if', 'どの条件にも当てはまらなかったときに動きます。'],
+      ['println(i)', 'output', '数字もそのまま `println` で表示できます。'],
+      ['println("', 'output', '文字を表示します。']
+    ]
+  },
+  {
+    id: 'js', name: 'JavaScript', type: '動的型', exec: 'インタプリタ（JIT）', comment: ['//'], sumName: 'sum',
+    run: 'node hello.js',
+    flow: [['hello.js', 'あなたが書く'], ['Node.js / ブラウザ', '実行エンジン', 'tool'], ['その場で実行', 'よく動く所は速く']],
+    flowNote: 'ブラウザの中にも実行エンジンが入っているので、Web ページの上でそのまま動きます。',
+    roles: { greet: 'こんにちは', sumInit: 'let sum', loop1: 'i <= 10', add: 'sum += i', printSum: '1から10', loop2: 'i <= 15', c15: '% 15', c3: '% 3', c5: '% 5', els: '} else {', oFB: '"FizzBuzz"', oF: '"Fizz"', oB: '"Buzz"', oN: 'log(i)' },
+    uses: 'Web ページの動き、Node.js を使ったサーバー',
+    hint: 'ブラウザがあれば、何もインストールせずに動かせます。Java と名前は似ていますが、別の言語です。',
+    tbl: { comment: '// 1行\n/* 何行でも */', print: 'console.log(x);', var: 'let x = 1;\nconst y = 2;', loop: 'for (let i = 0; i < n; i++) { }', if: 'if (x > 0) { } else if … else { }', str: '`x = ${x}`', end: 'ほぼ省略できる', block: '{ }' },
+    notes: [
+      ['log("こんにちは', 'output', '`console.log` で表示します。ブラウザでは開発者ツールの「コンソール」に出ます。'],
+      ['let sum', 'var', '`let` で、あとから値を変えられる変数を作ります。型は書きません。変えない値には `const` を使います。'],
+      ['i <= 10', 'loop', 'Java や C とほぼ同じ形の for 文です。`i` を 1 から 10 まで増やします。'],
+      ['sum += i', 'var', '`sum = sum + i` の短い書き方です。'],
+      ['log(`', 'output', 'バッククォート記号で囲んだ文字列（テンプレート文字列）では、`${sum}` の場所に値が入ります。'],
+      ['i <= 15', 'loop', '1 から 15 までくりかえします。'],
+      ['% 15', 'if', '`===` は「型も値も同じか」を調べます。JavaScript では `==` より `===` を使うのがおすすめです。'],
+      ['} else if', 'if', '前の条件に当てはまらなかったときだけ、この条件を調べます。'],
+      ['} else {', 'if', 'どの条件にも当てはまらなかったときに動きます。'],
+      ['log(i)', 'output', '数字をそのまま表示します。'],
+      ['log("', 'output', '文字を表示します。']
+    ]
+  },
+  {
+    id: 'ts', name: 'TypeScript', type: '静的型', exec: 'JS に変換して実行', comment: ['//'], sumName: 'sum',
+    run: 'npx tsx hello.ts',
+    flow: [['hello.ts', 'あなたが書く'], ['tsc / tsx', '型チェック + 変換', 'tool'], ['JavaScript', '型がとれた形'], ['Node.js', 'が実行']],
+    flowNote: '実行する前に型をチェックして、まちがいを教えてくれます。そのあと JavaScript に変えて動かします。',
+    roles: { greet: 'log(greeting)', sumInit: 'let sum', loop1: 'i <= 10', add: 'sum += i', printSum: '1から10', loop2: 'i <= 15', c15: '% 15', c3: '% 3', c5: '% 5', els: 'return String', oFB: 'log(fizzBuzz', oF: 'log(fizzBuzz', oB: 'log(fizzBuzz', oN: 'log(fizzBuzz' },
+    uses: '大きめの Web アプリ、チームで作るフロントエンド',
+    hint: 'JavaScript に「型」を足した言語です。JavaScript のコードはほぼそのまま使えて、型のまちがいを実行前に見つけてくれます。',
+    tbl: { comment: '// 1行\n/* 何行でも */', print: 'console.log(x);', var: 'let x: number = 1;\nconst s: string = "a";', loop: 'for (let i = 0; i < n; i++) { }', if: 'if (x > 0) { } else if … else { }', str: '`x = ${x}`', end: 'ほぼ省略できる', block: '{ }' },
+    notes: [
+      ['const greeting', 'var', '`const` は入れなおせない変数です。`: string` で「文字列が入る」と型を書けます。これが TypeScript の一番の特ちょうです。'],
+      ['log(greeting)', 'output', '変数 `greeting` の中身を表示します。'],
+      ['let sum', 'var', '`number` は数の型です。整数も小数も、同じ `number` で表します。'],
+      ['i: number = 1', 'loop', 'くりかえし。`i` にも `: number` と型をつけています（つけなくても、TypeScript が自動で決めてくれます）。'],
+      ['sum += i', 'var', '`sum = sum + i` の短い書き方です。'],
+      ['log(`', 'output', 'テンプレート文字列。`${sum}` の場所に値が入ります。'],
+      ['function fizzBuzz', 'setup', '関数 `fizzBuzz` を作ります。`(n: number)` は数を受けとる、最後の `: string` は文字列を返す、という意味です。'],
+      ['return String', 'if', 'どの条件にも当てはまらなければ、数を文字列に変えて返します。返す型を `string` と決めたので、数のまま返すとエラーになります。'],
+      ['% 15', 'if', '条件に当てはまったら、すぐに `return` で答えを返し、関数を終わります。'],
+      ['% 3', 'if', '3 で割り切れたら "Fizz" を返します。'],
+      ['% 5', 'if', '5 で割り切れたら "Buzz" を返します。'],
+      ['i <= 15', 'loop', '1 から 15 までくりかえします。'],
+      ['log(fizzBuzz', 'output', '関数 `fizzBuzz` を呼んで、返ってきた文字を表示します。']
+    ]
+  },
+  {
+    id: 'php', name: 'PHP', type: '動的型', exec: 'インタプリタ', comment: ['//'], sumName: '$sum',
+    run: 'php hello.php',
+    flow: [['hello.php', 'あなたが書く'], ['php', 'インタプリタ', 'tool'], ['その場で実行', 'Web なら HTML を作る']],
+    flowNote: 'Web サーバーの上で動いて、見る人ごとに HTML を作って返すのが得意です。',
+    roles: { greet: 'こんにちは', sumInit: '$sum = 0', loop1: '$i <= 10', add: '$sum += $i', printSum: '1から10', loop2: '$i <= 15', c15: '% 15', c3: '% 3', c5: '% 5', els: '} else {', oFB: '"FizzBuzz', oF: '"Fizz\\n', oB: '"Buzz', oN: 'echo $i' },
+    uses: 'Web サイトのサーバー側（WordPress など）',
+    hint: 'HTML の中にそのまま書けるので、Web ページ作りに向いています。変数の名前の前に `$` をつけるのが目じるしです。',
+    tbl: { comment: '// 1行\n# 1行\n/* 何行でも */', print: 'echo $x;', var: '$x = 1;', loop: 'for ($i = 0; $i < $n; $i++) { }', if: 'if ($x > 0) { } elseif … else { }', str: '"x = {$x}"', end: '必要', block: '{ }' },
+    notes: [
+      ['<?php', 'setup', 'ここから PHP のコードが始まる、という目じるしです。'],
+      ['echo "こんにちは', 'output', '`echo` で表示します。`\\n` は改行です。'],
+      ['$sum = 0', 'var', 'PHP の変数は、名前の前に `$` をつけます。型は書きません。'],
+      ['$i <= 10', 'loop', 'C や Java と同じ形の for 文です。変数には `$` がつきます。'],
+      ['$sum += $i', 'var', '`$sum = $sum + $i` の短い書き方です。'],
+      ['echo "1から10', 'output', 'ダブルクォート `"` で囲んだ文字列では、`{$sum}` が値に置きかわります。シングルクォートで囲むと置きかわりません。'],
+      ['$i <= 15', 'loop', '1 から 15 までくりかえします。'],
+      ['% 15', 'if', '`%` は割り算のあまり。`===` は「型も値も同じか」を調べます。'],
+      ['} elseif', 'if', 'PHP では `elseif` と、つなげて書けます。前の条件に当てはまらなかったときに調べます。'],
+      ['} else {', 'if', 'どの条件にも当てはまらなかったときに動きます。'],
+      ['echo $i', 'output', '`.`（ドット）で文字列をつなげます。Java の `+` にあたります。'],
+      ['echo "', 'output', '文字を表示します。']
+    ]
+  },
+  {
+    id: 'ruby', name: 'Ruby', type: '動的型', exec: 'インタプリタ', comment: ['#'], sumName: 'sum',
+    run: 'ruby hello.rb',
+    flow: [['hello.rb', 'あなたが書く'], ['ruby', 'インタプリタ', 'tool'], ['その場で実行', '上から順に']],
+    flowNote: 'インタプリタがコードを読みながら実行します。すぐ試せるので、少しずつ作るのに向いています。',
+    roles: { greet: 'こんにちは', sumInit: 'sum = (1', loop1: 'sum = (1', add: 'sum = (1', printSum: '1から10', loop2: '(1..15)', c15: '% 15', c3: '% 3', c5: '% 5', els: 'else', oFB: '"FizzBuzz"', oF: '"Fizz"', oB: '"Buzz"', oN: 'puts i' },
+    uses: 'Web アプリ（Ruby on Rails）、ちょっとした自動化',
+    hint: '日本で生まれた言語です。「書いていて楽しい」ことを大事にしていて、英語の文のように読めます。',
+    tbl: { comment: '# 1行', print: 'puts x', var: 'x = 1', loop: '(1..n).each do |i| … end', if: 'if x > 0\nelsif …\nelse\nend', str: '"x = #{x}"', end: 'いらない', block: 'do … end / if … end' },
+    notes: [
+      ['puts "こんにちは', 'output', '`puts` で表示して改行します。かっこは書かなくてもかまいません。'],
+      ['sum = (1', 'var', '`(1..10)` は 1〜10 の範囲です。`.sum` で合計します。Ruby では数も範囲も「もの（オブジェクト）」で、`.` で命令できます。'],
+      ['puts "1から10', 'output', 'ダブルクォートの文字列の中の `#{sum}` に、値が入ります。'],
+      ['(1..15)', 'loop', '1〜15 を1つずつ `i` に入れて、`do` から `end` までをくりかえします。'],
+      ['if i % 15', 'if', '`%` は割り算のあまり。条件を `( )` で囲む必要はありません。'],
+      ['elsif', 'if', 'Ruby では `elsif` と書きます（else の e がありません）。前の条件に当てはまらなかったときに調べます。'],
+      ['  else', 'if', 'どの条件にも当てはまらなかったときに動きます。'],
+      ['puts i', 'output', '数字をそのまま表示します。'],
+      ['puts "', 'output', '文字を表示します。']
+    ]
+  },
+  {
+    id: 'go', name: 'Go', type: '静的型', exec: 'コンパイル', comment: ['//'], sumName: 'sum',
+    run: 'go run hello.go',
+    flow: [['hello.go', 'あなたが書く'], ['go build', 'コンパイラ', 'tool'], ['hello', '機械語のファイル'], ['CPU', 'が直接実行']],
+    flowNote: 'コンパイルがとても速く、できたファイル1つを置くだけで動きます。`go run` は、コンパイルと実行をまとめてします。',
+    roles: { greet: 'こんにちは', sumInit: 'sum := 0', loop1: 'i <= 10', add: 'sum += i', printSum: '1から10', loop2: 'i <= 15', c15: '%15', c3: '%3', c5: '%5', els: 'default:', oFB: '"FizzBuzz"', oF: '"Fizz"', oB: '"Buzz"', oN: 'Println(i)' },
+    uses: 'Web サーバー、クラウドの道具（Docker など）',
+    hint: '機能をわざと少なくして、だれが書いても同じような形になるように作られています。読みやすさを大事にする言語です。',
+    tbl: { comment: '// 1行\n/* 何行でも */', print: 'fmt.Println(x)', var: 'x := 1\nvar x int = 1', loop: 'for i := 0; i < n; i++ { }', if: 'if x > 0 { } else if … else { }\nswitch { case …: }', str: 'fmt.Sprintf("%d", x)', end: 'いらない', block: '{ }' },
+    notes: [
+      ['package main', 'setup', '実行するプログラムは、`main` という名前のパッケージ（まとまり）に書きます。'],
+      ['import "fmt"', 'setup', '表示に使う `fmt` パッケージを読みこみます。Go では、使っていない import があるとエラーになります。'],
+      ['func main', 'setup', 'プログラムの入口です。関数は `func` で作ります。'],
+      ['Println("こんにちは', 'output', '`fmt.Println` で表示して改行します。'],
+      ['sum := 0', 'var', '`:=` で変数を作って値を入れます。型（ここでは int）は Go が自動で決めます。'],
+      ['i <= 10', 'loop', 'Go のくりかえしは `for` だけです。条件を `( )` で囲みません。'],
+      ['sum += i', 'var', '`sum = sum + i` の短い書き方です。'],
+      ['Printf', 'output', '`Printf` は C の printf と同じく、`%d` の場所に値が入ります。'],
+      ['i <= 15', 'loop', '1 から 15 までくりかえします。'],
+      ['switch {', 'if', '条件だけを書く `switch` です。上から順に調べて、当てはまった `case` だけが動きます。'],
+      ['case i%', 'if', 'この条件に当てはまったときに、すぐ下の行が動きます。Go の switch は `break` を書かなくても下の case に進みません。'],
+      ['default:', 'if', 'どの case にも当てはまらなかったときに動きます。'],
+      ['Println(i)', 'output', '数字をそのまま表示します。'],
+      ['Println("', 'output', '文字を表示します。']
+    ]
+  },
+  {
+    id: 'rust', name: 'Rust', type: '静的型', exec: 'コンパイル', comment: ['//'], sumName: 'sum',
+    run: 'rustc hello.rs && ./hello',
+    flow: [['hello.rs', 'あなたが書く'], ['rustc', 'コンパイラ（安全チェック）', 'tool'], ['hello', '機械語のファイル'], ['CPU', 'が直接実行']],
+    flowNote: 'コンパイルのときにメモリの使い方まで細かくチェックするので、実行中にこわれにくいプログラムになります。',
+    roles: { greet: 'こんにちは', sumInit: 'let sum', loop1: 'let sum', add: 'let sum', printSum: '1から10', loop2: '1..=15', c15: '% 15', c3: '% 3', c5: '% 5', els: '} else {', oFB: '"FizzBuzz"', oF: '"Fizz"', oB: '"Buzz"', oN: '"{}", i' },
+    uses: '速くて安全さが大事なソフト、ブラウザや OS の部品',
+    hint: 'C と同じくらい速く、それでいてメモリのまちがいをコンパイル時に防ぎます。ルールは厳しめですが、エラーの説明がていねいです。',
+    tbl: { comment: '// 1行\n/* 何行でも */', print: 'println!("{}", x);', var: 'let x = 1;\nlet mut y = 2;', loop: 'for i in 0..n { }', if: 'if x > 0 { } else if … else { }', str: 'format!("{}", x)', end: '必要', block: '{ }' },
+    notes: [
+      ['fn main', 'setup', 'プログラムの入口です。関数は `fn` で作ります。'],
+      ['println!("こんにちは', 'output', '`println!` で表示して改行します。`!` は「マクロ」という特別な命令のしるしです。'],
+      ['let sum', 'var', '`let` で変数を作ります（`mut` をつけないと、あとから変えられません）。`i32` は 32 ビットの整数。`1..=10` は 10 もふくむ範囲です。'],
+      ['println!("1から10', 'output', '`{}` の場所に、後ろに書いた値が入ります。'],
+      ['1..=15', 'loop', '`i` に 1〜15 を順に入れてくりかえします。'],
+      ['if i % 15', 'if', '`%` は割り算のあまり。条件は `( )` で囲みませんが、`{ }` は必ず書きます。'],
+      ['} else if', 'if', '前の条件に当てはまらなかったときだけ、この条件を調べます。'],
+      ['} else {', 'if', 'どの条件にも当てはまらなかったときに動きます。'],
+      ['"{}", i', 'output', '数字を表示します。'],
+      ['println!("', 'output', '文字を表示します。']
+    ]
+  }
+];
+
+const TBL_ROWS = [
+  ['type', '型'], ['exec', '動かし方'], ['comment', 'コメント'], ['print', '表示する'], ['var', '変数を作る'],
+  ['loop', 'くりかえし'], ['if', '条件分岐'], ['str', '文字列に値を入れる'], ['end', '文の終わりの ;'], ['block', 'まとまり']
+];
+
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const rich = s => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>');
+
+/* ---- コードを読みこんで、行ごとに種類と説明をつける ---- */
+for (const L of LANGS) {
+  const raw = document.getElementById('src-' + L.id).textContent.replace(/^\n/, '').replace(/\n$/, '');
+  L.lines = raw.split('\n').map(text => {
+    const t = text.trim();
+    if (!t) return { text, tag: null, note: null };
+    if (L.comment.some(p => t.startsWith(p)) || t === '*/') {
+      return { text, tag: 'comment', note: t.includes('実行:') ? 'コメント（メモ）です。プログラムとしては読まれません。ここでは実行のしかたをメモしています。' : 'コメント（メモ）です。プログラムとしては読まれません。' };
+    }
+    if (/^[})\]]+;?$/.test(t)) return { text, tag: 'block', note: '`{` から始まったまとまり（ブロック）の終わりです。' };
+    if (t === 'end') return { text, tag: 'block', note: 'Ruby は `{ }` のかわりに、`end` でまとまりを閉じます。' };
+    const hit = L.notes.find(([p]) => text.includes(p));
+    return hit ? { text, tag: hit[1], note: hit[2] } : { text, tag: null, note: null };
+  });
+  L.roleLine = {};
+  for (const [role, pat] of Object.entries(L.roles)) {
+    L.roleLine[role] = L.lines.findIndex(l => l.tag !== 'comment' && l.text.includes(pat));
+  }
+}
+
+/* ---- 実行の流れ（どの言語も同じ動き） ---- */
+function buildSteps() {
+  const S = [];
+  let sum = null;
+  S.push({ role: 'greet', i: null, sum, out: 'greet', msg: 'あいさつを表示します' });
+  sum = 0;
+  S.push({ role: 'sumInit', i: null, sum, pop: 's', msg: '合計を入れる箱を作って、0 を入れます' });
+  for (let i = 1; i <= 10; i++) {
+    S.push({ role: 'loop1', i, sum, pop: 'i', msg: `i を ${i} にして、くりかえしの中へ` });
+    const before = sum; sum += i;
+    S.push({ role: 'add', i, sum, pop: 's', msg: `${before} に ${i} を足して ${sum}` });
+  }
+  S.push({ role: 'loop1', i: 11, sum, pop: 'i', msg: 'i が 11 になり、10 より大きいので、くりかえしを終わります', check: ['11 <= 10', false] });
+  S.push({ role: 'printSum', i: null, sum, out: `1から10の合計: ${sum}`, msg: '合計を表示します' });
+  for (let i = 1; i <= 15; i++) {
+    S.push({ role: 'loop2', i, sum, pop: 'i', msg: `i を ${i} にして、くりかえしの中へ` });
+    const tests = [[15, 'c15', 'oFB', 'FizzBuzz'], [3, 'c3', 'oF', 'Fizz'], [5, 'c5', 'oB', 'Buzz']];
+    let done = false;
+    for (const [d, role, oRole, word] of tests) {
+      const ok = i % d === 0;
+      S.push({ role, i, sum, msg: ok ? `${i} は ${d} で割り切れます` : `${i} は ${d} で割り切れないので、次の条件へ`, check: [`${i} % ${d} = ${i % d}`, ok] });
+      if (ok) { S.push({ role: oRole, i, sum, out: word, msg: `${word} を表示します` }); done = true; break; }
+    }
+    if (!done) {
+      S.push({ role: 'els', i, sum, msg: 'どれにも当てはまらないので、数をそのまま使います' });
+      S.push({ role: 'oN', i, sum, out: String(i), msg: `${i} を表示します` });
+    }
+  }
+  S.push({ role: null, i: null, sum, msg: 'おしまい！ どの言語でも、まったく同じ結果になりました' , end: true });
+  return S;
+}
+const STEPS = buildSteps();
+
+/* ---- 状態 ---- */
+const state = { picked: ['java', 'python'], filter: null, sel: {}, step: -1, playing: false, timer: null };
+try {
+  const saved = JSON.parse(localStorage.getItem('kurabe-picked') || 'null');
+  if (Array.isArray(saved) && saved.length && saved.every(id => LANGS.some(L => L.id === id))) state.picked = saved.slice(0, 2);
+} catch (e) { /* 保存できない環境でもそのまま動く */ }
+state.sel.java = LANGS.find(L => L.id === 'java').roleLine.loop1;
+
+const langOf = id => LANGS.find(L => L.id === id);
+
+/* ---- 言語のボタン ---- */
+function renderChips() {
+  $('#chips').innerHTML = LANGS.map(L => {
+    const k = state.picked.indexOf(L.id);
+    return `<button class="chip" data-id="${L.id}" aria-pressed="${k >= 0}"><span class="slot">${k + 1}</span>${esc(L.name)}</button>`;
+  }).join('');
+}
+$('#chips').addEventListener('click', e => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  const id = b.dataset.id, k = state.picked.indexOf(id);
+  if (k >= 0) { if (state.picked.length > 1) state.picked.splice(k, 1); }
+  else { state.picked.push(id); if (state.picked.length > 2) state.picked.shift(); }
+  try { localStorage.setItem('kurabe-picked', JSON.stringify(state.picked)); } catch (e2) { /* 無視 */ }
+  renderAll();
+});
+
+/* ---- 色の説明（タップで、その種類の行だけを目立たせる） ---- */
+function renderLegend() {
+  $('#legend').innerHTML = '<span class="lt">行の色（タップでしぼりこみ）:</span>' + Object.entries(TAGS).map(([k, v]) =>
+    `<button class="tag t-${k}" data-tag="${k}" aria-pressed="${state.filter === k}">${v}</button>`).join('');
+}
+$('#legend').addEventListener('click', e => {
+  const b = e.target.closest('.tag'); if (!b) return;
+  state.filter = state.filter === b.dataset.tag ? null : b.dataset.tag;
+  renderLegend(); renderPanes();
+});
+
+/* ---- コードの表示 ---- */
+function flowHTML(L) {
+  const n = L.flow.length, dur = n * 1.1;
+  let h = '';
+  L.flow.forEach(([a, b, kind], k) => {
+    if (k) h += `<span class="farrow" style="--dur:${dur}s;--d:${(k - 1) * 1.1 + .55}s"><i></i></span>`;
+    h += `<span class="fstep${kind ? ' kind-' + kind : ''}" style="--dur:${dur}s;--d:${k * 1.1}s">${esc(a)}<small>${esc(b)}</small></span>`;
+  });
+  return `<div class="flow"><div class="flow-title">コードが動くまで</div><div class="flow-row">${h}</div><p class="flow-note">${rich(L.flowNote)}</p></div>`;
+}
+
+function renderPanes() {
+  const box = $('#panes');
+  box.style.setProperty('--n', state.picked.length);
+  const cur = STEPS[state.step];
+  box.innerHTML = state.picked.map(id => {
+    const L = langOf(id);
+    const nowLine = cur && cur.role ? L.roleLine[cur.role] : -1;
+    const lines = L.lines.map((ln, k) => {
+      const cls = ['ln'];
+      if (!ln.tag) cls.push('blank');
+      if (state.filter && ln.tag !== state.filter) cls.push('dim');
+      if (k === state.sel[id]) cls.push('sel');
+      if (k === nowLine) cls.push('now');
+      const style = ln.tag ? ` style="--c:var(--c-${ln.tag})"` : '';
+      let h = `<div class="${cls.join(' ')}" data-k="${k}"${style}${ln.note ? ' role="button" tabindex="0"' : ''}><span class="no">${k + 1}</span><span class="tx">${esc(ln.text) || ' '}</span></div>`;
+      if (k === state.sel[id] && ln.note) {
+        h += `<div class="note" style="--c:var(--c-${ln.tag})"><span class="nt">${TAGS[ln.tag]}</span><span>${rich(ln.note)}</span></div>`;
+      }
+      return h;
+    }).join('');
+    return `<article class="pane" data-id="${id}">
+      <div class="pane-head">
+        <div class="pane-title"><h2>${esc(L.name)}</h2>
+          <div class="badges"><span class="badge ${L.type === '静的型' ? 'static' : 'dynamic'}">${L.type}</span><span class="badge">${esc(L.exec)}</span></div></div>
+        <div class="run">実行: <code>${esc(L.run)}</code><button class="copy" data-copy="${esc(L.run)}">コピー</button></div>
+      </div>
+      <div class="code">${lines}</div>
+      ${flowHTML(L)}
+    </article>`;
+  }).join('');
+}
+
+function pickLine(paneId, k) {
+  const L = langOf(paneId);
+  if (!L.lines[k] || !L.lines[k].note) return;
+  state.sel[paneId] = state.sel[paneId] === k ? null : k;
+  renderPanes();
+}
+$('#panes').addEventListener('click', e => {
+  const c = e.target.closest('.copy');
+  if (c) {
+    const t = c.dataset.copy;
+    Promise.resolve().then(() => navigator.clipboard.writeText(t)).then(() => { c.textContent = 'コピーしました'; }, () => {
+      const r = document.createRange(); r.selectNodeContents(c.previousElementSibling);
+      const s = getSelection(); s.removeAllRanges(); s.addRange(r); c.textContent = '選びました';
+    });
+    setTimeout(() => { c.textContent = 'コピー'; }, 1600);
+    return;
+  }
+  const ln = e.target.closest('.ln'); if (!ln) return;
+  pickLine(ln.closest('.pane').dataset.id, +ln.dataset.k);
+});
+$('#panes').addEventListener('keydown', e => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const ln = e.target.closest('.ln'); if (!ln) return;
+  e.preventDefault(); pickLine(ln.closest('.pane').dataset.id, +ln.dataset.k);
+});
+
+/* ---- 再生 ---- */
+const SPEEDS = [1400, 900, 550, 300, 140];
+function greetText() { return 'こんにちは、' + langOf(state.picked[0]).name + '!'; }
+function setVal(id, v, pop) {
+  const el = document.getElementById(id);
+  const t = v == null ? '-' : String(v);
+  el.textContent = t;
+  if (pop) { const b = el.parentElement; b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); }
+}
+function renderPlayer(animate) {
+  const cur = STEPS[state.step];
+  $('#n-s').textContent = langOf(state.picked[0]).sumName;
+  setVal('v-i', cur ? cur.i : null, animate && cur && cur.pop === 'i');
+  setVal('v-s', cur ? cur.sum : null, animate && cur && cur.pop === 's');
+  $('#msg').textContent = cur ? cur.msg : '「再生」を押すと、1行ずつ動きはじめます';
+  $('#check').innerHTML = cur && cur.check
+    ? `<span>${esc(cur.check[0])}</span><span class="res ${cur.check[1] ? 'yes' : 'no'}">${cur.check[1] ? 'はい' : 'いいえ'}</span>`
+    : '';
+  const outs = [];
+  for (let k = 0; k <= state.step; k++) if (STEPS[k].out) outs.push(STEPS[k].out === 'greet' ? greetText() : STEPS[k].out);
+  const last = cur && cur.out && animate;
+  $('#console').innerHTML = '<div class="console-title">画面</div>' + outs.slice(-3).map((o, k, a) =>
+    `<div class="cl${last && k === a.length - 1 ? ' new' : ''}">${esc(o)}</div>`).join('');
+  $('#bar').style.width = ((state.step + 1) / STEPS.length * 100) + '%';
+  $('#stepno').textContent = `${Math.max(0, state.step + 1)} / ${STEPS.length}`;
+  $('#t-play').textContent = state.playing ? '一時停止' : (state.step >= STEPS.length - 1 ? 'もう一度' : '再生');
+  $('#i-play').innerHTML = state.playing ? '<path d="M3 2h4v12H3zM9 2h4v12H9z"/>' : '<path d="M4 2l10 6-10 6z"/>';
+}
+function step(animate = true) {
+  if (state.step >= STEPS.length - 1) { stop(); return; }
+  state.step++;
+  renderPanes(); renderPlayer(animate);
+  if (state.step >= STEPS.length - 1) stop();
+}
+function tick() { step(); if (state.playing) state.timer = setTimeout(tick, SPEEDS[$('#speed').value - 1]); }
+function play() {
+  if (state.step >= STEPS.length - 1) state.step = -1;
+  state.playing = true; renderPlayer(false); tick();
+}
+function stop() { state.playing = false; clearTimeout(state.timer); renderPlayer(false); }
+$('#b-play').addEventListener('click', () => state.playing ? stop() : play());
+$('#b-step').addEventListener('click', () => { stop(); if (state.step >= STEPS.length - 1) state.step = -1; step(); });
+$('#b-reset').addEventListener('click', () => { stop(); state.step = -1; renderPanes(); renderPlayer(false); });
+
+/* ---- 早見表とカード ---- */
+function renderTable() {
+  const head = '<thead><tr><th></th>' + LANGS.map(L => `<th class="${state.picked.includes(L.id) ? 'hl' : ''}">${esc(L.name)}</th>`).join('') + '</tr></thead>';
+  const body = TBL_ROWS.map(([key, label]) => '<tr><th>' + label + '</th>' + LANGS.map(L => {
+    const v = key === 'type' ? L.type : key === 'exec' ? L.exec : L.tbl[key];
+    const cell = (key === 'type' || key === 'exec' || key === 'end') ? esc(v) : `<code>${esc(v)}</code>`;
+    return `<td class="${state.picked.includes(L.id) ? 'hl' : ''}">${cell}</td>`;
+  }).join('') + '</tr>').join('');
+  $('#table').innerHTML = head + '<tbody>' + body + '</tbody>';
+}
+function renderCards() {
+  $('#cards').innerHTML = LANGS.map(L => `<div class="card${state.picked.includes(L.id) ? ' hl' : ''}">
+    <h3>${esc(L.name)} <button class="pick" data-id="${L.id}">${state.picked.includes(L.id) ? 'くらべ中' : 'くらべる'}</button></h3>
+    <div class="badges"><span class="badge ${L.type === '静的型' ? 'static' : 'dynamic'}">${L.type}</span><span class="badge">${esc(L.exec)}</span></div>
+    <dl><div><dt>よく使われる場所</dt><dd>${rich(L.uses)}</dd></div><div><dt>特ちょう</dt><dd>${rich(L.hint)}</dd></div></dl>
+  </div>`).join('');
+}
+$('#cards').addEventListener('click', e => {
+  const b = e.target.closest('.pick'); if (!b || state.picked.includes(b.dataset.id)) return;
+  state.picked.push(b.dataset.id); if (state.picked.length > 2) state.picked.shift();
+  try { localStorage.setItem('kurabe-picked', JSON.stringify(state.picked)); } catch (e2) { /* 無視 */ }
+  renderAll();
+  window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+});
+
+function renderAll() { renderChips(); renderLegend(); renderPanes(); renderPlayer(false); renderTable(); renderCards(); }
+renderAll();
+</script>
+</body>
+</html>
