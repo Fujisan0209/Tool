@@ -219,6 +219,8 @@ public class Main {
   let paintQueued = false;
   let activeKey = null;
   let lastPanelSig = "";
+  let autoPairs = new Set(); // 自動で入れた閉じ記号の位置（打てばそのまま通り過ぎる）
+  let autoClose = true;
   let LH = 22;
 
   /* ------------------------------------------------------------------ */
@@ -270,7 +272,7 @@ public class Main {
       }
       if (c) codes.fill(c, t.s, t.e);
     }
-    return codes;
+    return { codes, tokens, comments };
   }
 
   /* ------------------------------------------------------------------ */
@@ -284,6 +286,13 @@ public class Main {
     while (q < max - p && oldText.charCodeAt(oldText.length - 1 - q) === newText.charCodeAt(newText.length - 1 - q)) q++;
     const oldEnd = oldText.length - q;
     const delta = newText.length - oldText.length;
+    // 自動で入れた閉じ記号の位置もずらす（編集した範囲に入ったものは忘れる）
+    const pairs = new Set();
+    for (const pos of autoPairs) {
+      if (pos < p) pairs.add(pos);
+      else if (pos >= oldEnd) pairs.add(pos + delta);
+    }
+    autoPairs = pairs;
     for (const d of diags) {
       if (d.e < p || (d.e === p && d.s < p)) continue;
       if (d.s >= oldEnd && d.s > p) {
@@ -373,7 +382,7 @@ public class Main {
   function render() {
     const text = input.value;
     const starts = lineStarts(text);
-    const codes = colorCodes(text);
+    const { codes, tokens, comments } = colorCodes(text);
     const marks = new Uint8Array(text.length + 1);
     const vis = visibleDiags(starts);
     const perLine = new Map();
@@ -388,7 +397,7 @@ public class Main {
       perLine.set(d.line, arr);
     }
     for (const ds of perLine.values()) ds.sort((a, b) => (a.sev === b.sev ? a.s - b.s : a.sev === "error" ? -1 : 1));
-    model = { text, starts, codes, marks, perLine };
+    model = { text, starts, codes, marks, perLine, tokens, comments };
     htmlCache = new Map();
     // 横スクロールの幅（いちばん長い行）と、行番号の幅
     const units = maxLineUnits(text, starts);
@@ -683,6 +692,7 @@ public class Main {
     const c = caretInfo();
     if (c.line !== caretLine) {
       caretLine = c.line;
+      autoPairs.clear();
       // 打っていた行から離れたら、待たせていた指摘をすぐ出す
       if (Date.now() - lastEditAt < LINE_GRACE) render();
       else paint();
@@ -807,6 +817,58 @@ public class Main {
     return [ls, le];
   }
 
+  /* かっこ・クォートを自動で閉じる ------------------------------------ */
+  const PAIRS = { "(": ")", "[": "]", "{": "}", '"': '"', "'": "'" };
+  const CLOSERS = new Set([")", "]", "}", '"', "'"]);
+
+  /** pos が文字列・文字・コメントの中か */
+  function insideStrOrComment(pos) {
+    const text = input.value;
+    const m = model && model.text === text ? model : colorCodes(text);
+    for (const c of m.comments) {
+      if (c.s >= pos) break;
+      const lineComment = text.startsWith("//", c.s);
+      if (pos < c.e || (pos === c.e && (lineComment || !text.startsWith("*/", c.e - 2)))) return true;
+    }
+    for (const t of m.tokens) {
+      if (t.s >= pos) break;
+      if ((t.t === "str" || t.t === "chr") && (pos < t.e || (pos === t.e && t.open))) return true;
+    }
+    return false;
+  }
+
+  /** ( [ { " ' を打ったとき。処理したら true */
+  function handlePair(k, text, s, e) {
+    const next = text[e];
+    const prev = text[s - 1];
+    // 自動で入れた閉じ記号の上は、打っても増やさずに通り過ぎる
+    if (s === e && CLOSERS.has(k) && next === k && autoPairs.has(s)) {
+      autoPairs.delete(s);
+      input.setSelectionRange(s + 1, s + 1);
+      updateCaret(false);
+      return true;
+    }
+    const close = PAIRS[k];
+    if (!close) return false;
+    // 選んだ文字を囲む
+    if (s !== e) {
+      const sel = text.slice(s, e);
+      if (sel.includes("\n") && k !== "{") return false;
+      replaceRange(s, e, k + sel + close);
+      input.setSelectionRange(s + 1, e + 1);
+      updateCaret(false);
+      return true;
+    }
+    if (insideStrOrComment(s)) return false;
+    if ((k === '"' || k === "'") && prev && /[\p{L}\p{N}_$"'\\]/u.test(prev)) return false;
+    if (next !== undefined && !/[\s)\]};,]/.test(next)) return false;
+    replaceRange(s, e, k + close);
+    input.setSelectionRange(s + 1, s + 1);
+    autoPairs.add(s + 1);
+    updateCaret(false);
+    return true;
+  }
+
   input.addEventListener("keydown", (ev) => {
     if (ev.isComposing || ev.keyCode === 229) return;
     const text = input.value;
@@ -858,6 +920,18 @@ public class Main {
         replaceRange(s, e, "\n" + indent);
       }
       updateCaret(true);
+      return;
+    }
+    if (autoClose && !ev.ctrlKey && !ev.metaKey && !ev.altKey && (PAIRS[ev.key] || CLOSERS.has(ev.key))) {
+      if (handlePair(ev.key, text, s, e)) {
+        ev.preventDefault();
+        return;
+      }
+    }
+    if (ev.key === "Backspace" && s === e && s > 0 && autoPairs.has(s) && PAIRS[text[s - 1]] === text[s]) {
+      // ( | ) のように空のペアなら、両方消す
+      ev.preventDefault();
+      replaceRange(s - 1, s + 1, "");
       return;
     }
     if (ev.key === "}" && s === e) {
@@ -1000,6 +1074,32 @@ public class Main {
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => (toastEl.hidden = true), 2600);
   }
+
+  /* かっこを自動で閉じる：オン / オフ（このブラウザに覚える） */
+  const acBtn = $("autoclose");
+  const PREF_KEY = "java-sonoba-check:autoclose";
+  function setAutoClose(on, save) {
+    autoClose = on;
+    autoPairs.clear();
+    acBtn.setAttribute("aria-pressed", on ? "true" : "false");
+    acBtn.querySelector(".state").textContent = on ? "オン" : "オフ";
+    if (save) {
+      try {
+        localStorage.setItem(PREF_KEY, on ? "1" : "0");
+      } catch (e) {
+        /* 保存できない環境では何もしない */
+      }
+    }
+  }
+  try {
+    setAutoClose(localStorage.getItem(PREF_KEY) !== "0", false);
+  } catch (e) {
+    setAutoClose(true, false);
+  }
+  acBtn.addEventListener("click", () => {
+    setAutoClose(!autoClose, true);
+    toast(autoClose ? "かっこと \" を自動で閉じます" : "かっこと \" を自動で閉じません");
+  });
 
   /* ------------------------------------------------------------------ */
   /* 保存（このブラウザの中だけ）                                         */

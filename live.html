@@ -260,6 +260,18 @@
     font-variant-numeric: tabular-nums;
   }
   .statusbar .grow { flex: 1; }
+  .sb-toggle {
+    display: inline-flex; align-items: center; gap: 7px;
+    font: inherit; color: var(--ed-dim); background: transparent; border: 0; padding: 2px 4px; margin: -2px 0;
+    border-radius: 4px; cursor: pointer;
+  }
+  .sb-toggle:hover { color: var(--ed-ink); background: rgba(255,255,255,.05); }
+  .sb-toggle .sw { width: 22px; height: 12px; border-radius: 999px; background: rgba(255,255,255,.16); position: relative; flex: none; transition: background .15s; }
+  .sb-toggle .sw::after { content: ""; position: absolute; left: 2px; top: 2px; width: 8px; height: 8px; border-radius: 50%; background: var(--ed-ink); transition: transform .15s; }
+  .sb-toggle[aria-pressed="true"] { color: var(--ed-ink); }
+  .sb-toggle[aria-pressed="true"] .sw { background: color-mix(in srgb, var(--ok) 75%, transparent); }
+  .sb-toggle[aria-pressed="true"] .sw::after { transform: translateX(10px); }
+  @media (prefers-reduced-motion: reduce) { .sb-toggle .sw, .sb-toggle .sw::after { transition: none; } }
   .statusbar kbd { font: inherit; border: 1px solid rgba(255,255,255,.14); border-radius: 4px; padding: 0 5px; color: var(--ed-ink); }
 
   /* ---------- 指摘の一覧 ---------- */
@@ -324,7 +336,7 @@
   .legend .w { color: var(--warn); }
 
   .toast {
-    position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+    position: fixed; left: 50%; bottom: calc(64px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
     background: var(--ink); color: var(--surface); border-radius: 8px; padding: 7px 14px; font-size: 14px; z-index: 20;
     box-shadow: 0 8px 24px -10px rgba(0,0,0,.5);
   }
@@ -390,6 +402,9 @@
         <span id="status-line">1 行 1 列</span>
         <span id="status-ms"></span>
         <span class="grow"></span>
+        <button type="button" class="sb-toggle" id="autoclose" aria-pressed="true" title="( [ { &quot; ' を打つと、閉じる側も一緒に入れます">
+          <span class="sw" aria-hidden="true"></span>( ) 自動で閉じる：<span class="state">オン</span>
+        </button>
         <span><kbd>F8</kbd> 次の指摘へ</span>
       </div>
     </section>
