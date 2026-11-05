@@ -1,0 +1,2488 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ネットワーク・OS 動く図解</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  /* Layout: tabs (network / OS). Each tab = settings strip, a big moving diagram with the step player under it,
+     then detail panels (headers + tables, or PCB + Gantt chart). Stacks on phones; diagrams scroll sideways inside their card. */
+  :root {
+    --bg: #f3f5f8;
+    --surface: #ffffff;
+    --surface-2: #f7f8fb;
+    --ink: #1a2230;
+    --muted: #5b6577;
+    --line: #dde2ea;
+    --accent: #2853c4;
+    --accent-ink: #ffffff;
+    --accent-bg: #e8eefc;
+    --term-bg: #18202c;
+    --hi: #ffe7a3;          /* "this changed" marker */
+    --hi-ink: #6b4a00;
+    --bad: #c2362f;  --bad-bg: #fcecea;
+    --good: #1f7a4a; --good-bg: #e7f5ec;
+    --run: #b4570b;  --run-bg: #fdf0e2;
+    --arp: #7a3fb0;  --arp-bg: #f2eafa;
+    --node: #ffffff; --node-line: #8a94a6; --wire: #b9c1ce;
+    --code-bg: #eef1f6;
+    /* process colors (P1..P5) */
+    --p1: #2f6fd6; --p2: #d0602a; --p3: #1f8a5b; --p4: #a5459e; --p5: #8a7a12;
+
+    --f-display: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif;
+    --f-body: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif;
+    --f-mono: "JetBrains Mono", "Noto Sans Mono CJK JP", "Osaka-Mono", "MS Gothic", ui-monospace, monospace;
+    --r: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #10151d; --surface: #171e29; --surface-2: #1c2431; --ink: #e5eaf2; --muted: #98a3b6; --line: #2a3443;
+      --accent: #7c9cf5; --accent-ink: #0d1320; --accent-bg: #1d2a48;
+      --term-bg: #0a0e14; --hi: #5a4712; --hi-ink: #ffe6a6;
+      --bad: #ff8a80; --bad-bg: #3a1f22; --good: #6fd39b; --good-bg: #16301f;
+      --run: #ffb26b; --run-bg: #3a2a18; --arp: #c9a2f0; --arp-bg: #2c2140;
+      --node: #1c2431; --node-line: #7d889b; --wire: #3b4659;
+      --code-bg: #222b39;
+      --p1: #6f9cf0; --p2: #f08a58; --p3: #4fc28c; --p4: #d07cc8; --p5: #cdb84a;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #10151d; --surface: #171e29; --surface-2: #1c2431; --ink: #e5eaf2; --muted: #98a3b6; --line: #2a3443;
+    --accent: #7c9cf5; --accent-ink: #0d1320; --accent-bg: #1d2a48;
+    --term-bg: #0a0e14; --hi: #5a4712; --hi-ink: #ffe6a6;
+    --bad: #ff8a80; --bad-bg: #3a1f22; --good: #6fd39b; --good-bg: #16301f;
+    --run: #ffb26b; --run-bg: #3a2a18; --arp: #c9a2f0; --arp-bg: #2c2140;
+    --node: #1c2431; --node-line: #7d889b; --wire: #3b4659;
+    --code-bg: #222b39;
+    --p1: #6f9cf0; --p2: #f08a58; --p3: #4fc28c; --p4: #d07cc8; --p5: #cdb84a;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--f-body); font-size: 16px; line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 1240px; margin: 0 auto; padding-block: 28px 56px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  [hidden] { display: none !important; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  code { font-family: var(--f-mono); font-size: .9em; background: var(--code-bg); border-radius: 4px; padding: .05em .35em; overflow-wrap: anywhere; }
+
+  /* ---------- header & tabs ---------- */
+  .masthead { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 24px; margin-bottom: 18px; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo { flex: none; width: 44px; height: 44px; border-radius: 12px; background: var(--term-bg); display: grid; place-items: center; }
+  h1 { font-family: var(--f-display); font-weight: 700; font-size: clamp(24px, 3.2vw, 32px); line-height: 1.3; margin: 0; text-wrap: balance; }
+  .tagline { margin: 0; color: var(--muted); font-size: 15px; max-width: 40em; }
+
+  .tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--line); margin-bottom: 18px; overflow-x: auto; }
+  .tab {
+    font: inherit; font-weight: 700; font-size: 15.5px; cursor: pointer; white-space: nowrap;
+    background: none; border: 0; border-bottom: 3px solid transparent; color: var(--muted);
+    padding: 8px 14px 9px; margin-bottom: -1px;
+  }
+  .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+  .tab:hover { color: var(--ink); }
+  .tab small { font-weight: 500; color: var(--muted); margin-left: 6px; font-size: 13px; }
+
+  /* ---------- setup strip ---------- */
+  .setup { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 18px; margin-bottom: 14px; }
+  .field { display: grid; gap: 2px; }
+  .field > span { font-size: 12.5px; font-weight: 700; letter-spacing: .04em; color: var(--muted); }
+  select, input[type="number"] {
+    font: inherit; font-size: 15px; color: var(--ink); background: var(--surface);
+    border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; min-height: 38px;
+  }
+  input[type="number"] { width: 5.2em; font-family: var(--f-mono); }
+  .presets { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .presets > span { font-size: 12.5px; font-weight: 700; letter-spacing: .04em; color: var(--muted); margin-right: 2px; }
+  .chip-btn {
+    font: inherit; font-size: 13.5px; cursor: pointer; background: var(--surface); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px;
+  }
+  .chip-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .chip-btn[aria-pressed="true"] { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); font-weight: 700; }
+
+  /* ---------- stage: diagram + narration + player ---------- */
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); min-width: 0; }
+  .stage { overflow: hidden; }
+  .diagram { overflow-x: auto; background: var(--surface-2); border-bottom: 1px solid var(--line); }
+  .diagram svg { display: block; width: 100%; height: auto; margin: 0 auto; }
+  .narr { padding: 14px 18px 16px; display: grid; gap: 10px; }
+  .narr-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+  .step-no { font-family: var(--f-mono); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .narr h2 { font-family: var(--f-display); font-size: 20px; line-height: 1.45; margin: 0; text-wrap: balance; }
+  .narr-text { display: grid; gap: 6px; min-height: 5.2em; }
+  .narr-text p { margin: 0; max-width: 46em; }
+  .narr[data-tone="drop"] h2 { color: var(--bad); }
+  .narr[data-tone="ok"] h2 { color: var(--good); }
+
+  .player { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 18px; border-bottom: 1px solid var(--line); background: var(--surface); }
+  .pbtn {
+    font: inherit; font-size: 14.5px; font-weight: 700; cursor: pointer; min-height: 38px;
+    border-radius: 8px; padding: 6px 14px; border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  }
+  .pbtn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .pbtn:disabled { opacity: .4; cursor: default; }
+  .pbtn-main { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); padding-inline: 22px; }
+  .pbtn-main:hover:not(:disabled) { color: var(--accent-ink); filter: brightness(1.08); }
+  .pbar { flex: 1 1 160px; display: flex; gap: 3px; min-width: 120px; }
+  .pbar button { flex: 1; height: 10px; min-width: 4px; border: 0; padding: 0; border-radius: 3px; background: var(--line); cursor: pointer; }
+  .pbar button.past { background: color-mix(in srgb, var(--accent) 40%, var(--line)); }
+  .pbar button.now { background: var(--accent); }
+  .speed { font-size: 13px; min-height: 32px; padding: 3px 6px; }
+  .keys { font-size: 12.5px; color: var(--muted); margin: 0; }
+
+  /* ---------- details ---------- */
+  .details { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; margin-top: 16px; align-items: start; }
+  @media (max-width: 880px) { .details { grid-template-columns: minmax(0, 1fr); } }
+  .panel { padding: 14px 18px 16px; }
+  .panel h3 { font-size: 13px; letter-spacing: .08em; margin: 0 0 8px; color: var(--muted); font-weight: 700; }
+  .panel .empty { color: var(--muted); font-size: 14.5px; margin: 0; }
+  .wide { grid-column: 1 / -1; }
+
+  /* packet headers */
+  .pkt { display: grid; gap: 8px; }
+  .layer { border-radius: 8px; border: 1px solid var(--line); padding: 8px 12px 10px; }
+  .layer h4 { margin: 0 0 4px; font-size: 13px; font-weight: 700; display: flex; justify-content: space-between; gap: 8px; }
+  .layer h4 small { font-weight: 500; color: var(--muted); }
+  .layer.l2 { border-left: 4px solid var(--arp); }
+  .layer.l2 h4 { color: var(--arp); }
+  .layer.l3 { border-left: 4px solid var(--accent); }
+  .layer.l3 h4 { color: var(--accent); }
+  .layer.l4 { border-left: 4px solid var(--muted); }
+  .layer.off { opacity: .55; border-style: dashed; }
+  .layer p { margin: 0; }
+  .kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 2px 12px; margin: 0; font-size: 14.5px; }
+  .kv dt { color: var(--muted); }
+  .kv dd { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 8px; min-width: 0; border-radius: 4px; }
+  .kv dd code { background: none; padding: 0; }
+  .kv dd small { color: var(--muted); font-size: 12.5px; }
+  .kv dd.changed { background: var(--hi); color: var(--hi-ink); padding-inline: 4px; margin-inline: -4px; }
+  .kv dd.changed small { color: inherit; }
+  .kv dd.changed::after { content: "変わった"; font-size: 11px; font-weight: 700; margin-left: auto; }
+  .legend-note { font-size: 12.5px; color: var(--muted); margin: 8px 0 0; }
+
+  /* tables */
+  .tbl-wrap { overflow-x: auto; }
+  table.t { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  .t th, .t td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .t th { font-size: 12px; color: var(--muted); font-weight: 700; letter-spacing: .03em; }
+  .t td.mono { font-family: var(--f-mono); }
+  .t tr.match td { background: var(--accent-bg); }
+  .t tr.hit td { background: var(--hi); color: var(--hi-ink); font-weight: 700; }
+  .t tr.hit td:first-child::before { content: "▶ "; }
+  .t .ok { color: var(--good); font-weight: 700; }
+  .t .ng { color: var(--muted); }
+  .t tr.hit .ok { color: inherit; }
+  .t-note { font-size: 12.5px; color: var(--muted); margin: 8px 0 0; }
+
+  /* network svg */
+  .wire { stroke: var(--wire); stroke-width: 3; fill: none; }
+  .net-label { font-family: var(--f-mono); font-size: 11.5px; fill: var(--muted); paint-order: stroke; stroke: var(--surface-2); stroke-width: 4px; }
+  .if-label { font-family: var(--f-mono); font-size: 11px; fill: var(--muted); paint-order: stroke; stroke: var(--surface-2); stroke-width: 4px; }
+  .node .shape { fill: var(--node); stroke: var(--node-line); stroke-width: 2; }
+  .node .glyph { stroke: var(--node-line); stroke-width: 2; fill: none; stroke-linecap: round; }
+  .node .name { font-family: var(--f-body); font-weight: 700; font-size: 14px; fill: var(--ink); paint-order: stroke; stroke: var(--surface-2); stroke-width: 4px; }
+  .node .addr { font-family: var(--f-mono); font-size: 11px; fill: var(--muted); paint-order: stroke; stroke: var(--surface-2); stroke-width: 4px; }
+  .node.on .shape { stroke: var(--accent); stroke-width: 3; }
+  .node.on .glyph { stroke: var(--accent); }
+  .node .halo { fill: var(--accent); opacity: 0; }
+  .node.on .halo { opacity: .14; }
+  .tok rect { stroke: rgba(0,0,0,.15); }
+  .tok text { font-family: var(--f-mono); font-size: 11px; font-weight: 600; fill: #fff; }
+  .tok-ip rect { fill: var(--accent); } .tok-ip text { fill: var(--accent-ink); }
+  .tok-arp rect { fill: var(--arp); } .tok-arp text { fill: var(--surface); }
+  .tok-icmp rect { fill: var(--run); } .tok-icmp text { fill: var(--surface); }
+  .tok-drop rect { fill: var(--bad); } .tok-drop text { fill: var(--surface); }
+
+  /* os svg */
+  .sbox { fill: var(--node); stroke: var(--node-line); stroke-width: 1.5; }
+  .sbox-run { stroke: var(--accent); stroke-width: 2.5; }
+  .slabel { font-weight: 700; font-size: 14px; fill: var(--ink); }
+  .ssub { font-size: 11.5px; fill: var(--muted); }
+  .arrow { stroke: var(--wire); stroke-width: 2.5; fill: none; }
+  .arrow-label { font-size: 12px; fill: var(--muted); paint-order: stroke; stroke: var(--surface-2); stroke-width: 4px; }
+  .arrow.on { stroke: var(--accent); stroke-width: 3.5; }
+  .arrow-label.on { fill: var(--accent); font-weight: 700; }
+  .ptok circle { stroke: var(--surface); stroke-width: 2; }
+  .ptok .pname { font-family: var(--f-mono); font-weight: 600; font-size: 12.5px; fill: #fff; }
+  .ptok .psub { font-size: 10.5px; fill: var(--muted); }
+  .swap { font-size: 12px; font-weight: 700; fill: var(--run); }
+  @media (prefers-reduced-motion: no-preference) {
+    .ptok { transition: transform .55s cubic-bezier(.3,.7,.3,1); }
+  }
+
+  /* OS setup */
+  .seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface); }
+  .seg label { position: relative; cursor: pointer; }
+  .seg input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+  .seg span { display: block; padding: 6px 14px; font-size: 14.5px; font-weight: 700; color: var(--muted); }
+  .seg label + label span { border-left: 1px solid var(--line); }
+  .seg input:checked + span { background: var(--accent); color: var(--accent-ink); }
+  .seg input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: -3px; }
+  .algo-note { margin: 0 0 12px; font-size: 14.5px; color: var(--muted); max-width: 52em; }
+  .procs-card { padding: 12px 16px 14px; margin-bottom: 16px; }
+  .procs-card h3 { font-size: 13px; letter-spacing: .08em; margin: 0 0 6px; color: var(--muted); }
+  .procs td { padding: 3px 6px; }
+  .procs input[type="number"] { width: 4.4em; min-height: 32px; padding: 3px 6px; font-size: 14px; }
+  .procs .x { font: inherit; cursor: pointer; border: 0; background: none; color: var(--muted); font-size: 18px; line-height: 1; padding: 4px 8px; border-radius: 6px; }
+  .procs .x:hover { color: var(--bad); background: var(--bad-bg); }
+  .procs-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-top: 8px; }
+  .procs-foot p { margin: 0; font-size: 12.5px; color: var(--muted); }
+  .dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1px; margin-right: 6px; }
+
+  /* PCB */
+  .pcb td { vertical-align: middle; }
+  .bar { display: inline-block; width: 70px; height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; vertical-align: 1px; margin-right: 6px; }
+  .bar i { display: block; height: 100%; }
+  .badge { font-size: 11px; font-weight: 700; border-radius: 4px; padding: 0 6px; margin-left: 6px; }
+  .badge-save { background: var(--run-bg); color: var(--run); }
+  .badge-load { background: var(--accent-bg); color: var(--accent); }
+  .st-running { color: var(--accent); font-weight: 700; }
+  .st-blocked { color: var(--run); }
+  .st-done { color: var(--good); }
+  .st-new { color: var(--muted); }
+
+  /* Gantt */
+  .gantt { border-collapse: separate; border-spacing: 2px; font-size: 12px; }
+  .gantt th { font-family: var(--f-mono); font-weight: 400; color: var(--muted); text-align: left; padding: 0 2px; min-width: 22px; }
+  .gantt th.now { color: var(--accent); font-weight: 600; }
+  .gantt td { width: 22px; height: 22px; padding: 0; border-radius: 3px; }
+  .gantt td.name { width: auto; padding-right: 8px; font-family: var(--f-mono); font-weight: 600; white-space: nowrap; }
+  .gantt td.run { background: var(--pc); }
+  .gantt td.wait { background: color-mix(in srgb, var(--pc) 16%, transparent); }
+  .gantt td.io { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--pc) 45%, transparent) 0 3px, transparent 3px 6px); }
+  .gantt td.next { box-shadow: inset 0 0 0 2px var(--pc); }
+  .gantt td.future { background: var(--surface-2); }
+  .g-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+  .g-legend i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: -2px; margin-right: 4px; --pc: var(--muted); }
+  .g-legend i.run { background: var(--pc); }
+  .g-legend i.wait { background: color-mix(in srgb, var(--pc) 16%, transparent); border: 1px solid var(--line); }
+  .g-legend i.io { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--pc) 45%, transparent) 0 3px, transparent 3px 6px); border: 1px solid var(--line); }
+
+  /* results */
+  .t td.num, .t th.num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--f-mono); }
+  .t tr.avg td { font-weight: 700; border-top: 2px solid var(--line); }
+  .compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-top: 12px; }
+  .compare div { border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: 13.5px; }
+  .compare b { display: block; font-family: var(--f-mono); font-size: 18px; }
+  .compare .cur { border-color: var(--accent); background: var(--accent-bg); }
+  .compare .best b { color: var(--good); }
+  .formula { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+
+  .foot { margin-top: 28px; font-size: 13px; color: var(--muted); }
+  .foot a { color: inherit; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="masthead">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 28 28"><circle cx="5" cy="14" r="3.2" fill="#7c9cf5"/><circle cx="23" cy="6" r="3.2" fill="#7c9cf5"/><circle cx="23" cy="22" r="3.2" fill="#7c9cf5"/><path d="M8 13 L20 7 M8 15 L20 21" stroke="#5b6b8a" stroke-width="2"/><rect x="11" y="7.5" width="7" height="5" rx="1.2" fill="#ffb547"/></svg>
+      </div>
+      <h1>ネットワーク・OS 動く図解</h1>
+    </div>
+    <p class="tagline">パケットがルーターを渡っていくようすや、OS がプロセスを切りかえるようすを、ボタンを押して1ステップずつ見られます。読むより、さわって覚えましょう。</p>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="図解をえらぶ">
+    <button class="tab" role="tab" id="tab-net" aria-controls="panel-net" aria-selected="true">ネットワーク<small>パケットの旅</small></button>
+    <button class="tab" role="tab" id="tab-os" aria-controls="panel-os" aria-selected="false" tabindex="-1">OS<small>プロセスの切りかえ</small></button>
+  </nav>
+
+  <!-- ===================== ネットワーク ===================== -->
+  <section id="panel-net" role="tabpanel" aria-labelledby="tab-net">
+    <div class="setup">
+      <label class="field"><span>送り主</span><select id="net-from"></select></label>
+      <label class="field"><span>あて先</span><select id="net-to"></select></label>
+      <label class="field"><span>TTL</span><input id="net-ttl" type="number" min="1" max="64" value="64"></label>
+      <div class="presets" id="net-presets"><span>例:</span></div>
+    </div>
+
+    <div class="card stage">
+      <div class="diagram"><svg id="net-svg" viewBox="0 0 860 330" role="img" aria-label="ネットワークの図。パケットの位置はステップの説明に書いてあります。"></svg></div>
+      <div class="player" id="net-player"></div>
+      <div class="narr" id="net-narr" aria-live="polite"></div>
+    </div>
+
+    <div class="details">
+      <div class="card panel">
+        <h3>パケットの中身（ヘッダー）</h3>
+        <div id="net-packet"></div>
+      </div>
+      <div class="card panel">
+        <h3 id="net-table-title">表</h3>
+        <div id="net-table"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== OS ===================== -->
+  <section id="panel-os" role="tabpanel" aria-labelledby="tab-os" hidden>
+    <div class="setup">
+      <div class="field"><span>CPU の使わせ方（スケジューリング）</span>
+        <div class="seg" id="os-algo" role="radiogroup" aria-label="スケジューリングのやり方"></div>
+      </div>
+      <label class="field" id="os-q-wrap"><span>持ち時間（クォンタム）</span><input id="os-q" type="number" min="1" max="10" value="2"></label>
+      <div class="presets" id="os-presets"><span>例:</span></div>
+    </div>
+    <p class="algo-note" id="os-algo-note"></p>
+
+    <div class="card procs-card">
+      <h3>プロセス</h3>
+      <div class="tbl-wrap">
+        <table class="t procs">
+          <thead><tr><th>名前</th><th>到着時刻</th><th>CPU 時間</th><th>I/O を始める<br>（CPU をいくつ使ったあと）</th><th>I/O の長さ</th><th aria-label="消す"></th></tr></thead>
+          <tbody id="os-procs"></tbody>
+        </table>
+      </div>
+      <div class="procs-foot">
+        <button type="button" class="chip-btn" id="os-add">＋ プロセスを足す</button>
+        <p>I/O がないときは、右の2つを空にします。数字を変えると、最初からやり直します。</p>
+      </div>
+    </div>
+
+    <div class="card stage">
+      <div class="diagram"><svg id="os-svg" viewBox="0 0 660 336" role="img" aria-label="プロセスの状態遷移図。どのプロセスがどの状態かはステップの説明と下の表に書いてあります。"></svg></div>
+      <div class="player" id="os-player"></div>
+      <div class="narr" id="os-narr" aria-live="polite"></div>
+    </div>
+
+    <div class="details">
+      <div class="card panel">
+        <h3>PCB（プロセスごとのメモ）</h3>
+        <div class="tbl-wrap" id="os-pcb"></div>
+        <p class="t-note">OS はプロセスごとに PCB（プロセス制御ブロック）を持ち、「どこまで進んだか」や状態をメモしています。CPU を切りかえるとき、ここに保存・ここから読み出しをします。</p>
+      </div>
+      <div class="card panel">
+        <h3>ガントチャート（だれがいつ CPU を使ったか）</h3>
+        <div class="tbl-wrap" id="os-gantt"></div>
+      </div>
+      <div class="card panel wide">
+        <h3>待ち時間とターンアラウンドタイム</h3>
+        <div id="os-result"></div>
+      </div>
+    </div>
+  </section>
+
+  <p class="foot">← → キーでも1ステップずつ動かせます。すべてこのページの中だけで動き、どこにも送信しません。</p>
+</div>
+
+<script>
+/* src/net.js */
+/*
+ * ネットワークの「動く図解」の中身。
+ * パケットが 1 つのネットワークから別のネットワークへ届くまでを、
+ * 1 ステップずつの配列（steps）にして返します。DOM は使いません（Node でもテストできます）。
+ *
+ * 図のなかの機械:
+ *
+ *   PC-A ─┐                ┌─ R2 ── サーバー     (172.16.1.0/24)
+ *         ├ スイッチ ── R1 ┤
+ *   PC-B ─┘ 192.168.1.0/24 └─ R3 ── サーバーB    (172.16.2.0/24)
+ *
+ * 説明文の中の `...` はコードとして表示されます。
+ */
+(function (root) {
+  "use strict";
+
+  // ---------- IP アドレスの計算 ----------
+  function ipToInt(ip) {
+    return ip.split(".").reduce((n, o) => n * 256 + Number(o), 0);
+  }
+  function intToIp(n) {
+    return [24, 16, 8, 0].map((s) => Math.floor(n / 2 ** s) % 256).join(".");
+  }
+  function maskInt(prefix) {
+    return prefix === 0 ? 0 : 0xffffffff - (2 ** (32 - prefix) - 1);
+  }
+  function maskOf(prefix) {
+    return intToIp(maskInt(prefix));
+  }
+  /** ip AND サブネットマスク → ネットワークアドレス */
+  function networkOf(ip, prefix) {
+    return intToIp((ipToInt(ip) & maskInt(prefix)) >>> 0);
+  }
+
+  const BROADCAST = "FF:FF:FF:FF:FF:FF";
+
+  // ---------- 図の機械 ----------
+  const route = (dest, via, iface) => {
+    const [net, p] = dest.split("/");
+    return { net, prefix: Number(p), via, iface };
+  };
+
+  const NODES = {
+    pca: {
+      type: "host", name: "PC-A", x: 70, y: 74,
+      ifaces: { eth0: { ip: "192.168.1.10", prefix: 24, mac: "00:00:00:AA:00:01", seg: "lan1" } },
+      routes: [route("192.168.1.0/24", null, "eth0"), route("0.0.0.0/0", "192.168.1.1", "eth0")],
+    },
+    pcb: {
+      type: "host", name: "PC-B", x: 70, y: 256,
+      ifaces: { eth0: { ip: "192.168.1.20", prefix: 24, mac: "00:00:00:BB:00:01", seg: "lan1" } },
+      routes: [route("192.168.1.0/24", null, "eth0"), route("0.0.0.0/0", "192.168.1.1", "eth0")],
+    },
+    sw1: { type: "switch", name: "スイッチ", x: 210, y: 165, seg: "lan1" },
+    r1: {
+      type: "router", name: "R1", x: 380, y: 165,
+      ifaces: {
+        eth0: { ip: "192.168.1.1", prefix: 24, mac: "00:00:00:11:00:01", seg: "lan1" },
+        eth1: { ip: "10.0.12.1", prefix: 30, mac: "00:00:00:11:00:02", seg: "l12" },
+        eth2: { ip: "10.0.13.1", prefix: 30, mac: "00:00:00:11:00:03", seg: "l13" },
+      },
+      routes: [
+        route("192.168.1.0/24", null, "eth0"),
+        route("10.0.12.0/30", null, "eth1"),
+        route("10.0.13.0/30", null, "eth2"),
+        route("172.16.1.0/24", "10.0.12.2", "eth1"),
+        route("172.16.0.0/16", "10.0.13.2", "eth2"),
+        route("0.0.0.0/0", "10.0.13.2", "eth2"),
+      ],
+    },
+    r2: {
+      type: "router", name: "R2", x: 590, y: 74,
+      ifaces: {
+        eth0: { ip: "10.0.12.2", prefix: 30, mac: "00:00:00:22:00:01", seg: "l12" },
+        eth1: { ip: "172.16.1.1", prefix: 24, mac: "00:00:00:22:00:02", seg: "lan2" },
+      },
+      routes: [
+        route("10.0.12.0/30", null, "eth0"),
+        route("172.16.1.0/24", null, "eth1"),
+        route("0.0.0.0/0", "10.0.12.1", "eth0"),
+      ],
+    },
+    r3: {
+      type: "router", name: "R3", x: 590, y: 256,
+      ifaces: {
+        eth0: { ip: "10.0.13.2", prefix: 30, mac: "00:00:00:33:00:01", seg: "l13" },
+        eth1: { ip: "172.16.2.1", prefix: 24, mac: "00:00:00:33:00:02", seg: "lan3" },
+      },
+      // R3 にはデフォルトルートがない（知らない宛先は捨てる）
+      routes: [
+        route("10.0.13.0/30", null, "eth0"),
+        route("172.16.2.0/24", null, "eth1"),
+        route("192.168.1.0/24", "10.0.13.1", "eth0"),
+        route("172.16.1.0/24", "10.0.13.1", "eth0"),
+      ],
+    },
+    srv: {
+      type: "host", name: "サーバー", x: 790, y: 74,
+      ifaces: { eth0: { ip: "172.16.1.80", prefix: 24, mac: "00:00:00:CC:00:01", seg: "lan2" } },
+      routes: [route("172.16.1.0/24", null, "eth0"), route("0.0.0.0/0", "172.16.1.1", "eth0")],
+    },
+    srv2: {
+      type: "host", name: "サーバーB", x: 790, y: 256,
+      ifaces: { eth0: { ip: "172.16.2.50", prefix: 24, mac: "00:00:00:DD:00:01", seg: "lan3" } },
+      routes: [route("172.16.2.0/24", null, "eth0"), route("0.0.0.0/0", "172.16.2.1", "eth0")],
+    },
+  };
+
+  /** ケーブル（同じネットワーク）。sw があれば、そのスイッチを通る */
+  const SEGMENTS = {
+    lan1: { net: "192.168.1.0/24", sw: "sw1", ports: { pca: 1, pcb: 2, r1: 3 } },
+    l12: { net: "10.0.12.0/30" },
+    l13: { net: "10.0.13.0/30" },
+    lan2: { net: "172.16.1.0/24" },
+    lan3: { net: "172.16.2.0/24" },
+  };
+
+  /** 最初から ARP 表に入っている相手（ルーター同士は前にやりとりしたことがある） */
+  const INITIAL_ARP = {
+    r1: { "10.0.12.2": "00:00:00:22:00:01", "10.0.13.2": "00:00:00:33:00:01" },
+    r2: { "10.0.12.1": "00:00:00:11:00:02", "172.16.1.80": "00:00:00:CC:00:01" },
+    r3: { "10.0.13.1": "00:00:00:11:00:03", "172.16.2.50": "00:00:00:DD:00:01" },
+  };
+
+  /** 送り先として選べるもの */
+  const DESTINATIONS = [
+    { ip: "172.16.1.80", label: "サーバー（172.16.1.80）" },
+    { ip: "172.16.2.50", label: "サーバーB（172.16.2.50）" },
+    { ip: "192.168.1.20", label: "PC-B（192.168.1.20）" },
+    { ip: "192.168.1.10", label: "PC-A（192.168.1.10）" },
+    { ip: "172.16.9.9", label: "172.16.9.9（どこにもない）" },
+    { ip: "8.8.8.8", label: "8.8.8.8（図の外）" },
+  ];
+  const SOURCES = ["pca", "pcb", "srv", "srv2"];
+
+  /** よく使う組み合わせ */
+  const PRESETS = [
+    { id: "normal", label: "ふつうに届く", from: "pca", to: "172.16.1.80", ttl: 64 },
+    { id: "lan", label: "同じLANの中", from: "pca", to: "192.168.1.20", ttl: 64 },
+    { id: "ttl", label: "TTLが切れる", from: "pca", to: "172.16.1.80", ttl: 2 },
+    { id: "longest", label: "別の道（最長一致）", from: "pca", to: "172.16.2.50", ttl: 64 },
+    { id: "noroute", label: "道がない", from: "pca", to: "172.16.9.9", ttl: 64 },
+  ];
+
+  // ---------- 名前を引く ----------
+  const allIfaces = [];
+  for (const [id, n] of Object.entries(NODES))
+    for (const [ifName, f] of Object.entries(n.ifaces || {})) allIfaces.push({ node: id, ifName, ...f });
+
+  const ifaceByIp = (ip) => allIfaces.find((f) => f.ip === ip) || null;
+  const ifaceByMac = (mac) => allIfaces.find((f) => f.mac === mac) || null;
+  const nameOf = (id) => NODES[id].name;
+
+  /** 「R1 の eth1」「PC-A」のように、MAC/IP の持ち主を言う */
+  function ownerLabel(f) {
+    if (!f) return "";
+    return NODES[f.node].type === "router" ? `${nameOf(f.node)} の ${f.ifName}` : nameOf(f.node);
+  }
+  function macLabel(mac) {
+    if (mac === BROADCAST) return "全員（ブロードキャスト）";
+    return ownerLabel(ifaceByMac(mac));
+  }
+  function ipLabel(ip) {
+    return ownerLabel(ifaceByIp(ip)) || "（図にない）";
+  }
+  function hostIface(id) {
+    return Object.values(NODES[id].ifaces)[0];
+  }
+
+  // ---------- ルーティング表を引く ----------
+  function lookup(id, dst) {
+    const rows = NODES[id].routes.map((r) => {
+      const masked = networkOf(dst, r.prefix);
+      return { ...r, masked, match: masked === r.net };
+    });
+    let best = null;
+    for (const r of rows) if (r.match && (!best || r.prefix > best.prefix)) best = r;
+    return { rows, best };
+  }
+
+  function routeTable(id, dst, L) {
+    const node = NODES[id];
+    return {
+      kind: "route",
+      title: `${node.name} のルーティング表`,
+      cols: ["あて先ネットワーク", "次にわたす相手", "出口"],
+      rows: L.rows.map((r) => [
+        `${r.net}/${r.prefix}`,
+        r.via ? `${r.via}（${ipLabel(r.via)}）` : "直接つながっている",
+        r.iface,
+      ]),
+      state: L.rows.map((r) => (r === L.best ? "hit" : r.match ? "match" : "")),
+      calc: L.rows.map((r) => ({
+        text: `${dst} AND ${maskOf(r.prefix)} = ${r.masked}`,
+        ok: r.match,
+        target: `${r.net}/${r.prefix}`,
+      })),
+    };
+  }
+
+  function arpTable(id, arp, hiIp) {
+    const rows = [...arp[id].entries()];
+    return {
+      kind: "arp",
+      title: `${nameOf(id)} の ARP 表（IP → MAC のメモ）`,
+      cols: ["IP アドレス", "MAC アドレス"],
+      rows: rows.map(([ip, mac]) => [`${ip}（${ipLabel(ip)}）`, mac]),
+      state: rows.map(([ip]) => (ip === hiIp ? "hit" : "")),
+      empty: "まだ何も入っていない",
+    };
+  }
+
+  function macTableView(seg, macTable, hiMac) {
+    const s = SEGMENTS[seg];
+    const rows = [...macTable.entries()];
+    return {
+      kind: "mac",
+      title: `${nameOf(s.sw)} の MAC アドレス表`,
+      cols: ["MAC アドレス", "ポート（つながっている先）"],
+      rows: rows.map(([mac, node]) => [mac, `${s.ports[node]}番（${nameOf(node)}）`]),
+      state: rows.map(([mac]) => (mac === hiMac ? "hit" : "")),
+      empty: "まだ何も入っていない",
+    };
+  }
+
+  // ---------- メイン ----------
+  /**
+   * opts = { from: "pca", to: "172.16.1.80", ttl: 64 }
+   * 戻り値: { steps: [...], result: "delivered" | "ttl" | "noroute" | "noarp" }
+   *
+   * step = {
+   *   title, text,                 説明（`...` はコード）
+   *   at,                          いま注目している機械の id
+   *   moves: [[id, id, ...], ...], このステップで動く道すじ（なければ動かない）
+   *   rest:  [{ node, type }],     ステップが終わったときにパケットがいる場所
+   *   packet: { pid, type, eth, ip, arp, data } | null,  ヘッダーの中身
+   *   table: {...} | null,         表（ルーティング表・ARP表・MAC表）
+   *   tone: "ok" | "drop" | undefined,
+   * }
+   */
+  function simulate(opts) {
+    const from = NODES[opts && opts.from] && NODES[opts.from].type === "host" ? opts.from : "pca";
+    const dst = String((opts && opts.to) || "172.16.1.80");
+    const ttl0 = Math.max(1, Math.min(255, Math.floor(Number(opts && opts.ttl) || 64)));
+
+    const arp = {};
+    for (const id of Object.keys(NODES)) arp[id] = new Map(Object.entries(INITIAL_ARP[id] || {}));
+    const macTable = new Map(); // MAC → そのMACがつながっているポートの機械
+    const steps = [];
+    let pidSeq = 0;
+    let result = "delivered";
+    const hops = []; // 通ったルーター
+
+    const add = (s) => steps.push(s);
+    const ipPacket = (pkt, eth) => ({
+      pid: pkt.pid,
+      type: pkt.proto === "ICMP" ? "icmp" : "ip",
+      eth: eth ? { dst: eth.dst, src: eth.src, dstLabel: macLabel(eth.dst), srcLabel: macLabel(eth.src) } : null,
+      ip: { src: pkt.src, dst: pkt.dst, ttl: pkt.ttl, srcLabel: ipLabel(pkt.src), dstLabel: ipLabel(pkt.dst) },
+      data: pkt.data,
+    });
+
+    // --- 1. パケットを作る ---
+    const src = hostIface(from);
+    const pkt0 = { pid: ++pidSeq, src: src.ip, dst, ttl: ttl0, proto: "TCP", data: "TCP ポート80「ページをください」" };
+    add({
+      title: `${nameOf(from)} がパケットを作る`,
+      text:
+        `送り主は自分の IP アドレス \`${src.ip}\`、あて先は \`${dst}\`。` +
+        `TTL（あと何台のルーターを通れるか）は \`${ttl0}\` から始めます。` +
+        "\nこの IP アドレスの組は、最後まで変わりません。",
+      at: from,
+      rest: [{ node: from, type: "ip" }],
+      packet: ipPacket(pkt0, null),
+      table: null,
+    });
+
+    if (dst === src.ip) {
+      add({
+        title: "あて先が自分自身",
+        text: "あて先が自分の IP アドレスなので、ネットワークには出ていきません。送り先を変えてみてください。",
+        at: from,
+        rest: [{ node: from, type: "ip" }],
+        packet: ipPacket(pkt0, null),
+        table: null,
+      });
+      return { steps, result: "self" };
+    }
+
+    let cur = { node: from, pkt: pkt0, inIf: null };
+    let guard = 0;
+    while (cur && guard++ < 40) cur = sendFrom(cur.node, cur.pkt, cur.inIf);
+
+    // --- まとめ ---
+    add(summaryStep());
+    return { steps, result };
+
+    // ===== ここから下は simulate の中だけで使う関数 =====
+
+    /** id の機械が、パケットを次へ送る。次に処理する {node, pkt, inIf} か null を返す */
+    function sendFrom(id, pkt, inIf) {
+      const node = NODES[id];
+      const L = lookup(id, pkt.dst);
+      const table = routeTable(id, pkt.dst, L);
+
+      if (!L.best) {
+        add({
+          title: `${node.name} のルーティング表に、あて先が見つからない`,
+          text:
+            `\`${pkt.dst}\` に当てはまる行が 1 つもありません。デフォルトルート（\`0.0.0.0/0\`）もないので、` +
+            `${node.name} はどこへ送ればいいかわからず、パケットを**捨てます**。`,
+          at: id,
+          rest: [{ node: id, type: "drop" }],
+          packet: ipPacket(pkt, null),
+          table,
+          tone: "drop",
+        });
+        if (pkt.proto !== "ICMP") result = "noroute";
+        return icmpBack(id, inIf, pkt, "unreachable");
+      }
+
+      const best = L.best;
+      const out = node.ifaces[best.iface];
+      const nextIp = best.via || pkt.dst;
+
+      if (!pkt.brief) add(lookupStep(id, pkt, L, table, nextIp));
+
+      let mac = arp[id].get(nextIp);
+      if (!mac) {
+        mac = resolveArp(id, best.iface, nextIp, pkt);
+        if (!mac) {
+          if (pkt.proto !== "ICMP") result = "noarp";
+          return null;
+        }
+      }
+      const target = ifaceByMac(mac);
+      const eth = { src: out.mac, dst: mac };
+      transmit(id, best.iface, target, pkt, eth, nextIp === pkt.dst);
+      return receive(target.node, target.ifName, pkt, eth);
+    }
+
+    function lookupStep(id, pkt, L, table, nextIp) {
+      const node = NODES[id];
+      const best = L.best;
+      const matches = L.rows.filter((r) => r.match);
+      if (node.type === "host") {
+        const own = node.ifaces[best.iface];
+        const same = !best.via;
+        return {
+          title: same ? `${node.name}「あて先は同じネットワークだ」` : `${node.name}「あて先はよそのネットワークだ」`,
+          text: same
+            ? `あて先 \`${pkt.dst}\` を自分のサブネットマスク \`${maskOf(own.prefix)}\` で AND すると \`${networkOf(pkt.dst, own.prefix)}\`。` +
+              `自分と同じネットワーク \`${networkOf(own.ip, own.prefix)}/${own.prefix}\` なので、**ルーターを通さず直接**届けます。`
+            : `あて先 \`${pkt.dst}\` は、自分のネットワーク \`${networkOf(own.ip, own.prefix)}/${own.prefix}\` に入っていません。` +
+              `よそのネットワーク行きは、**デフォルトゲートウェイ**（${ipLabel(best.via)}: \`${best.via}\`）にわたします。`,
+          at: id,
+          rest: [{ node: id, type: "ip" }],
+          packet: ipPacket(pkt, null),
+          table,
+        };
+      }
+      let why;
+      if (matches.length > 1) {
+        const list = matches.map((r) => `\`${r.net}/${r.prefix}\``).join("、");
+        why =
+          `当てはまる行が ${matches.length} つあります（${list}）。` +
+          `いちばん細かい（/ の数字が大きい）\`/${best.prefix}\` を選びます。これを**最長一致**といいます。`;
+      } else {
+        why = `当てはまるのは \`${best.net}/${best.prefix}\` の行だけです。`;
+      }
+      const go = best.via
+        ? `次は ${ipLabel(best.via)}（\`${best.via}\`）へ、出口は \`${best.iface}\`。`
+        : `あて先は直接つながっているネットワークにいるので、\`${best.iface}\` から直接届けます。`;
+      return {
+        title: `${node.name} がルーティング表を引く`,
+        text: `あて先 \`${pkt.dst}\` を、表の各行のマスクで AND して、行のネットワークと同じになるか調べます。\n${why}\n${go}`,
+        at: id,
+        rest: [{ node: id, type: "ip" }],
+        packet: ipPacket(pkt, null),
+        table,
+      };
+    }
+
+    /** ARP で nextIp の MAC アドレスを調べる。見つかれば MAC、なければ null */
+    function resolveArp(id, ifName, nextIp, pkt) {
+      const node = NODES[id];
+      const me = node.ifaces[ifName];
+      const seg = SEGMENTS[me.seg];
+      const members = allIfaces.filter((f) => f.seg === me.seg && f.node !== id);
+      const owner = members.find((f) => f.ip === nextIp) || null;
+      const via = (a, b) => (seg.sw ? [a, seg.sw, b] : [a, b]);
+      if (seg.sw) macTable.set(me.mac, id);
+
+      add({
+        title: `${node.name} が ARP で「\`${nextIp}\` はだれ？」と全員に聞く`,
+        text:
+          `イーサネットで送るには、相手の **MAC アドレス**（機械ごとの番号）が必要です。` +
+          `${node.name} の ARP 表には \`${nextIp}\` がまだないので、同じネットワークの全員に聞きます（ブロードキャスト）。` +
+          (seg.sw ? "\nスイッチは、あて先が全員なので、すべてのポートにコピーして送ります。" : ""),
+        at: id,
+        moves: members.map((f) => via(id, f.node)),
+        rest: members.map((f) => ({ node: f.node, type: "arp" })),
+        packet: {
+          pid: `arp-${pkt.pid}-${nextIp}`,
+          type: "arp",
+          eth: { dst: BROADCAST, src: me.mac, dstLabel: macLabel(BROADCAST), srcLabel: macLabel(me.mac) },
+          arp: { op: "request", text: `${nextIp} を持っている人は、MAC アドレスを教えて（${me.ip} より）` },
+        },
+        table: arpTable(id, arp, null),
+      });
+
+      if (!owner) {
+        add({
+          title: "だれも返事をしない",
+          text: `\`${nextIp}\` を持っている機械がネットワークにいないので、MAC アドレスがわからず、送れません。`,
+          at: id,
+          rest: [{ node: id, type: "drop" }],
+          packet: null,
+          table: arpTable(id, arp, null),
+          tone: "drop",
+        });
+        return null;
+      }
+
+      // 聞かれた側は、ついでに聞いてきた相手を覚える
+      arp[owner.node].set(me.ip, me.mac);
+      if (seg.sw) macTable.set(owner.mac, owner.node);
+      arp[id].set(nextIp, owner.mac);
+      const others = members.filter((f) => f !== owner).map((f) => nameOf(f.node));
+
+      add({
+        title: `${ownerLabel(owner)} が「それはわたし」と返事`,
+        text:
+          `\`${nextIp}\` を持っている ${nameOf(owner.node)} だけが、自分の MAC アドレス \`${owner.mac}\` を返します` +
+          (others.length ? `（${others.join("、")} は自分のことではないので無視）。` : "。") +
+          `\n${node.name} は ARP 表にメモしたので、次からは聞かずに使えます。`,
+        at: owner.node,
+        moves: [via(owner.node, id)],
+        rest: [{ node: id, type: "arp" }],
+        packet: {
+          pid: `arp-${pkt.pid}-${nextIp}-r`,
+          type: "arp",
+          eth: { dst: me.mac, src: owner.mac, dstLabel: macLabel(me.mac), srcLabel: macLabel(owner.mac) },
+          arp: { op: "reply", text: `${nextIp} の MAC アドレスは ${owner.mac} です` },
+        },
+        table: arpTable(id, arp, nextIp),
+      });
+      return owner.mac;
+    }
+
+    /** フレームにして、ケーブル（とスイッチ）を通して送る */
+    function transmit(id, outName, target, pkt, eth, direct) {
+      const node = NODES[id];
+      const out = node.ifaces[outName];
+      const seg = SEGMENTS[out.seg];
+      const type = pkt.proto === "ICMP" ? "icmp" : "ip";
+      const dstName = nameOf(target.node);
+
+      let text;
+      if (node.type === "router") {
+        text =
+          `${node.name} は新しいフレームを作り直します。送信元 MAC は自分の出口 \`${outName}\` の \`${eth.src}\`、` +
+          `あて先 MAC は ${ownerLabel(target)} の \`${eth.dst}\`。` +
+          "\n**MAC アドレスは区間ごとに入れかわります**が、IP アドレスはそのままです。";
+      } else {
+        text =
+          `IP パケットをイーサネットの**フレーム**に入れて送ります。あて先 MAC は ${ownerLabel(target)} の \`${eth.dst}\`。` +
+          (direct ? "" : `\nあて先 IP は \`${pkt.dst}\` のままですが、まずは ${dstName} に渡す、という意味です。`);
+      }
+
+      if (pkt.brief) {
+        add({
+          title: `${pkt.proto} が ${node.name} → ${dstName} へ`,
+          text: node.type === "router" ? `${node.name} が中継します（TTL を 1 減らし、フレームを作り直す）。` : `${node.name} から送ります。`,
+          at: id,
+          moves: [seg.sw ? [id, seg.sw, target.node] : [id, target.node]],
+          rest: [{ node: target.node, type }],
+          packet: ipPacket(pkt, eth),
+          table: null,
+        });
+        if (seg.sw) macTable.set(eth.src, id);
+        return;
+      }
+
+      add({
+        title: `${node.name} → ${seg.sw ? nameOf(seg.sw) : dstName} へ送り出す`,
+        text,
+        at: id,
+        moves: [[id, seg.sw || target.node]],
+        rest: [{ node: seg.sw || target.node, type }],
+        packet: ipPacket(pkt, eth),
+        table: null,
+      });
+
+      if (seg.sw) {
+        macTable.set(eth.src, id);
+        const known = macTable.get(eth.dst);
+        add({
+          title: `${nameOf(seg.sw)}が ${dstName} のポートにだけ送る`,
+          text:
+            `スイッチは MAC アドレス表で、あて先 MAC \`${eth.dst}\` がどのポートの先にあるかを調べます` +
+            (known ? "（さっきの ARP のやりとりで覚えました）。" : "。") +
+            `\nスイッチは**フレームの中身を書きかえません**。MAC も IP も TTL もそのままです。`,
+          at: seg.sw,
+          moves: [[seg.sw, target.node]],
+          rest: [{ node: target.node, type }],
+          packet: ipPacket(pkt, eth),
+          table: macTableView(out.seg, macTable, eth.dst),
+        });
+      }
+    }
+
+    /** 受け取った側の処理。次に送る {node, pkt, inIf} か null */
+    function receive(id, ifName, pkt, eth) {
+      const node = NODES[id];
+      const mine = node.ifaces[ifName];
+
+      if (node.type === "host") {
+        const ok = pkt.dst === mine.ip;
+        if (pkt.proto === "ICMP") {
+          add({
+            title: `${node.name} に知らせ（ICMP）が届いた`,
+            text:
+              `「${pkt.data}」という知らせです。送ったパケットは届かなかったことがわかります。` +
+              (pkt.reason === "ttl"
+                ? "\n`traceroute`（Windows では `tracert`）は、TTL を 1, 2, 3… と増やしながら送り、この知らせを返してきたルーターを順に並べて、通り道を調べています。"
+                : ""),
+            at: id,
+            rest: [{ node: id, type: "icmp" }],
+            packet: ipPacket(pkt, eth),
+            table: null,
+            tone: "ok",
+          });
+          return null;
+        }
+        add({
+          title: ok ? `${node.name} が受け取った！` : `${node.name} あてではない`,
+          text: ok
+            ? `あて先 MAC も、あて先 IP（\`${pkt.dst}\`）も自分なので受け取ります。フレームと IP の部分を外して、中身（${pkt.data}）をプログラムにわたします。`
+            : "自分あてではないので捨てます。",
+          at: id,
+          rest: [{ node: id, type: ok ? "ip" : "drop" }],
+          packet: ipPacket(pkt, eth),
+          table: null,
+          tone: ok ? "ok" : "drop",
+        });
+        return null;
+      }
+
+      // ルーター
+      const p2 = { ...pkt, ttl: pkt.ttl - 1 };
+      if (pkt.proto !== "ICMP") hops.push(id);
+      if (!pkt.brief) {
+        add({
+          title: `${node.name} が受け取って、TTL を 1 減らす`,
+          text:
+            `あて先 MAC が自分（${node.name} の \`${ifName}\`）なので受け取り、フレームの部分を外します。` +
+            `あて先 IP \`${pkt.dst}\` は自分ではないので、**中継**します。` +
+            `\nルーターを通るたびに TTL を 1 減らします: \`${pkt.ttl}\` → \`${p2.ttl}\`。`,
+          at: id,
+          rest: [{ node: id, type: "ip" }],
+          packet: ipPacket(p2, null),
+          table: null,
+        });
+      }
+      if (p2.ttl <= 0) {
+        if (pkt.proto !== "ICMP") result = "ttl";
+        add({
+          title: `TTL が 0 になったので、${node.name} が捨てる`,
+          text:
+            "TTL が 0 になったパケットは、そこで捨てられます。" +
+            "道がぐるぐる回って（ループして）いても、パケットがネットワークにいつまでも残らないようにするためのしくみです。",
+          at: id,
+          rest: [{ node: id, type: "drop" }],
+          packet: ipPacket(p2, null),
+          table: null,
+          tone: "drop",
+        });
+        return icmpBack(id, ifName, p2, "ttl");
+      }
+      return { node: id, pkt: p2, inIf: ifName };
+    }
+
+    /** ルーターが送り主に「届かなかった」と知らせる（ICMP） */
+    function icmpBack(id, inIf, orig, reason) {
+      const node = NODES[id];
+      if (orig.proto === "ICMP" || node.type !== "router" || !inIf) return null;
+      const back = {
+        pid: ++pidSeq,
+        src: node.ifaces[inIf].ip,
+        dst: orig.src,
+        ttl: 64,
+        proto: "ICMP",
+        brief: true,
+        reason,
+        data: reason === "ttl" ? "ICMP 時間切れ（Time Exceeded）" : "ICMP あて先に届けられません（Destination Unreachable）",
+      };
+      add({
+        title: `${node.name} が送り主に知らせ（ICMP）を返す`,
+        text:
+          `だまって捨てるだけでなく、送り主 \`${orig.src}\`（${ipLabel(orig.src)}）に「${back.data}」という **ICMP** パケットを送ります。` +
+          "\nこの知らせも、ふつうのパケットと同じようにルーティング表を見て運ばれます（ここからは少し早送り）。",
+        at: id,
+        rest: [{ node: id, type: "icmp" }],
+        packet: ipPacket(back, null),
+        table: null,
+      });
+      return { node: id, pkt: back, inIf: null };
+    }
+
+    function summaryStep() {
+      const routerNames = hops.map(nameOf);
+      const lines = [];
+      if (result === "delivered") {
+        lines.push(`${nameOf(from)} から \`${dst}\` に届きました。通ったルーター: ${routerNames.length ? routerNames.join(" → ") : "なし（同じネットワークの中）"}。`);
+        lines.push("**IP アドレス**（送り主とあて先）は、最初から最後まで変わりませんでした。");
+        if (routerNames.length) {
+          lines.push("**MAC アドレス**は、ルーターを通るたびに、その区間の送り手と受け手に書きかわりました。");
+          lines.push(`**TTL** は、ルーターを ${routerNames.length} 台通ったので \`${ttl0}\` → \`${ttl0 - routerNames.length}\`。`);
+        } else {
+          lines.push("同じネットワークの中なので、ルーターは通らず、TTL も減りませんでした。スイッチは MAC アドレスだけを見て中継します。");
+        }
+      } else if (result === "ttl") {
+        lines.push(`TTL \`${ttl0}\` で送ったので、${routerNames.length} 台目の ${routerNames[routerNames.length - 1]} で TTL が 0 になり、捨てられました。`);
+        lines.push("TTL を大きくすれば、もっと先まで届きます。上の TTL の数字を変えて、どこまで届くか試してみましょう。");
+      } else if (result === "noroute") {
+        lines.push(`\`${dst}\` への道を知っているルーターがなく、途中で捨てられました。`);
+        lines.push("ルーターは、自分のルーティング表に書いてあることしか知りません。どの行にも当てはまらず、デフォルトルートもないと、パケットは捨てられます。");
+      } else {
+        lines.push(`\`${dst}\` を持っている機械が、同じネットワークにいませんでした。ARP に返事がないと、MAC アドレスがわからず送れません。`);
+      }
+      return {
+        title: "まとめ",
+        text: lines.join("\n"),
+        at: null,
+        rest: steps.length ? steps[steps.length - 1].rest : [],
+        packet: null,
+        table: null,
+        tone: result === "delivered" ? "ok" : "drop",
+        summary: true,
+      };
+    }
+  }
+
+  const api = {
+    NODES,
+    SEGMENTS,
+    DESTINATIONS,
+    SOURCES,
+    PRESETS,
+    simulate,
+    networkOf,
+    maskOf,
+    lookup,
+  };
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  else root.NetSim = api;
+})(typeof globalThis !== "undefined" ? globalThis : this);
+
+</script>
+<script>
+/* src/os.js */
+/*
+ * OS の「動く図解」の中身。
+ * いくつかのプロセスが 1 つの CPU を順番に使うようすを、時刻ごとの場面（frames）にして返します。
+ * DOM は使いません（Node でもテストできます）。
+ *
+ * 時刻の決まりごと（教科書・試験でよく使う決まりに合わせています）:
+ *   - 時刻 t の場面では、まず「t に起きたこと」を順に処理して、t から t+1 まで CPU を使うプロセスを決めます。
+ *   - 同じ時刻に列に並ぶときは、
+ *       1. 前の時刻で I/O を始めた・終わったプロセスの処理
+ *       2. 新しく到着したプロセス
+ *       3. I/O が終わったプロセス
+ *       4. 持ち時間切れ・横取りで CPU を手放したプロセス
+ *     の順に並びます。
+ *   - コンテキストスイッチにかかる時間は 0 とします。
+ *
+ * 説明文の中の `...` はコード、**...** は太字で表示されます。
+ */
+(function (root) {
+  "use strict";
+
+  const ALGOS = {
+    fcfs: { label: "到着順", long: "到着順（FCFS）", note: "先に来たプロセスから順に、終わるまで実行します。" },
+    sjf: { label: "処理時間順", long: "処理時間順（SJF）", note: "列の中で、CPU を使う時間がいちばん短いものを選びます。実行が始まったら、終わるまで続けます。" },
+    srtf: { label: "残り時間順", long: "残り時間順（SRT・横取りあり）", note: "残りの CPU 時間がいちばん短いものを実行します。もっと短いものが来たら、実行中のプロセスから CPU を横取りします。" },
+    rr: { label: "ラウンドロビン", long: "ラウンドロビン（RR）", note: "決まった持ち時間（タイムクォンタム）ずつ、順番に CPU を使います。使い切ったら列の最後に並び直します。" },
+  };
+
+  const STATE_LABEL = {
+    new: "新規（まだ来ていない）",
+    ready: "実行可能（順番待ち）",
+    running: "実行中",
+    blocked: "待ち（I/O 中）",
+    done: "終了",
+  };
+
+  const PRESETS = [
+    {
+      id: "basic",
+      label: "3つのプロセス",
+      algo: "fcfs",
+      quantum: 2,
+      procs: [
+        { arrival: 0, cpu: 5 },
+        { arrival: 1, cpu: 3 },
+        { arrival: 2, cpu: 1 },
+      ],
+    },
+    {
+      id: "rr",
+      label: "ラウンドロビン",
+      algo: "rr",
+      quantum: 2,
+      procs: [
+        { arrival: 0, cpu: 5 },
+        { arrival: 1, cpu: 3 },
+        { arrival: 2, cpu: 1 },
+      ],
+    },
+    {
+      id: "srtf",
+      label: "横取りが起きる",
+      algo: "srtf",
+      quantum: 2,
+      procs: [
+        { arrival: 0, cpu: 6 },
+        { arrival: 2, cpu: 2 },
+        { arrival: 3, cpu: 4 },
+      ],
+    },
+    {
+      id: "io",
+      label: "I/O待ちがある",
+      algo: "fcfs",
+      quantum: 2,
+      procs: [
+        { arrival: 0, cpu: 5, ioAt: 2, ioLen: 4 },
+        { arrival: 1, cpu: 3 },
+        { arrival: 2, cpu: 3, ioAt: 1, ioLen: 2 },
+      ],
+    },
+  ];
+
+  const MAX_PROCS = 5;
+  const int = (v, lo, hi, dflt) => {
+    const n = Math.floor(Number(v));
+    if (!Number.isFinite(n)) return dflt;
+    return Math.max(lo, Math.min(hi, n));
+  };
+
+  /** 入力を、安全な形にそろえる */
+  function normalize(procs) {
+    return (procs || []).slice(0, MAX_PROCS).map((p, i) => {
+      const cpu = int(p.cpu, 1, 20, 3);
+      let ioAt = p.ioAt === "" || p.ioAt == null ? null : int(p.ioAt, 1, 19, null);
+      let ioLen = p.ioLen === "" || p.ioLen == null ? null : int(p.ioLen, 1, 20, null);
+      if (ioAt == null || ioLen == null || ioAt >= cpu) ioAt = ioLen = null;
+      return { name: `P${i + 1}`, arrival: int(p.arrival, 0, 30, 0), cpu, ioAt, ioLen };
+    });
+  }
+
+  /**
+   * cfg = { algo: "fcfs"|"sjf"|"srtf"|"rr", quantum: 2, procs: [{ arrival, cpu, ioAt?, ioLen? }] }
+   * 戻り値: { frames, stats, timeline, algo, quantum }
+   *
+   * frame = {
+   *   time, title, lines: [...],
+   *   states: { P1: "ready", ... },  ready: ["P2", "P3"]（先頭から）, running: "P1" | null,
+   *   blocked: [{ name, left }], arrows: ["ready-running", ...],
+   *   procs: { P1: { used, cpu, left, wait, ioLeft } },
+   *   switchFrom, switchTo,  コンテキストスイッチ（なければ null）
+   *   end: boolean
+   * }
+   * timeline[t] = { run: "P1" | null, states: {...} }   t から t+1 までのようす（ガントチャート用）
+   */
+  function schedule(cfg) {
+    const algo = ALGOS[cfg && cfg.algo] ? cfg.algo : "fcfs";
+    const q = int(cfg && cfg.quantum, 1, 10, 2);
+    const input = normalize(cfg && cfg.procs);
+    const P = input.map((p) => {
+      const bursts = p.ioAt ? [p.ioAt, p.ioLen, p.cpu - p.ioAt] : [p.cpu];
+      return {
+        ...p,
+        bursts,
+        seg: 0,
+        left: bursts[0],
+        used: 0,
+        wait: 0,
+        state: "new",
+        ioEnd: null,
+        finish: null,
+      };
+    });
+
+    const frames = [];
+    const timeline = [];
+    const ready = [];
+    let running = null;
+    let slice = 0; // いまのプロセスが続けて使った時間（ラウンドロビン用）
+    let lastRan = null; // 1つ前の時間に CPU を使っていたプロセス
+    let carry = []; // 前の時間の終わりに起きたこと
+    const LIMIT = 400;
+
+    for (let t = 0; t <= LIMIT; t++) {
+      const ev = carry;
+      carry = [];
+
+      for (const p of P)
+        if (p.state === "new" && p.arrival === t) {
+          p.state = "ready";
+          ready.push(p);
+          ev.push({ type: "arrive", p: p.name });
+        }
+      for (const p of P)
+        if (p.state === "blocked" && p.ioEnd === t) {
+          p.state = "ready";
+          ready.push(p);
+          ev.push({ type: "io-done", p: p.name });
+        }
+
+      if (running) {
+        if (algo === "rr" && slice >= q) {
+          if (ready.length) {
+            running.state = "ready";
+            ready.push(running);
+            ev.push({ type: "quantum", p: running.name });
+            running = null;
+          } else {
+            ev.push({ type: "quantum-again", p: running.name });
+            slice = 0;
+          }
+        } else if (algo === "srtf") {
+          const s = shortest(ready);
+          if (s && s.left < running.left) {
+            ev.push({ type: "preempt", p: running.name, by: s.name, left: running.left, byLeft: s.left });
+            running.state = "ready";
+            ready.push(running);
+            running = null;
+          }
+        }
+      }
+
+      let switchFrom = null;
+      let switchTo = null;
+      if (!running && ready.length) {
+        const snapshot = ready.map((p) => ({ name: p.name, left: p.left }));
+        const pick = algo === "sjf" || algo === "srtf" ? shortest(ready) : ready[0];
+        ready.splice(ready.indexOf(pick), 1);
+        pick.state = "running";
+        running = pick;
+        slice = 0;
+        if (lastRan && lastRan !== pick) {
+          switchFrom = lastRan.name;
+          switchTo = pick.name;
+        }
+        ev.push({
+          type: "dispatch",
+          p: pick.name,
+          candidates: snapshot,
+          from: switchFrom,
+          fromState: lastRan && lastRan.state,
+          fresh: pick.used === 0,
+        });
+      } else if (running && running === lastRan && !ev.some((e) => e.type === "quantum-again")) {
+        ev.push({ type: "continue", p: running.name });
+      }
+      if (!running && P.some((p) => p.state !== "done")) ev.push({ type: "idle" });
+
+      const end = P.every((p) => p.state === "done");
+      frames.push(makeFrame(t, ev, switchFrom, switchTo, end));
+      if (end) break;
+
+      // t から t+1 まで
+      timeline.push({ run: running ? running.name : null, states: Object.fromEntries(P.map((p) => [p.name, p.state])) });
+      for (const p of P) if (p.state === "ready") p.wait++;
+      lastRan = running;
+      if (running) {
+        running.left--;
+        running.used++;
+        slice++;
+        if (running.left === 0) {
+          running.seg++;
+          if (running.seg < running.bursts.length) {
+            running.state = "blocked";
+            running.ioEnd = t + 1 + running.bursts[running.seg];
+            running.seg++;
+            running.left = running.bursts[running.seg];
+            carry.push({ type: "io-start", p: running.name, len: running.bursts[running.seg - 1] });
+          } else {
+            running.state = "done";
+            running.finish = t + 1;
+            carry.push({ type: "exit", p: running.name });
+          }
+          running = null;
+        }
+      }
+    }
+
+    const stats = P.map((p) => {
+      const io = p.ioLen || 0;
+      const turnaround = p.finish - p.arrival;
+      return { name: p.name, arrival: p.arrival, cpu: p.cpu, io, finish: p.finish, turnaround, wait: turnaround - p.cpu - io };
+    });
+    const avg = (k) => (stats.length ? stats.reduce((s, x) => s + x[k], 0) / stats.length : 0);
+    return {
+      algo,
+      quantum: q,
+      procs: input,
+      frames,
+      timeline,
+      stats,
+      average: { wait: avg("wait"), turnaround: avg("turnaround") },
+    };
+
+    // ---- ここから下は schedule の中だけで使う関数 ----
+
+    function shortest(list) {
+      let best = null;
+      for (const p of list) if (!best || p.left < best.left) best = p;
+      return best;
+    }
+
+    function makeFrame(t, ev, switchFrom, switchTo, end) {
+      const lines = [];
+      const arrows = new Set();
+      const L = (s) => lines.push(s);
+      const reasonOf = (e) => {
+        if (algo === "fcfs") return "列の先頭（いちばん先に並んだ）だから";
+        if (algo === "rr") return "列の先頭だから";
+        const list = e.candidates.map((c) => `${c.name}: ${c.left}`).join("、");
+        return e.candidates.length > 1
+          ? `列の中で、${algo === "sjf" ? "CPU を使う時間" : "残りの CPU 時間"}がいちばん短いから（${list}）`
+          : "列にいるのが 1 つだけだから";
+      };
+
+      for (const e of ev) {
+        const p = e.p;
+        switch (e.type) {
+          case "exit":
+            arrows.add("running-done");
+            L(`**${p} が終わった。** CPU の仕事をぜんぶ終えて「終了」になります。`);
+            break;
+          case "io-start":
+            arrows.add("running-blocked");
+            L(
+              `**${p} が I/O を始めた。** ファイルの読み書きなどを ${e.len} の間待つので、CPU を手放して「待ち」になります。` +
+                "待っている間 CPU を遊ばせないよう、ほかのプロセスに使わせます。"
+            );
+            break;
+          case "arrive":
+            arrows.add("new-ready");
+            L(`**${p} が到着。** 実行可能キュー（CPU の順番待ちの列）の最後に並びます。`);
+            break;
+          case "io-done":
+            arrows.add("blocked-ready");
+            L(`**${p} の I/O が終わった。** すぐに CPU には戻れず、「実行可能」になって列の最後に並びます。`);
+            break;
+          case "quantum":
+            arrows.add("running-ready");
+            L(`**${p} は持ち時間（タイムクォンタム ${q}）を使い切った。** CPU を手放して、列の最後に並び直します。`);
+            break;
+          case "quantum-again":
+            L(`${p} は持ち時間（${q}）を使い切りましたが、列にだれもいないので、そのまま続けて実行します。`);
+            break;
+          case "preempt":
+            arrows.add("running-ready");
+            L(
+              `**${e.by} が ${p} から CPU を横取り。** ${e.by} の残り（${e.byLeft}）が、実行中の ${p} の残り（${e.left}）より短いからです。` +
+                `${p} は列に戻ります。`
+            );
+            break;
+          case "dispatch":
+            arrows.add("ready-running");
+            L(`**${p} を CPU で実行**します（ディスパッチ）。${reasonOf(e)}です。`);
+            if (e.from) {
+              const save =
+                e.fromState === "done"
+                  ? `${e.from} はもう終わったので保存はいらず、`
+                  : `${e.from} がどこまで進んだか（プログラムカウンタやレジスタの中身）を ${e.from} の **PCB** に保存し、`;
+              const load = e.fresh ? `${p} は初めて動くので、最初から動かします。` : `${p} の PCB から読み出して、${p} の続きから動かします。`;
+              L(`CPU を ${e.from} から ${p} に切りかえます（**コンテキストスイッチ**）。${save}${load}`);
+            }
+            break;
+          case "continue":
+            L(`${p} がそのまま実行を続けます。`);
+            break;
+          case "idle":
+            L("実行できるプロセスがないので、CPU はひま（アイドル）です。");
+            break;
+        }
+      }
+      if (end) {
+        L("すべてのプロセスが終わりました。下の表で、待ち時間とターンアラウンドタイムを確かめましょう。");
+      }
+
+      const disp = ev.find((e) => e.type === "dispatch");
+      let title = `時刻 ${t}`;
+      if (end) title += "：ぜんぶ終了";
+      else if (switchFrom) title += `：${switchFrom} → ${switchTo} に切りかえ`;
+      else if (disp) title += `：${disp.p} を実行`;
+      else if (running) title += `：${running.name} が実行中`;
+      else title += "：CPU はひま";
+
+      return {
+        time: t,
+        title,
+        lines,
+        events: ev,
+        arrows: [...arrows],
+        states: Object.fromEntries(P.map((p) => [p.name, p.state])),
+        ready: ready.map((p) => p.name),
+        running: running ? running.name : null,
+        blocked: P.filter((p) => p.state === "blocked").map((p) => ({ name: p.name, left: p.ioEnd - t })),
+        procs: Object.fromEntries(
+          P.map((p) => [
+            p.name,
+            {
+              used: p.used,
+              cpu: p.cpu,
+              left: p.cpu - p.used,
+              wait: p.wait,
+              ioLeft: p.state === "blocked" ? p.ioEnd - t : null,
+              finish: p.finish,
+            },
+          ])
+        ),
+        switchFrom,
+        switchTo,
+        end,
+      };
+    }
+  }
+
+  const api = { ALGOS, STATE_LABEL, PRESETS, MAX_PROCS, normalize, schedule };
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  else root.OsSim = api;
+})(typeof globalThis !== "undefined" ? globalThis : this);
+
+</script>
+<script>
+/* src/app.js */
+/* 画面の動き。net.js と os.js を先に読みこんでください。 */
+(function () {
+  "use strict";
+  const Net = window.NetSim;
+  const Os = window.OsSim;
+  const SVGNS = "http://www.w3.org/2000/svg";
+  const $ = (id) => document.getElementById(id);
+  const reduceMotion = () => window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // ---------- 小さな道具 ----------
+  /** `code` と **太字** を要素にする（文字はすべて textContent で入れる） */
+  function rich(el, text) {
+    String(text)
+      .split(/(`[^`]+`|\*\*[^*]+\*\*)/)
+      .forEach((part) => {
+        if (!part) return;
+        if (part[0] === "`" && part.length > 1) {
+          const c = document.createElement("code");
+          c.textContent = part.slice(1, -1);
+          el.appendChild(c);
+        } else if (part.startsWith("**")) {
+          el.appendChild(rich(document.createElement("b"), part.slice(2, -2)));
+        } else el.appendChild(document.createTextNode(part));
+      });
+    return el;
+  }
+  function h(tag, cls, text) {
+    const el = document.createElement(tag);
+    if (cls) el.className = cls;
+    if (text !== undefined && text !== null) rich(el, text);
+    return el;
+  }
+  function s(tag, attrs, parent) {
+    const el = document.createElementNS(SVGNS, tag);
+    for (const [k, v] of Object.entries(attrs || {})) el.setAttribute(k, v);
+    if (parent) parent.appendChild(el);
+    return el;
+  }
+  function stext(parent, x, y, text, cls, anchor) {
+    const t = s("text", { x, y, class: cls || "" }, parent);
+    if (anchor) t.setAttribute("text-anchor", anchor);
+    t.textContent = text;
+    return t;
+  }
+  const store = {
+    get(k) {
+      try {
+        return localStorage.getItem(k);
+      } catch (e) {
+        return null;
+      }
+    },
+    set(k, v) {
+      try {
+        localStorage.setItem(k, v);
+      } catch (e) {
+        /* 保存できなくても動く */
+      }
+    },
+  };
+
+  function narrate(box, title, lines, stepText, tone) {
+    box.replaceChildren();
+    const head = h("div", "narr-head");
+    head.appendChild(h("span", "step-no", stepText));
+    head.appendChild(h("h2", "", title));
+    box.appendChild(head);
+    const body = h("div", "narr-text");
+    lines.forEach((l) => body.appendChild(h("p", "", l)));
+    box.appendChild(body);
+    if (tone) box.dataset.tone = tone;
+    else delete box.dataset.tone;
+  }
+
+  function table(cols, rows, opts) {
+    opts = opts || {};
+    const t = h("table", "t" + (opts.cls ? " " + opts.cls : ""));
+    const thead = h("thead");
+    const tr = h("tr");
+    cols.forEach((c, i) => {
+      const th = h("th", opts.numCols && opts.numCols.includes(i) ? "num" : "", c);
+      th.scope = "col";
+      tr.appendChild(th);
+    });
+    thead.appendChild(tr);
+    t.appendChild(thead);
+    const tb = h("tbody");
+    rows.forEach((r, ri) => {
+      const row = h("tr", (opts.state && opts.state[ri]) || "");
+      r.forEach((cell, ci) => {
+        const td = h("td", opts.numCols && opts.numCols.includes(ci) ? "num" : opts.mono && opts.mono.includes(ci) ? "mono" : "");
+        if (cell instanceof Node) td.appendChild(cell);
+        else rich(td, cell);
+        row.appendChild(td);
+      });
+      tb.appendChild(row);
+    });
+    t.appendChild(tb);
+    const wrap = h("div", "tbl-wrap");
+    wrap.appendChild(t);
+    return wrap;
+  }
+
+  // ---------- 1ステップずつ進めるボタン ----------
+  const SPEEDS = { slow: 1.6, normal: 1, fast: 0.55 };
+
+  function makePlayer(root, opts) {
+    let n = 0;
+    let i = 0;
+    let timer = 0;
+    let playing = false;
+
+    const btn = (label, cls, aria) => {
+      const b = h("button", "pbtn" + (cls ? " " + cls : ""), label);
+      b.type = "button";
+      if (aria) b.setAttribute("aria-label", aria);
+      root.appendChild(b);
+      return b;
+    };
+    const first = btn("⏮", "", "最初にもどる");
+    const prev = btn("◀ 前へ", "");
+    const next = btn("次へ ▶", "pbtn-main");
+    const play = btn("▶ 自動", "");
+    const speed = h("select", "speed");
+    speed.setAttribute("aria-label", "自動で進む速さ");
+    [
+      ["slow", "ゆっくり"],
+      ["normal", "ふつう"],
+      ["fast", "はやい"],
+    ].forEach(([v, l]) => {
+      const o = h("option", "", l);
+      o.value = v;
+      speed.appendChild(o);
+    });
+    speed.value = store.get("zukai-speed") || "normal";
+    root.appendChild(speed);
+    const bar = h("div", "pbar");
+    bar.setAttribute("role", "group");
+    bar.setAttribute("aria-label", "ステップの場所");
+    root.appendChild(bar);
+
+    const factor = () => SPEEDS[speed.value] || 1;
+
+    function stop() {
+      playing = false;
+      clearTimeout(timer);
+      play.textContent = "▶ 自動";
+      play.setAttribute("aria-pressed", "false");
+    }
+    function schedule() {
+      clearTimeout(timer);
+      if (!playing) return;
+      if (i >= n - 1) return stop();
+      timer = setTimeout(() => {
+        go(i + 1, true);
+        schedule();
+      }, opts.delay(i) * factor());
+    }
+    function paint() {
+      first.disabled = prev.disabled = i <= 0;
+      next.disabled = i >= n - 1;
+      [...bar.children].forEach((b, j) => {
+        b.className = j < i ? "past" : j === i ? "now" : "";
+        if (j === i) b.setAttribute("aria-current", "step");
+        else b.removeAttribute("aria-current");
+      });
+    }
+    function go(j, animate) {
+      j = Math.max(0, Math.min(n - 1, j));
+      const forward = j === i + 1;
+      i = j;
+      paint();
+      opts.onShow(i, animate && forward, factor());
+    }
+    function setCount(count) {
+      stop();
+      n = count;
+      bar.replaceChildren();
+      for (let j = 0; j < n; j++) {
+        const b = h("button");
+        b.type = "button";
+        b.setAttribute("aria-label", `ステップ ${j + 1}`);
+        b.addEventListener("click", () => {
+          stop();
+          go(j, false);
+        });
+        bar.appendChild(b);
+      }
+      i = 0;
+      paint();
+      opts.onShow(0, false, factor());
+    }
+
+    first.addEventListener("click", () => {
+      stop();
+      go(0, false);
+    });
+    prev.addEventListener("click", () => {
+      stop();
+      go(i - 1, false);
+    });
+    next.addEventListener("click", () => {
+      stop();
+      go(i + 1, true);
+    });
+    play.addEventListener("click", () => {
+      if (playing) return stop();
+      if (i >= n - 1) go(0, false);
+      playing = true;
+      play.textContent = "⏸ 止める";
+      play.setAttribute("aria-pressed", "true");
+      go(i + 1, true);
+      schedule();
+    });
+    speed.addEventListener("change", () => store.set("zukai-speed", speed.value));
+
+    return {
+      setCount,
+      stop,
+      prev: () => (stop(), go(i - 1, false)),
+      next: () => (stop(), go(i + 1, true)),
+      get index() {
+        return i;
+      },
+      get count() {
+        return n;
+      },
+    };
+  }
+
+  // =====================================================================
+  //  ネットワーク
+  // =====================================================================
+  const net = {
+    steps: [],
+    svg: $("net-svg"),
+    nodeEls: {},
+    tokLayer: null,
+    raf: 0,
+  };
+
+  // 横長（パソコン）と縦長（スマホ）の2つの配置
+  const narrow = window.matchMedia ? window.matchMedia("(max-width: 720px)") : { matches: false };
+  const NET_LAYOUT = {
+    wide: {
+      viewBox: "0 0 860 330",
+      maxWidth: "1000px",
+      pos: (id) => [Net.NODES[id].x, Net.NODES[id].y],
+      labels: { lan1: [210, 222, "middle"], l12: [458, 98, "middle"], l13: [458, 240, "middle"], lan2: [700, 62, "middle"], lan3: [700, 244, "middle"] },
+      ifK: 0.36,
+    },
+    tall: {
+      viewBox: "0 0 360 690",
+      maxWidth: "440px",
+      pos: (id) =>
+        ({ pca: [70, 50], pcb: [290, 50], sw1: [180, 160], r1: [180, 300], r2: [70, 460], r3: [290, 460], srv: [70, 620], srv2: [290, 620] }[id]),
+      labels: { lan1: [196, 236, "start"], l12: [58, 372, "middle"], l13: [302, 372, "middle"], lan2: [130, 545, "middle"], lan3: [230, 545, "middle"] },
+      ifK: 0.45,
+    },
+  };
+  const netLayout = () => (narrow.matches ? NET_LAYOUT.tall : NET_LAYOUT.wide);
+
+  function drawNet() {
+    const svg = net.svg;
+    const LY = netLayout();
+    svg.setAttribute("viewBox", LY.viewBox);
+    svg.style.maxWidth = LY.maxWidth;
+    svg.replaceChildren();
+    net.nodeEls = {};
+    const wires = s("g", {}, svg);
+    const labels = s("g", {}, svg);
+    const nodesG = s("g", {}, svg);
+    net.tokLayer = s("g", {}, svg);
+
+    const N = Net.NODES;
+    const membersOf = (seg) =>
+      Object.entries(N)
+        .filter(([, n]) => n.ifaces && Object.values(n.ifaces).some((f) => f.seg === seg))
+        .map(([id]) => id);
+
+    for (const [segId, seg] of Object.entries(Net.SEGMENTS)) {
+      const mem = membersOf(segId);
+      const pairs = seg.sw ? mem.map((m) => [seg.sw, m]) : [[mem[0], mem[1]]];
+      for (const [a, b] of pairs) {
+        const [x1, y1] = LY.pos(a);
+        const [x2, y2] = LY.pos(b);
+        s("line", { x1, y1, x2, y2, class: "wire" }, wires);
+      }
+      const [lx, ly, anchor] = LY.labels[segId] || [0, 0, "middle"];
+      stext(labels, lx, ly, seg.net, "net-label", anchor);
+    }
+    // ルーターの口（インターフェース）の名前と IP の最後の数字
+    for (const [id, n] of Object.entries(N)) {
+      if (n.type !== "router") continue;
+      for (const [ifName, f] of Object.entries(n.ifaces)) {
+        const seg = Net.SEGMENTS[f.seg];
+        const other = seg.sw || membersOf(f.seg).find((m) => m !== id);
+        const [nx, ny] = LY.pos(id);
+        const [ox, oy] = LY.pos(other);
+        const x = nx + (ox - nx) * LY.ifK;
+        const y = ny + (oy - ny) * LY.ifK + 4;
+        stext(labels, x, y, `${ifName} .${f.ip.split(".").pop()}`, "if-label", "middle");
+      }
+    }
+
+    for (const [id, n] of Object.entries(N)) {
+      const [nx, ny] = LY.pos(id);
+      const g = s("g", { class: "node", transform: `translate(${nx} ${ny})` }, nodesG);
+      s("circle", { r: 40, class: "halo" }, g);
+      if (n.type === "host") {
+        s("rect", { x: -22, y: -18, width: 44, height: 30, rx: 4, class: "shape" }, g);
+        s("path", { d: "M-8 18 H8 M0 12 V18", class: "glyph" }, g);
+        stext(g, 0, 40, n.name, "name", "middle");
+        stext(g, 0, 55, Object.values(n.ifaces)[0].ip, "addr", "middle");
+      } else if (n.type === "router") {
+        s("circle", { r: 24, class: "shape" }, g);
+        s("path", { d: "M-12 -4 H10 M5 -9 L10 -4 L5 1 M12 6 H-10 M-5 1 L-10 6 L-5 11", class: "glyph" }, g);
+        stext(g, 0, 44, n.name, "name", "middle");
+        stext(g, 0, 59, "ルーター", "addr", "middle");
+      } else {
+        s("rect", { x: -30, y: -14, width: 60, height: 28, rx: 5, class: "shape" }, g);
+        s("path", { d: "M-20 5 h6 M-7 5 h6 M6 5 h6 M-18 -5 H18", class: "glyph" }, g);
+        stext(g, 0, 34, n.name, "name", "middle");
+      }
+      net.nodeEls[id] = g;
+    }
+  }
+
+  const TOKEN_TEXT = { ip: "IP", arp: "ARP", icmp: "ICMP", drop: "✕" };
+  function token(type, x, y) {
+    const g = s("g", { class: `tok tok-${type}`, transform: `translate(${x} ${y})` }, net.tokLayer);
+    const w = type === "icmp" ? 44 : 36;
+    s("rect", { x: -w / 2, y: -11, width: w, height: 22, rx: 5 }, g);
+    stext(g, 0, 4, TOKEN_TEXT[type] || "IP", "", "middle");
+    return g;
+  }
+  const center = (id) => netLayout().pos(id);
+  const perch = (id) => {
+    const [x, y] = netLayout().pos(id);
+    return [x, y - (Net.NODES[id].type === "switch" ? 30 : 36)];
+  };
+
+  function placeTokens(rest) {
+    cancelAnimationFrame(net.raf);
+    net.tokLayer.replaceChildren();
+    for (const r of rest || []) token(r.type, ...perch(r.node));
+  }
+
+  function animateMoves(moves, type, rest, factor) {
+    cancelAnimationFrame(net.raf);
+    net.tokLayer.replaceChildren();
+    const paths = moves.map((ids) => {
+      const pts = [perch(ids[0]), ...ids.map(center), perch(ids[ids.length - 1])];
+      const lens = [];
+      let total = 0;
+      for (let k = 1; k < pts.length; k++) {
+        const d = Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]);
+        lens.push(d);
+        total += d;
+      }
+      return { pts, lens, total, el: token(type, ...pts[0]) };
+    });
+    const longest = Math.max(...paths.map((p) => p.total));
+    const dur = Math.max(600, Math.min(1900, (longest / 340) * 1000)) * factor;
+    const t0 = performance.now();
+    const ease = (x) => (x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2);
+    const frame = (now) => {
+      const p = Math.min(1, (now - t0) / dur);
+      const e = ease(p);
+      for (const path of paths) {
+        let d = e * path.total;
+        let k = 0;
+        while (k < path.lens.length - 1 && d > path.lens[k]) d -= path.lens[k++];
+        const a = path.pts[k];
+        const b = path.pts[k + 1];
+        const f = path.lens[k] ? Math.min(1, d / path.lens[k]) : 1;
+        path.el.setAttribute("transform", `translate(${a[0] + (b[0] - a[0]) * f} ${a[1] + (b[1] - a[1]) * f})`);
+      }
+      if (p < 1) net.raf = requestAnimationFrame(frame);
+      else placeTokens(rest);
+    };
+    net.raf = requestAnimationFrame(frame);
+  }
+
+  function packetPanel(i) {
+    const box = $("net-packet");
+    box.replaceChildren();
+    const st = net.steps[i];
+    const pk = st.packet;
+    if (!pk) {
+      box.appendChild(h("p", "empty", st.summary ? "上の「まとめ」を読んで、もう一度最初から見たり、送り先や TTL を変えたりしてみましょう。" : "このステップではパケットはありません。"));
+      return;
+    }
+    // ひとつ前の、同じパケットのようす（変わったところに色をつける）
+    let prevIp = null;
+    let prevEth = null;
+    for (let j = i - 1; j >= 0; j--) {
+      const q = net.steps[j].packet;
+      if (!q || q.pid !== pk.pid) continue;
+      if (!prevIp && q.ip) prevIp = q.ip;
+      if (!prevEth && q.eth) prevEth = q.eth;
+      if (prevIp && prevEth) break;
+    }
+    const wrap = h("div", "pkt");
+    const kv = (rows) => {
+      const dl = h("dl", "kv");
+      for (const [label, value, sub, changed] of rows) {
+        dl.appendChild(h("dt", "", label));
+        const dd = h("dd", changed ? "changed" : "");
+        const c = h("code");
+        c.textContent = value;
+        dd.appendChild(c);
+        if (sub) dd.appendChild(h("small", "", sub));
+        dl.appendChild(dd);
+      }
+      return dl;
+    };
+
+    const l2 = h("div", "layer l2" + (pk.eth ? "" : " off"));
+    const l2h = h("h4", "", "イーサネット（フレーム）");
+    l2h.appendChild(h("small", "", "となりの機械まで"));
+    l2.appendChild(l2h);
+    if (pk.eth) {
+      l2.appendChild(
+        kv([
+          ["あて先 MAC", pk.eth.dst, pk.eth.dstLabel, prevEth && prevEth.dst !== pk.eth.dst],
+          ["送信元 MAC", pk.eth.src, pk.eth.srcLabel, prevEth && prevEth.src !== pk.eth.src],
+        ])
+      );
+    } else {
+      l2.appendChild(h("p", "empty", "まだ付けていない／ルーターの中では外してある"));
+    }
+    wrap.appendChild(l2);
+
+    if (pk.arp) {
+      const a = h("div", "layer l3");
+      a.appendChild(h("h4", "", pk.arp.op === "request" ? "ARP 問い合わせ" : "ARP 返事"));
+      a.appendChild(h("p", "", pk.arp.text));
+      wrap.appendChild(a);
+    } else {
+      const l3 = h("div", "layer l3");
+      const l3h = h("h4", "", "IP");
+      l3h.appendChild(h("small", "", "最後のあて先まで"));
+      l3.appendChild(l3h);
+      l3.appendChild(
+        kv([
+          ["送り主 IP", pk.ip.src, pk.ip.srcLabel, prevIp && prevIp.src !== pk.ip.src],
+          ["あて先 IP", pk.ip.dst, pk.ip.dstLabel, prevIp && prevIp.dst !== pk.ip.dst],
+          ["TTL", String(pk.ip.ttl), "あと何台のルーターを通れるか", prevIp && prevIp.ttl !== pk.ip.ttl],
+        ])
+      );
+      wrap.appendChild(l3);
+      const l4 = h("div", "layer l4");
+      l4.appendChild(h("h4", "", "中身（データ）"));
+      l4.appendChild(h("p", "", pk.data));
+      wrap.appendChild(l4);
+    }
+    box.appendChild(wrap);
+    box.appendChild(h("p", "legend-note", "上が外側のヘッダーです。黄色は、前のステップから変わったところ。"));
+  }
+
+  function tablePanel(st) {
+    const box = $("net-table");
+    const title = $("net-table-title");
+    box.replaceChildren();
+    const tb = st.table;
+    if (!tb) {
+      title.textContent = "表";
+      box.appendChild(h("p", "empty", "このステップでは表を使いません。ルーティング表・ARP 表・スイッチの MAC アドレス表は、使うときにここに出ます。"));
+      return;
+    }
+    title.textContent = tb.title;
+    if (!tb.rows.length) {
+      box.appendChild(h("p", "empty", `（${tb.empty || "空"}）`));
+      return;
+    }
+    let cols = tb.cols;
+    let rows = tb.rows;
+    if (tb.calc) {
+      cols = [...cols, "あて先 AND マスク"];
+      rows = rows.map((r, k) => {
+        const c = tb.calc[k];
+        const span = h("span", c.ok ? "ok" : "ng", `${c.text.split(" = ")[1]} ${c.ok ? "✓" : "✕"}`);
+        span.title = c.text;
+        return [...r, span];
+      });
+    }
+    box.appendChild(table(cols, rows, { state: tb.state, mono: tb.kind === "route" ? [0, 3] : [0, 1] }));
+    if (tb.calc) {
+      box.appendChild(
+        h(
+          "p",
+          "t-note",
+          "あて先 IP を各行のマスク（`/24` なら `255.255.255.0`）で AND して、行のネットワークと同じなら当てはまる（✓）。✓ がいくつもあれば、`/` の数字がいちばん大きい行を使う（最長一致）。"
+        )
+      );
+    } else if (tb.kind === "arp") {
+      box.appendChild(h("p", "t-note", "ARP 表は、同じネットワークの相手の「IP アドレス → MAC アドレス」のメモです。"));
+    } else if (tb.kind === "mac") {
+      box.appendChild(h("p", "t-note", "スイッチは、届いたフレームの送信元 MAC を見て「この MAC はこのポートの先にいる」と覚えます。"));
+    }
+  }
+
+  function showNet(i, animate, factor) {
+    const st = net.steps[i];
+    for (const [id, el] of Object.entries(net.nodeEls)) el.classList.toggle("on", id === st.at);
+    const type = st.packet ? st.packet.type : (st.rest[0] && st.rest[0].type) || "ip";
+    if (animate && st.moves && st.moves.length && !reduceMotion()) animateMoves(st.moves, type, st.rest, factor);
+    else placeTokens(st.rest);
+    narrate($("net-narr"), st.title, st.text.split("\n"), `${i + 1} / ${net.steps.length}`, st.tone);
+    packetPanel(i);
+    tablePanel(st);
+  }
+
+  const netPlayer = makePlayer($("net-player"), {
+    onShow: showNet,
+    delay: (i) => (net.steps[i + 1] && net.steps[i + 1].moves ? 2600 : 2300),
+  });
+
+  const netFrom = $("net-from");
+  const netTo = $("net-to");
+  const netTtl = $("net-ttl");
+
+  function runNet() {
+    const r = Net.simulate({ from: netFrom.value, to: netTo.value, ttl: netTtl.value });
+    net.steps = r.steps;
+    for (const b of $("net-presets").querySelectorAll("button")) {
+      const p = Net.PRESETS.find((x) => x.id === b.dataset.id);
+      const on = p.from === netFrom.value && p.to === netTo.value && Number(p.ttl) === Number(netTtl.value);
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+    }
+    netPlayer.setCount(net.steps.length);
+  }
+
+  function initNet() {
+    for (const id of Net.SOURCES) {
+      const n = Net.NODES[id];
+      const o = h("option", "", `${n.name}（${Object.values(n.ifaces)[0].ip}）`);
+      o.value = id;
+      netFrom.appendChild(o);
+    }
+    for (const d of Net.DESTINATIONS) {
+      const o = h("option", "", d.label);
+      o.value = d.ip;
+      netTo.appendChild(o);
+    }
+    for (const p of Net.PRESETS) {
+      const b = h("button", "chip-btn", p.label);
+      b.type = "button";
+      b.dataset.id = p.id;
+      b.addEventListener("click", () => {
+        netFrom.value = p.from;
+        netTo.value = p.to;
+        netTtl.value = p.ttl;
+        runNet();
+      });
+      $("net-presets").appendChild(b);
+    }
+    netFrom.value = "pca";
+    netTo.value = "172.16.1.80";
+    netFrom.addEventListener("change", runNet);
+    netTo.addEventListener("change", runNet);
+    let t = 0;
+    netTtl.addEventListener("input", () => {
+      clearTimeout(t);
+      t = setTimeout(runNet, 350);
+    });
+    drawNet();
+    runNet();
+  }
+
+  // =====================================================================
+  //  OS
+  // =====================================================================
+  const os = {
+    cfg: null,
+    run: null,
+    svg: $("os-svg"),
+    toks: {},
+    arrows: {},
+    swap: null,
+  };
+
+  const OS_LAYOUT = {
+    wide: {
+      viewBox: "0 0 660 336",
+      maxWidth: "760px",
+      head: [338, 152, "先頭 →", "end"],
+      swap: [628, 152],
+      box: {
+        new: { x: 20, y: 12, w: 230, h: 84, label: "新規", sub: "まだ来ていない" },
+        done: { x: 410, y: 12, w: 230, h: 84, label: "終了", sub: "" },
+        ready: { x: 20, y: 132, w: 330, h: 84, label: "実行可能", sub: "CPU の順番待ちの列" },
+        running: { x: 440, y: 132, w: 200, h: 84, label: "実行中", sub: "CPU" },
+        blocked: { x: 190, y: 246, w: 280, h: 80, label: "待ち", sub: "I/O が終わるのを待つ" },
+      },
+      arrows: {
+        "new-ready": { d: "M135 96 L135 130", label: "到着", lx: 145, ly: 118, anchor: "start" },
+        "ready-running": { d: "M350 160 L438 160", label: "ディスパッチ", lx: 395, ly: 124, anchor: "middle" },
+        "running-ready": { d: "M440 192 L352 192", label: "時間切れ・横取り", lx: 395, ly: 236, anchor: "middle" },
+        "running-done": { d: "M540 132 L540 98", label: "終了", lx: 550, ly: 120, anchor: "start" },
+        "running-blocked": { d: "M560 216 C560 262 530 286 472 286", label: "I/O を始める", lx: 566, ly: 268, anchor: "start" },
+        "blocked-ready": { d: "M190 286 C140 286 112 262 112 218", label: "I/O 完了", lx: 100, ly: 262, anchor: "end" },
+      },
+      slot: {
+        new: (k) => [52 + k * 44, 60],
+        ready: (k) => [316 - k * 44, 180],
+        running: () => [540, 178],
+        blocked: (k) => [230 + k * 44, 290],
+        done: (k) => [442 + k * 44, 60],
+      },
+    },
+    tall: {
+      viewBox: "0 0 360 486",
+      maxWidth: "440px",
+      head: [338, 152, "左が先頭", "end"],
+      swap: [148, 290],
+      box: {
+        new: { x: 10, y: 10, w: 340, h: 84, label: "新規", sub: "まだ来ていない" },
+        ready: { x: 10, y: 132, w: 340, h: 84, label: "実行可能", sub: "順番待ちの列" },
+        running: { x: 10, y: 270, w: 150, h: 84, label: "実行中", sub: "" },
+        blocked: { x: 210, y: 270, w: 140, h: 84, label: "待ち", sub: "I/O 中" },
+        done: { x: 10, y: 392, w: 340, h: 84, label: "終了", sub: "" },
+      },
+      arrows: {
+        "new-ready": { d: "M60 94 L60 130", label: "到着", lx: 70, ly: 118, anchor: "start" },
+        "ready-running": { d: "M60 216 L60 268", label: "ディスパッチ", lx: 68, ly: 247, anchor: "start" },
+        "running-ready": { d: "M140 270 L140 218", label: "時間切れ・横取り", lx: 148, ly: 247, anchor: "start" },
+        "running-done": { d: "M60 354 L60 390", label: "終了", lx: 70, ly: 378, anchor: "start" },
+        "running-blocked": { d: "M160 318 L208 318", label: "I/O", lx: 185, ly: 306, anchor: "middle" },
+        "blocked-ready": { d: "M300 270 L300 218", label: "I/O 完了", lx: 296, ly: 247, anchor: "end" },
+      },
+      slot: {
+        new: (k) => [40 + k * 44, 58],
+        ready: (k) => [40 + k * 44, 180],
+        running: () => [85, 318],
+        blocked: (k, n) => [234 + k * (n > 3 ? 72 / (n - 1) : 36), 318],
+        done: (k) => [40 + k * 44, 440],
+      },
+    },
+  };
+  const osLayout = () => (narrow.matches ? OS_LAYOUT.tall : OS_LAYOUT.wide);
+
+  function drawOsBase() {
+    const svg = os.svg;
+    const LY = osLayout();
+    svg.setAttribute("viewBox", LY.viewBox);
+    svg.style.maxWidth = LY.maxWidth;
+    svg.replaceChildren();
+    os.arrows = {};
+    const defs = s("defs", {}, svg);
+    for (const [id, color] of [
+      ["ah", "var(--wire)"],
+      ["ah-on", "var(--accent)"],
+    ]) {
+      const m = s("marker", { id, viewBox: "0 0 10 10", refX: 8, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto-start-reverse" }, defs);
+      const p = s("path", { d: "M0 0 L10 5 L0 10 z" }, m);
+      p.style.fill = color;
+    }
+    for (const [k, b] of Object.entries(LY.box)) {
+      s("rect", { x: b.x, y: b.y, width: b.w, height: b.h, rx: 10, class: "sbox" + (k === "running" ? " sbox-run" : "") }, svg);
+      const t = stext(svg, b.x + 12, b.y + 20, b.label, "slabel");
+      if (b.sub) {
+        const sub = s("tspan", { class: "ssub", dx: 8 }, t);
+        sub.textContent = b.sub;
+      }
+    }
+    const [hx, hy, htext, hanchor] = LY.head;
+    stext(svg, hx, hy, htext, "ssub", hanchor);
+    os.swap = stext(svg, LY.swap[0], LY.swap[1], "⇄ 切りかえ", "swap", "end");
+    for (const [k, a] of Object.entries(LY.arrows)) {
+      const path = s("path", { d: a.d, class: "arrow", "marker-end": "url(#ah)" }, svg);
+      const label = stext(svg, a.lx, a.ly, a.label, "arrow-label", a.anchor);
+      os.arrows[k] = { path, label };
+    }
+    os.tokLayer = s("g", {}, svg);
+  }
+
+  const pcolor = (name) => `var(--p${name.slice(1)})`;
+
+  function drawOsTokens() {
+    os.tokLayer.replaceChildren();
+    os.toks = {};
+    for (const p of os.run.procs) {
+      const g = s("g", { class: "ptok" }, os.tokLayer);
+      const c = s("circle", { r: 17 }, g);
+      c.style.fill = pcolor(p.name);
+      stext(g, 0, 4.5, p.name, "pname", "middle");
+      const sub = stext(g, 0, 31, "", "psub", "middle");
+      os.toks[p.name] = { g, sub };
+    }
+  }
+
+  function tokenPositions(f) {
+    const slot = osLayout().slot;
+    const pos = {};
+    const names = os.run.procs.map((p) => p.name);
+    names.filter((n) => f.states[n] === "new").forEach((n, k) => (pos[n] = slot.new(k)));
+    f.ready.forEach((n, k) => (pos[n] = slot.ready(k)));
+    if (f.running) pos[f.running] = slot.running();
+    f.blocked.forEach((b, k) => (pos[b.name] = slot.blocked(k, f.blocked.length)));
+    names
+      .filter((n) => f.states[n] === "done")
+      .sort((a, b) => f.procs[a].finish - f.procs[b].finish)
+      .forEach((n, k) => (pos[n] = slot.done(k)));
+    return pos;
+  }
+
+  function showOs(i, animate) {
+    const f = os.run.frames[i];
+    const pos = tokenPositions(f);
+    for (const p of os.run.procs) {
+      const t = os.toks[p.name];
+      const st = f.states[p.name];
+      const info = f.procs[p.name];
+      const [x, y] = pos[p.name];
+      if (!animate) {
+        t.g.style.transition = "none";
+        t.g.getBoundingClientRect();
+      }
+      t.g.style.transform = `translate(${x}px, ${y}px)`;
+      if (!animate) requestAnimationFrame(() => (t.g.style.transition = ""));
+      t.g.style.opacity = st === "new" ? 0.5 : st === "done" ? 0.75 : 1;
+      t.sub.textContent =
+        st === "new"
+          ? `到着 ${p.arrival}`
+          : st === "done"
+          ? `終了 ${info.finish}`
+          : st === "blocked"
+          ? `I/O あと${info.ioLeft}`
+          : `残り ${info.left}`;
+    }
+    for (const [k, a] of Object.entries(os.arrows)) {
+      const on = f.arrows.includes(k);
+      a.path.classList.toggle("on", on);
+      a.label.classList.toggle("on", on);
+      a.path.setAttribute("marker-end", on ? "url(#ah-on)" : "url(#ah)");
+    }
+    os.swap.style.display = f.switchFrom ? "" : "none";
+
+    narrate($("os-narr"), f.title, f.lines, `${i + 1} / ${os.run.frames.length}`, f.end ? "ok" : null);
+    pcbPanel(f);
+    ganttPanel(f);
+    resultPanel(f);
+  }
+
+  const STATE_SHORT = { new: "新規", ready: "実行可能", running: "実行中", blocked: "待ち（I/O）", done: "終了" };
+
+  function pcbPanel(f) {
+    const rows = os.run.procs.map((p) => {
+      const info = f.procs[p.name];
+      const st = f.states[p.name];
+      const name = h("span");
+      const dot = h("span", "dot");
+      dot.style.background = pcolor(p.name);
+      name.appendChild(dot);
+      name.appendChild(document.createTextNode(p.name));
+      if (f.switchFrom === p.name && st !== "done") name.appendChild(h("span", "badge badge-save", "保存"));
+      if (f.switchTo === p.name) name.appendChild(h("span", "badge badge-load", info.used ? "読み出し" : "はじめて"));
+      const prog = h("span");
+      const bar = h("span", "bar");
+      const fill = h("i");
+      fill.style.width = `${(info.used / info.cpu) * 100}%`;
+      fill.style.background = pcolor(p.name);
+      bar.appendChild(fill);
+      prog.appendChild(bar);
+      prog.appendChild(document.createTextNode(`${info.used} / ${info.cpu}`));
+      return [name, h("span", `st-${st}`, STATE_SHORT[st]), prog, String(info.wait)];
+    });
+    $("os-pcb").replaceChildren(table(["プロセス", "状態", "進み具合（CPU）", "待った時間"], rows, { cls: "pcb", numCols: [3] }));
+  }
+
+  function ganttPanel(f) {
+    const T = os.run.timeline.length;
+    const t = h("table", "gantt");
+    const head = h("tr");
+    head.appendChild(h("th", "", ""));
+    for (let k = 0; k < T; k++) head.appendChild(h("th", k === f.time ? "now" : "", String(k)));
+    head.appendChild(h("th", T === f.time ? "now" : "", String(T)));
+    t.appendChild(head);
+    for (const p of os.run.procs) {
+      const tr = h("tr");
+      tr.style.setProperty("--pc", pcolor(p.name));
+      tr.appendChild(h("td", "name", p.name));
+      for (let k = 0; k < T; k++) {
+        let cls = "";
+        if (k < f.time) {
+          const tl = os.run.timeline[k];
+          cls = tl.run === p.name ? "run" : tl.states[p.name] === "ready" ? "wait" : tl.states[p.name] === "blocked" ? "io" : "";
+        } else if (k === f.time && f.running === p.name) cls = "next";
+        else cls = "future";
+        const td = h("td", cls);
+        if (cls === "run") td.title = `${k}〜${k + 1}: 実行`;
+        tr.appendChild(td);
+      }
+      tr.appendChild(h("td", ""));
+      t.appendChild(tr);
+    }
+    const box = $("os-gantt");
+    box.replaceChildren(t);
+    const lg = h("div", "g-legend");
+    [
+      ["run", "CPU を使っている"],
+      ["wait", "列で待っている"],
+      ["io", "I/O 中"],
+    ].forEach(([c, l]) => {
+      const sp = h("span");
+      sp.appendChild(h("i", c));
+      sp.appendChild(document.createTextNode(l));
+      lg.appendChild(sp);
+    });
+    box.appendChild(lg);
+  }
+
+  function resultPanel(f) {
+    const box = $("os-result");
+    box.replaceChildren();
+    const rows = os.run.stats.map((x) => {
+      const done = f.procs[x.name].finish != null;
+      const q = (v) => (done ? String(v) : "—");
+      return [x.name, String(x.arrival), String(x.cpu), String(x.io || 0), q(x.finish), q(x.turnaround), q(x.wait)];
+    });
+    const state = rows.map(() => "");
+    if (f.end) {
+      const fmt = (v) => (Math.round(v * 100) / 100).toString();
+      rows.push(["平均", "", "", "", "", fmt(os.run.average.turnaround), fmt(os.run.average.wait)]);
+      state.push("avg");
+    }
+    box.appendChild(
+      table(["プロセス", "到着", "CPU 時間", "I/O", "終了", "ターンアラウンド", "待ち時間"], rows, {
+        numCols: [1, 2, 3, 4, 5, 6],
+        state,
+      })
+    );
+    box.appendChild(
+      h("p", "formula", "ターンアラウンドタイム ＝ 終了 − 到着　／　待ち時間 ＝ ターンアラウンドタイム − CPU 時間 − I/O の時間（＝列で待っていた時間の合計）")
+    );
+    if (!f.end) {
+      box.appendChild(h("p", "formula", "プロセスが終わると、ここに数字が出ます。最後まで進めると、ほかのやり方との比べっこも出ます。"));
+      return;
+    }
+    const cmp = Object.keys(Os.ALGOS).map((a) => ({ a, avg: Os.schedule({ ...os.cfg, algo: a }).average.wait }));
+    const best = Math.min(...cmp.map((c) => c.avg));
+    box.appendChild(h("p", "formula", "同じプロセスを、ほかのやり方で動かしたときの **平均待ち時間**:"));
+    const grid = h("div", "compare");
+    for (const c of cmp) {
+      const d = h("div", (c.a === os.run.algo ? "cur " : "") + (c.avg === best ? "best" : ""));
+      d.appendChild(h("span", "", Os.ALGOS[c.a].label + (c.a === "rr" ? `（${os.run.quantum}）` : "") + (c.a === os.run.algo ? "・いま" : "")));
+      d.appendChild(h("b", "", (Math.round(c.avg * 100) / 100).toString()));
+      grid.appendChild(d);
+    }
+    box.appendChild(grid);
+  }
+
+  const osPlayer = makePlayer($("os-player"), { onShow: showOs, delay: () => 1700 });
+
+  function cloneCfg(p) {
+    return { algo: p.algo, quantum: p.quantum, procs: p.procs.map((x) => ({ ...x })) };
+  }
+
+  function runOs() {
+    os.run = Os.schedule(os.cfg);
+    for (const b of $("os-presets").querySelectorAll("button")) {
+      const p = Os.PRESETS.find((x) => x.id === b.dataset.id);
+      b.setAttribute("aria-pressed", JSON.stringify(cloneCfg(p)) === JSON.stringify(normalizedCfg()) ? "true" : "false");
+    }
+    $("os-algo-note").replaceChildren(
+      rich(
+        document.createElement("span"),
+        Os.ALGOS[os.cfg.algo].note +
+          (os.cfg.algo === "rr" ? "　同じ時刻に並ぶときは、新しく来たプロセス → I/O が終わったプロセス → 持ち時間を使い切ったプロセス の順です。" : "")
+      )
+    );
+    $("os-q-wrap").hidden = os.cfg.algo !== "rr";
+    drawOsTokens();
+    osPlayer.setCount(os.run.frames.length);
+  }
+
+  /** プリセットとくらべるための形 */
+  function normalizedCfg() {
+    return {
+      algo: os.cfg.algo,
+      quantum: Number(os.cfg.quantum),
+      procs: Os.normalize(os.cfg.procs).map((p) => {
+        const o = { arrival: p.arrival, cpu: p.cpu };
+        if (p.ioAt) Object.assign(o, { ioAt: p.ioAt, ioLen: p.ioLen });
+        return o;
+      }),
+    };
+  }
+
+  function renderProcRows() {
+    const tb = $("os-procs");
+    tb.replaceChildren();
+    os.cfg.procs.forEach((p, k) => {
+      const tr = h("tr");
+      const name = h("td");
+      const dot = h("span", "dot");
+      dot.style.background = pcolor(`P${k + 1}`);
+      name.appendChild(dot);
+      name.appendChild(h("b", "", `P${k + 1}`));
+      tr.appendChild(name);
+      [
+        ["arrival", 0, 30, "到着時刻"],
+        ["cpu", 1, 20, "CPU 時間"],
+        ["ioAt", 1, 19, "I/O を始める"],
+        ["ioLen", 1, 20, "I/O の長さ"],
+      ].forEach(([key, min, max, label]) => {
+        const td = h("td");
+        const inp = h("input");
+        inp.type = "number";
+        inp.min = min;
+        inp.max = max;
+        inp.value = p[key] == null ? "" : p[key];
+        inp.setAttribute("aria-label", `P${k + 1} の${label}`);
+        if (key.startsWith("io")) inp.placeholder = "なし";
+        inp.addEventListener("input", () => {
+          p[key] = inp.value === "" ? null : Number(inp.value);
+          clearTimeout(os.timer);
+          os.timer = setTimeout(runOs, 400);
+        });
+        td.appendChild(inp);
+        tr.appendChild(td);
+      });
+      const td = h("td");
+      const x = h("button", "x", "×");
+      x.type = "button";
+      x.setAttribute("aria-label", `P${k + 1} を消す`);
+      x.disabled = os.cfg.procs.length <= 1;
+      x.addEventListener("click", () => {
+        os.cfg.procs.splice(k, 1);
+        renderProcRows();
+        runOs();
+      });
+      td.appendChild(x);
+      tr.appendChild(td);
+      tb.appendChild(tr);
+    });
+    $("os-add").disabled = os.cfg.procs.length >= Os.MAX_PROCS;
+  }
+
+  function setAlgoRadios() {
+    for (const r of $("os-algo").querySelectorAll("input")) r.checked = r.value === os.cfg.algo;
+    $("os-q").value = os.cfg.quantum;
+  }
+
+  function initOs() {
+    const algoBox = $("os-algo");
+    for (const [k, a] of Object.entries(Os.ALGOS)) {
+      const lab = h("label");
+      lab.title = a.long;
+      const r = h("input");
+      r.type = "radio";
+      r.name = "os-algo";
+      r.value = k;
+      r.addEventListener("change", () => {
+        os.cfg.algo = k;
+        runOs();
+      });
+      lab.appendChild(r);
+      lab.appendChild(h("span", "", a.label));
+      algoBox.appendChild(lab);
+    }
+    for (const p of Os.PRESETS) {
+      const b = h("button", "chip-btn", p.label);
+      b.type = "button";
+      b.dataset.id = p.id;
+      b.addEventListener("click", () => {
+        os.cfg = cloneCfg(p);
+        setAlgoRadios();
+        renderProcRows();
+        runOs();
+      });
+      $("os-presets").appendChild(b);
+    }
+    $("os-q").addEventListener("input", () => {
+      os.cfg.quantum = Number($("os-q").value) || 1;
+      clearTimeout(os.timer);
+      os.timer = setTimeout(runOs, 350);
+    });
+    $("os-add").addEventListener("click", () => {
+      if (os.cfg.procs.length >= Os.MAX_PROCS) return;
+      const last = os.cfg.procs[os.cfg.procs.length - 1];
+      os.cfg.procs.push({ arrival: last ? Number(last.arrival || 0) + 1 : 0, cpu: 3 });
+      renderProcRows();
+      runOs();
+    });
+    os.cfg = cloneCfg(Os.PRESETS[0]);
+    drawOsBase();
+    setAlgoRadios();
+    renderProcRows();
+    runOs();
+  }
+
+  // =====================================================================
+  //  タブとキーボード
+  // =====================================================================
+  const TABS = [
+    { tab: $("tab-net"), panel: $("panel-net"), hash: "#net", player: netPlayer },
+    { tab: $("tab-os"), panel: $("panel-os"), hash: "#os", player: osPlayer },
+  ];
+  let active = TABS[0];
+
+  function selectTab(t, focus) {
+    for (const x of TABS) {
+      const on = x === t;
+      x.tab.setAttribute("aria-selected", on ? "true" : "false");
+      x.tab.tabIndex = on ? 0 : -1;
+      x.panel.hidden = !on;
+      if (!on) x.player.stop();
+    }
+    active = t;
+    if (focus) t.tab.focus();
+    if (location.hash !== t.hash) history.replaceState(null, "", t.hash);
+    store.set("zukai-tab", t.hash);
+  }
+  TABS.forEach((t, k) => {
+    t.tab.addEventListener("click", () => selectTab(t));
+    t.tab.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+        e.preventDefault();
+        e.stopPropagation();
+        selectTab(TABS[(k + (e.key === "ArrowRight" ? 1 : TABS.length - 1)) % TABS.length], true);
+      }
+    });
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+    const tag = (e.target && e.target.tagName) || "";
+    if (/^(INPUT|SELECT|TEXTAREA)$/.test(tag) || (e.target && e.target.getAttribute && e.target.getAttribute("role") === "tab")) return;
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      active.player.next();
+    } else if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      active.player.prev();
+    }
+  });
+
+  initNet();
+  initOs();
+  const relayout = () => {
+    drawNet();
+    netPlayer.stop();
+    showNet(netPlayer.index, false, 1);
+    drawOsBase();
+    drawOsTokens();
+    osPlayer.stop();
+    showOs(osPlayer.index, false);
+  };
+  if (narrow.addEventListener) narrow.addEventListener("change", relayout);
+  const start = TABS.find((t) => t.hash === location.hash) || TABS.find((t) => t.hash === store.get("zukai-tab")) || TABS[0];
+  selectTab(start);
+  window.addEventListener("hashchange", () => {
+    const t = TABS.find((x) => x.hash === location.hash);
+    if (t && t !== active) selectTab(t);
+  });
+})();
+
+</script>
+</body>
+</html>
