@@ -212,11 +212,11 @@ public class Main {
   let graceTimer = 0;
   let saveTimer = 0;
   let debounceMs = 200;
-  let lineEls = [];
-  let lineHTML = [];
-  let lineCls = [];
-  let gutterEls = [];
-  let gutterCls = [];
+  let model = null; // 最後に描いたときの { text, starts, codes, marks, perLine }
+  let htmlCache = new Map();
+  let pool = []; // 見えている行の { ln, g, html, cls, gcls, num }
+  let first = 0; // pool[0] の行番号
+  let paintQueued = false;
   let activeKey = null;
   let lastPanelSig = "";
   let LH = 22;
@@ -341,10 +341,38 @@ public class Main {
     return out;
   }
 
+  // 長いファイルでも重くならないように、見えている行（と前後少し）だけを描く
+  const OVERSCAN = 40;
+  const topSpacer = document.createElement("div");
+  const botSpacer = document.createElement("div");
+  const gTopSpacer = document.createElement("div");
+  const gBotSpacer = document.createElement("div");
+  backdrop.append(topSpacer, botSpacer);
+  gutter.append(gTopSpacer, gBotSpacer);
+
+  /** 文字の幅（半角を1、全角を2として数える） */
+  function maxLineUnits(text, starts) {
+    let max = 0;
+    for (let li = 0; li < starts.length; li++) {
+      const ls = starts[li];
+      const le = li + 1 < starts.length ? starts[li + 1] - 1 : text.length;
+      if (le - ls <= max / 2) continue;
+      let u = 0;
+      for (let i = ls; i < le; i++) {
+        const c = text.charCodeAt(i);
+        if (c === 9) u += 4 - (u % 4);
+        else if (c >= 0x1100 && !(c >= 0xdc00 && c <= 0xdfff)) u += 2;
+        else if (!(c >= 0xdc00 && c <= 0xdfff)) u += 1;
+      }
+      if (u > max) max = u;
+    }
+    return max;
+  }
+
+  /** 指摘と色分けを計算して、画面を描く */
   function render() {
     const text = input.value;
     const starts = lineStarts(text);
-    const nLines = starts.length;
     const codes = colorCodes(text);
     const marks = new Uint8Array(text.length + 1);
     const vis = visibleDiags(starts);
@@ -354,86 +382,148 @@ public class Main {
       const s = Math.max(0, Math.min(d.s, text.length));
       let e = Math.min(d.e, text.length);
       if (e <= s) e = Math.min(s + 1, text.length);
-      for (let i = s; i < e; i++) marks[i] |= d.stale ? 0 : bit;
+      if (!d.stale) for (let i = s; i < e; i++) marks[i] |= bit;
       const arr = perLine.get(d.line) || [];
       arr.push(d);
       perLine.set(d.line, arr);
     }
-
-    // 行のHTML
-    while (lineEls.length < nLines) {
-      const el = document.createElement("div");
-      el.className = "ln";
-      backdrop.appendChild(el);
-      lineEls.push(el);
-      lineHTML.push(null);
-      lineCls.push("ln");
-      const g = document.createElement("div");
-      g.textContent = String(gutterEls.length + 1);
-      gutter.appendChild(g);
-      gutterEls.push(g);
-      gutterCls.push("");
-    }
-    while (lineEls.length > nLines) {
-      lineEls.pop().remove();
-      lineHTML.pop();
-      lineCls.pop();
-      gutterEls.pop().remove();
-      gutterCls.pop();
-    }
-
-    for (let li = 0; li < nLines; li++) {
-      const ls = starts[li];
-      const le = li + 1 < nLines ? starts[li + 1] - 1 : text.length;
-      let html = "";
-      let i = ls;
-      while (i < le) {
-        const c = codes[i];
-        const m = marks[i];
-        let j = i + 1;
-        while (j < le && codes[j] === c && marks[j] === m) j++;
-        const seg = text.slice(i, j);
-        let cls = CLS[c];
-        if (m) {
-          cls += (cls ? " " : "") + (m & 1 ? "u-err" : "u-warn");
-          if (!seg.trim()) cls += " blank";
-        }
-        html += cls ? `<span class="${cls}">${esc(seg)}</span>` : esc(seg);
-        i = j;
-      }
-      const ds = perLine.get(li);
-      let lc = "ln";
-      let gc = "";
-      if (ds) {
-        ds.sort((a, b) => (a.sev === b.sev ? a.s - b.s : a.sev === "error" ? -1 : 1));
-        const top = ds[0];
-        const sev = top.sev === "error" ? "err" : "warn";
-        const stale = ds.every((d) => d.stale);
-        html += `<span class="lens ${sev}${stale ? " pending" : ""}">${esc(top.msg)}${ds.length > 1 ? `<span class="more">+${ds.length - 1}</span>` : ""}</span>`;
-        lc += stale ? "" : ` l-${sev}`;
-        gc = stale ? "" : `g-${sev}`;
-      }
-      if (li === caretLine) {
-        lc += " cur";
-        gc += (gc ? " " : "") + "cur";
-      }
-      if (lineHTML[li] !== html) {
-        lineEls[li].innerHTML = html;
-        lineHTML[li] = html;
-      }
-      if (lineCls[li] !== lc) {
-        lineEls[li].className = lc;
-        lineCls[li] = lc;
-      }
-      if (gutterCls[li] !== gc) {
-        gutterEls[li].className = gc;
-        gutterCls[li] = gc;
-      }
-    }
-
+    for (const ds of perLine.values()) ds.sort((a, b) => (a.sev === b.sev ? a.s - b.s : a.sev === "error" ? -1 : 1));
+    model = { text, starts, codes, marks, perLine };
+    htmlCache = new Map();
+    // 横スクロールの幅（いちばん長い行）と、行番号の幅
+    const units = maxLineUnits(text, starts);
+    backdrop.style.minWidth = `calc(${units}ch + ${PAD_LEFT + 24 + (perLine.size ? 320 : 0)}px)`;
+    gutter.style.minWidth = `calc(${String(starts.length).length}ch + 34px)`;
+    paint();
     shown = new Set(vis.filter((d) => !d.stale).map((d) => d.id + "@" + d.line));
     renderPanel(vis);
   }
+
+  function lineHtml(li) {
+    const cached = htmlCache.get(li);
+    if (cached) return cached;
+    const { text, starts, codes, marks, perLine } = model;
+    const n = starts.length;
+    const ls = starts[li];
+    const le = li + 1 < n ? starts[li + 1] - 1 : text.length;
+    let html = "";
+    let i = ls;
+    while (i < le) {
+      const c = codes[i];
+      const m = marks[i];
+      let j = i + 1;
+      while (j < le && codes[j] === c && marks[j] === m) j++;
+      const seg = text.slice(i, j);
+      let cls = CLS[c];
+      if (m) {
+        cls += (cls ? " " : "") + (m & 1 ? "u-err" : "u-warn");
+        if (!seg.trim()) cls += " blank";
+      }
+      html += cls ? `<span class="${cls}">${esc(seg)}</span>` : esc(seg);
+      i = j;
+    }
+    let lc = "ln";
+    let gc = "";
+    const ds = perLine.get(li);
+    if (ds) {
+      const top = ds[0];
+      const sev = top.sev === "error" ? "err" : "warn";
+      const stale = ds.every((d) => d.stale);
+      html += `<span class="lens ${sev}${stale ? " pending" : ""}">${esc(top.msg)}${ds.length > 1 ? `<span class="more">+${ds.length - 1}</span>` : ""}</span>`;
+      if (!stale) {
+        lc += ` l-${sev}`;
+        gc = `g-${sev}`;
+      }
+    }
+    const out = { html, lc, gc };
+    htmlCache.set(li, out);
+    return out;
+  }
+
+  /** 見えている範囲の行だけを DOM にする */
+  function paint() {
+    paintQueued = false;
+    if (!model) return;
+    const n = model.starts.length;
+    const h = viewH;
+    const top = scrollTopCache;
+    const f = Math.max(0, Math.min(n - 1, Math.floor((top - PAD_TOP) / LH) - OVERSCAN));
+    const l = Math.max(f, Math.min(n - 1, Math.ceil((top + h - PAD_TOP) / LH) + OVERSCAN));
+    const cnt = l - f + 1;
+    first = f;
+    topSpacer.style.height = f * LH + "px";
+    botSpacer.style.height = (n - 1 - l) * LH + "px";
+    gTopSpacer.style.height = topSpacer.style.height;
+    gBotSpacer.style.height = botSpacer.style.height;
+    while (pool.length < cnt) {
+      const ln = document.createElement("div");
+      const g = document.createElement("div");
+      backdrop.insertBefore(ln, botSpacer);
+      gutter.insertBefore(g, gBotSpacer);
+      pool.push({ ln, g, html: null, cls: "", gcls: null, num: -1 });
+    }
+    while (pool.length > cnt) {
+      const p = pool.pop();
+      p.ln.remove();
+      p.g.remove();
+    }
+    for (let k = 0; k < cnt; k++) {
+      const li = f + k;
+      const p = pool[k];
+      const r = lineHtml(li);
+      const cur = li === caretLine;
+      const lc = cur ? r.lc + " cur" : r.lc;
+      const gc = cur ? (r.gc ? r.gc + " cur" : "cur") : r.gc;
+      if (p.html !== r.html) {
+        p.ln.innerHTML = r.html;
+        p.html = r.html;
+      }
+      if (p.cls !== lc) {
+        p.ln.className = lc;
+        p.cls = lc;
+      }
+      if (p.gcls !== gc) {
+        p.g.className = gc;
+        p.gcls = gc;
+      }
+      if (p.num !== li) {
+        p.g.textContent = String(li + 1);
+        p.num = li;
+      }
+    }
+  }
+  function queuePaint() {
+    if (paintQueued) return;
+    paintQueued = true;
+    requestAnimationFrame(paint);
+  }
+  // 大きさ・スクロール位置は、変わったときだけ読む（入力のたびに読むと、長いファイルで重くなる）
+  let viewH = 800;
+  let scrollTopCache = 0;
+  scroller.addEventListener("scroll", () => {
+    scrollTopCache = scroller.scrollTop;
+    queuePaint();
+  }, { passive: true });
+  if (window.ResizeObserver) {
+    new ResizeObserver(() => {
+      viewH = scroller.clientHeight || viewH;
+      queuePaint();
+    }).observe(scroller);
+  }
+  window.addEventListener("resize", () => {
+    viewH = scroller.clientHeight || viewH;
+    queuePaint();
+  });
+  let ensureQueued = false;
+  function queueEnsure() {
+    if (ensureQueued) return;
+    ensureQueued = true;
+    requestAnimationFrame(() => {
+      ensureQueued = false;
+      ensureVisible(caretInfo());
+    });
+  }
+  const lineEl = (li) => (li >= first && li < first + pool.length ? pool[li - first].ln : null);
 
   /* ------------------------------------------------------------------ */
   /* 指摘の一覧                                                          */
@@ -583,38 +673,25 @@ public class Main {
   function caretInfo() {
     const pos = input.selectionEnd;
     const text = input.value;
-    const before = text.slice(0, pos);
-    let line = 0;
-    for (let i = 0; i < before.length; i++) if (before.charCodeAt(i) === 10) line++;
-    const ls = before.lastIndexOf("\n") + 1;
-    return { pos, line, col: pos - ls, prefix: before.slice(ls) };
+    const starts = model && model.text === text ? model.starts : lineStarts(text);
+    const line = lineOf(starts, pos);
+    const ls = starts[line];
+    return { pos, line, col: pos - ls, prefix: text.slice(ls, pos) };
   }
 
   function updateCaret(scroll) {
     const c = caretInfo();
     if (c.line !== caretLine) {
-      const old = caretLine;
       caretLine = c.line;
-      if (lineEls[old]) {
-        lineCls[old] = lineCls[old].replace(" cur", "");
-        lineEls[old].className = lineCls[old];
-        gutterCls[old] = gutterCls[old].replace(/ ?cur/, "");
-        gutterEls[old].className = gutterCls[old];
-      }
-      if (lineEls[caretLine]) {
-        lineCls[caretLine] += " cur";
-        lineEls[caretLine].className = lineCls[caretLine];
-        gutterCls[caretLine] = (gutterCls[caretLine] ? gutterCls[caretLine] + " " : "") + "cur";
-        gutterEls[caretLine].className = gutterCls[caretLine];
-      }
       // 打っていた行から離れたら、待たせていた指摘をすぐ出す
       if (Date.now() - lastEditAt < LINE_GRACE) render();
+      else paint();
     }
     statusLine.textContent = `${c.line + 1} 行 ${c.col + 1} 列`;
     // カーソルのある行の指摘を、一覧で目立たせる
     const here = visibleList.find((d) => d.line === c.line);
     setActive(here ? here.key : null, false);
-    if (scroll) ensureVisible(c);
+    if (scroll) queueEnsure();
   }
 
   function ensureVisible(c) {
@@ -629,6 +706,11 @@ public class Main {
     const w = scroller.clientWidth;
     if (x < left + gw + 8) scroller.scrollLeft = Math.max(0, x - gw - 40);
     else if (x > left + w - 24) scroller.scrollLeft = x - w + 64;
+    viewH = h;
+    if (scroller.scrollTop !== scrollTopCache) {
+      scrollTopCache = scroller.scrollTop;
+      paint();
+    }
   }
 
   function setActive(key, scrollList) {
@@ -660,7 +742,8 @@ public class Main {
   }
 
   function flashLine(li) {
-    const el = lineEls[li];
+    paint();
+    const el = lineEl(li);
     if (!el) return;
     el.classList.remove("flash");
     void el.offsetWidth;
@@ -823,8 +906,10 @@ public class Main {
 
   gutter.addEventListener("click", (ev) => {
     const el = ev.target.closest("div");
-    if (!el || !el.parentElement || el.parentElement !== gutter) return;
-    const li = gutterEls.indexOf(el);
+    if (!el || el.parentElement !== gutter) return;
+    const k = pool.findIndex((p) => p.g === el);
+    if (k < 0) return;
+    const li = first + k;
     const d = visibleList.find((x) => x.line === li);
     if (!d) return;
     goTo(d, true);

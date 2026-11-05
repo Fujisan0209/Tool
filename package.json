@@ -1,11 +1,12 @@
 {
   "name": "java-error-yasashiku",
   "version": "1.0.0",
-  "description": "Javaのエラーメッセージを、初心者向けのやさしい日本語で説明するツール",
+  "description": "Java を習いはじめた人向けの、ブラウザだけで動くツール（書きながらまちがいを指摘／エラーメッセージをやさしく解説）",
   "private": true,
   "scripts": {
     "test": "node --test test/*.test.js",
-    "build": "node scripts/build.js"
+    "build": "node scripts/build.js",
+    "gen-jdk": "java scripts/GenJdkData.java > src/jdk-data.js"
   },
   "license": "MIT"
 }
