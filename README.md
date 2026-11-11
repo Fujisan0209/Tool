@@ -20,6 +20,11 @@ Javaを習いはじめた人向けのツールです。`javac` や `java` が出
 
 `src/` を書きかえたら、`npm run build` で `dist/java-error-yasashiku.html` を作りなおしてください。
 
+## ほかのツール
+
+- **一人前ロードマップ**（[`dist/ichininmae.html`](dist/ichininmae.html)）: C・Python・Java・JavaScript・TypeScript・PHP・Ruby・Go・Rust を、全体の流れを見てから 18 レッスンで順に学ぶ学習ツールです。くわしくは [`course/README.md`](course/README.md)。
+- **言語くらべ帳**（[`samples/index.html`](samples/index.html)）: 同じプログラムを2つの言語でならべて動かします。
+
 ## 対応しているエラー（50種類）
 
 | 種類 | エラー |

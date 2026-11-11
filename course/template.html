@@ -1,0 +1,723 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>一人前ロードマップ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=BIZ+UDGothic:wght@400;700&family=Zen+Maru+Gothic:wght@700;900&display=swap">
+<style>
+/* Layout: 方眼ノートの上に、1本の道（ロードマップ）と駅（ステージ）。レッスンは1列で上から読む */
+:root {
+  --paper: #eef2ef;
+  --grid: #dfe6e1;
+  --panel: #ffffff;
+  --ink: #1b2822;
+  --muted: #5a6b62;
+  --rule: #d3dcd6;
+  --accent: #1d6b57;
+  --accent-ink: #ffffff;
+  --accent-soft: #dcebe5;
+  --now: #ffe58a;
+  --now-ink: #1b2822;
+  --term: #18201c;
+  --term-ink: #d6f5e3;
+  --c-kw: #17799f;
+  --c-str: #b8481f;
+  --c-num: #7b3fb2;
+  --c-com: #6f7d76;
+  --c-pp: #5a5f9a;
+  --ok: #1f8a4c;
+  --ng: #b23a3a;
+  --f-display: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "BIZ UDPGothic", sans-serif;
+  --f-body: "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif;
+  --f-code: "BIZ UDGothic", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #121815; --grid: #1a221e; --panel: #19211d; --ink: #e2eae5; --muted: #98a9a0;
+    --rule: #2c3833; --accent: #5cc4a6; --accent-ink: #0d1411; --accent-soft: #1f302a;
+    --now: #5c4b12; --now-ink: #fff3c4; --term: #0c110f; --term-ink: #d6f5e3;
+    --c-kw: #62c3e8; --c-str: #f08c63; --c-num: #c79df0; --c-com: #8a968f; --c-pp: #a3a8e0;
+    --ok: #5fd08e; --ng: #f07c7c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #121815; --grid: #1a221e; --panel: #19211d; --ink: #e2eae5; --muted: #98a9a0;
+  --rule: #2c3833; --accent: #5cc4a6; --accent-ink: #0d1411; --accent-soft: #1f302a;
+  --now: #5c4b12; --now-ink: #fff3c4; --term: #0c110f; --term-ink: #d6f5e3;
+  --c-kw: #62c3e8; --c-str: #f08c63; --c-num: #c79df0; --c-com: #8a968f; --c-pp: #a3a8e0;
+  --ok: #5fd08e; --ng: #f07c7c;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 16px;
+  line-height: 1.8;
+}
+body::before {
+  content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px);
+  z-index: 10; background: var(--paper);
+}
+.wrap {
+  max-width: 1040px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 72px;
+  display: grid; gap: 28px;
+}
+.wrap.narrow { max-width: 800px; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; line-height: 1.35; }
+h1 { font-size: clamp(28px, 5vw, 40px); font-weight: 900; letter-spacing: .02em; }
+h2 { font-size: 22px; font-weight: 700; }
+h3 { font-size: 17px; font-weight: 700; }
+p { margin: 0; }
+ul, ol { margin: 0; padding: 0; list-style: none; }
+a { color: var(--accent); }
+code { font-family: var(--f-code); font-size: .92em; background: var(--accent-soft); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.eyebrow { font-size: 12px; letter-spacing: .14em; color: var(--muted); font-weight: 700; }
+.lead { color: var(--muted); max-width: 62ch; }
+.lead b { color: var(--ink); }
+.muted { color: var(--muted); }
+.panel { background: var(--panel); border: 1.5px solid var(--rule); border-radius: 14px; }
+.badges { display: flex; gap: 6px; flex-wrap: wrap; }
+.badge { font-size: 12px; border-radius: 6px; padding: 1px 8px; border: 1px solid var(--rule); color: var(--muted); font-weight: 700; line-height: 1.6; }
+.badge.static { border-color: var(--c-kw); color: var(--c-kw); }
+.badge.dynamic { border-color: var(--c-str); color: var(--c-str); }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none;
+  border: 1.5px solid var(--accent); background: var(--accent); color: var(--accent-ink);
+  border-radius: 12px; padding: 10px 20px; font-weight: 700; min-height: 46px;
+}
+.btn.ghost { background: var(--panel); color: var(--accent); }
+.btn.small { min-height: 34px; padding: 3px 12px; border-radius: 8px; font-size: 13px; }
+.btn[disabled] { opacity: .45; cursor: default; }
+.back { font-size: 14px; font-weight: 700; text-decoration: none; }
+
+/* ---- ホーム ---- */
+.head { display: grid; gap: 10px; }
+.how { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; counter-reset: how; }
+.how li { padding: 14px 16px; display: grid; gap: 4px; align-content: start; counter-increment: how; }
+.how li::before {
+  content: counter(how); width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--accent); color: var(--accent-ink); font-family: var(--f-display); font-weight: 900; line-height: 1;
+}
+.how b { font-family: var(--f-display); font-size: 17px; }
+.how span { font-size: 14px; color: var(--muted); line-height: 1.6; }
+.langs { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.lang {
+  padding: 16px; display: grid; gap: 8px; align-content: start; text-decoration: none; color: inherit;
+  transition: border-color .15s, transform .15s;
+}
+.lang:hover { border-color: var(--accent); transform: translateY(-2px); }
+.lang-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.lang h3 { font-size: 24px; }
+.lang .tag { font-weight: 700; line-height: 1.5; }
+.lang .about { font-size: 14px; color: var(--muted); line-height: 1.6; }
+.meter { height: 8px; background: var(--rule); border-radius: 4px; overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--accent); border-radius: 4px; }
+.meter-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.lang .go { font-weight: 700; color: var(--accent); font-size: 14px; }
+
+/* ---- 言語の全体図 ---- */
+.hero { display: grid; gap: 10px; }
+.two { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 16px; }
+.box { padding: 16px 18px; display: grid; gap: 10px; align-content: start; }
+.box-title { font-size: 12px; letter-spacing: .1em; color: var(--muted); font-weight: 700; }
+.ready li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; padding: 4px 0; line-height: 1.6; }
+.ready li::before { content: ""; width: 16px; height: 16px; margin-top: 5px; border: 2px solid var(--accent); border-radius: 4px; }
+.cta { padding: 16px 18px; display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; justify-content: space-between; }
+.cta .meter-row { flex: 1 1 220px; }
+.done-banner { background: var(--accent); color: var(--accent-ink); border-radius: 14px; padding: 16px 18px; display: grid; gap: 4px; }
+.done-banner b { font-family: var(--f-display); font-size: 20px; }
+
+.route { position: relative; display: grid; gap: 14px; }
+.route::before, .route::after {
+  content: ""; position: absolute; left: 21px; top: 22px; width: 4px; border-radius: 2px;
+}
+.route::before { bottom: 22px; background: var(--rule); }
+.route::after { height: calc((100% - 44px) * var(--p, 0)); background: var(--accent); transform-origin: top; animation: draw 1s ease-out both; }
+@keyframes draw { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+.stage { display: grid; grid-template-columns: 46px minmax(0, 1fr); gap: 12px; position: relative; z-index: 1; animation: rise .5s ease-out both; animation-delay: calc(var(--k) * 90ms); }
+@keyframes rise { from { transform: translateY(10px); opacity: .35; } to { transform: none; opacity: 1; } }
+.station {
+  width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--panel); border: 3px solid var(--rule); font-family: var(--f-display); font-weight: 900; font-size: 20px; line-height: 1;
+}
+.stage.started .station { border-color: var(--accent); color: var(--accent); }
+.stage.complete .station { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.stage-card { padding: 14px 16px; display: grid; gap: 10px; }
+.stage-head { display: grid; gap: 2px; }
+.stage-head .can { font-size: 14px; color: var(--muted); line-height: 1.6; }
+.stage-head .can b { color: var(--ink); font-weight: 700; }
+.lessons { display: grid; gap: 6px; }
+.lrow {
+  display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 10px; align-items: center;
+  padding: 8px 12px; border-radius: 10px; border: 1.5px solid var(--rule); text-decoration: none; color: inherit; background: var(--paper);
+  transition: border-color .15s;
+}
+.lrow:hover { border-color: var(--accent); }
+.lrow .n { font-family: var(--f-code); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.lrow .t { font-weight: 700; line-height: 1.5; }
+.lrow .s { font-size: 12px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+.lrow.done .s { color: var(--ok); }
+.lrow.next { border-color: var(--accent); background: var(--accent-soft); }
+.lrow.next .s { color: var(--accent); }
+.after li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; padding: 3px 0; line-height: 1.6; }
+.after li::before { content: "→"; color: var(--accent); font-weight: 700; }
+
+/* ---- レッスン ---- */
+.topbar {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--panel); border: 1.5px solid var(--rule); border-radius: 12px; padding: 8px 14px;
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 14px; align-items: center;
+  box-shadow: 0 6px 18px -14px rgba(0,0,0,.4);
+}
+.topbar .where { font-size: 13px; color: var(--muted); text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dots { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(18, minmax(0, 1fr)); gap: 3px; }
+.dots a { height: 6px; border-radius: 3px; background: var(--rule); }
+.dots a.done { background: var(--accent); }
+.dots a.cur { background: var(--now); outline: 2px solid var(--accent); outline-offset: 1px; }
+.dots a:nth-child(3n+1):not(:first-child) { margin-left: 4px; }
+.ltitle { display: grid; gap: 6px; }
+.goal { padding: 12px 16px; border-left: 5px solid var(--accent); border-radius: 0 12px 12px 0; background: var(--panel); display: grid; gap: 2px; }
+.goal .box-title { color: var(--accent); }
+.prose { display: grid; gap: 12px; max-width: 66ch; }
+.sec { display: grid; gap: 12px; }
+.sec > h2 { display: flex; align-items: center; gap: 10px; }
+.sec > h2 .step {
+  font-size: 12px; font-family: var(--f-body); letter-spacing: .08em; color: var(--accent-ink); background: var(--accent);
+  border-radius: 6px; padding: 2px 8px; white-space: nowrap; line-height: 1.6;
+}
+
+.codebox { overflow: hidden; }
+.tabs { display: flex; flex-wrap: wrap; gap: 4px; padding: 8px 8px 0; border-bottom: 1.5px solid var(--rule); align-items: flex-end; }
+.tab { border: 1.5px solid var(--rule); border-bottom: 0; background: var(--paper); border-radius: 8px 8px 0 0; padding: 4px 12px; font-family: var(--f-code); font-size: 13px; color: var(--muted); margin-bottom: -1.5px; }
+.tab[aria-selected="true"] { background: var(--panel); color: var(--ink); font-weight: 700; border-bottom: 1.5px solid var(--panel); }
+.tabs .copy { margin-left: auto; margin-bottom: 6px; }
+.copy { border: 1px solid var(--rule); background: transparent; border-radius: 6px; font-size: 12px; padding: 1px 10px; color: var(--muted); }
+.code { font-family: var(--f-code); font-size: 14px; line-height: 1.7; padding: 10px 0 12px; counter-reset: ln; }
+.cl { display: grid; grid-template-columns: 3em minmax(0, 1fr); }
+.cl::before { counter-increment: ln; content: counter(ln); color: var(--muted); text-align: right; padding-right: 12px; font-size: 12px; user-select: none; opacity: .7; padding-top: 2px; }
+.cl span.tx { white-space: pre-wrap; overflow-wrap: anywhere; padding-right: 12px; tab-size: 4; }
+.k { color: var(--c-kw); font-weight: 700; }
+.s { color: var(--c-str); }
+.n { color: var(--c-num); }
+.c { color: var(--c-com); }
+.p { color: var(--c-pp); font-weight: 700; }
+.runline { border-top: 1.5px solid var(--rule); padding: 8px 14px; font-size: 13px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; color: var(--muted); }
+
+.predict { padding: 16px 18px; display: grid; gap: 12px; }
+.term { background: var(--term); color: var(--term-ink); border: 1.5px solid var(--rule); border-radius: 10px; padding: 10px 14px; font-family: var(--f-code); font-size: 14px; line-height: 1.7; }
+.term .tl { white-space: pre-wrap; overflow-wrap: anywhere; min-height: 1.7em; animation: typed .25s ease both; }
+@keyframes typed { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: none; } }
+.term-title { font-size: 11px; color: #8fb5a2; letter-spacing: .1em; font-family: var(--f-body); }
+
+.points { display: grid; gap: 8px; }
+.points li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; padding: 10px 14px; line-height: 1.7; }
+.points li::before { content: ""; width: 10px; height: 10px; margin-top: 9px; border-radius: 50%; background: var(--accent); }
+
+.quiz { padding: 16px 18px; display: grid; gap: 12px; }
+.quiz .q { font-weight: 700; }
+.choices { display: grid; gap: 8px; }
+.choice { text-align: left; border: 1.5px solid var(--rule); background: var(--paper); border-radius: 10px; padding: 10px 14px; line-height: 1.6; overflow-wrap: anywhere; }
+.choice:hover { border-color: var(--accent); }
+.choice.right { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 14%, var(--panel)); font-weight: 700; }
+.choice.wrong { border-color: var(--ng); background: color-mix(in srgb, var(--ng) 12%, var(--panel)); animation: shake .3s; }
+@keyframes shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+.verdict { font-weight: 700; }
+.verdict.ok { color: var(--ok); }
+.verdict.ng { color: var(--ng); }
+
+.task { padding: 16px 18px; display: grid; gap: 10px; }
+.hintbox { padding: 10px 14px; border-radius: 10px; background: var(--paper); border: 1.5px dashed var(--rule); font-size: 15px; }
+.lnav { display: flex; gap: 12px; justify-content: space-between; flex-wrap: wrap; align-items: center; }
+
+/* ---- 図 ---- */
+.dg { padding: 16px; display: grid; gap: 12px; border-style: dashed; }
+.dg-cap { font-size: 14px; color: var(--muted); line-height: 1.6; }
+.dg-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.dg-col { display: grid; gap: 8px; }
+.bx {
+  border: 1.5px solid var(--rule); border-radius: 10px; padding: 6px 12px; font-size: 14px; line-height: 1.5;
+  background: var(--panel); text-align: center; font-family: var(--f-code);
+}
+.bx small { display: block; color: var(--muted); font-size: 11px; font-family: var(--f-body); }
+.bx.tool { border-style: dashed; }
+.lit { animation: lit var(--dur, 4s) linear infinite; animation-delay: var(--d, 0s); }
+@keyframes lit {
+  0% { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
+  20%, 100% { border-color: var(--rule); box-shadow: none; }
+}
+.ar { width: 26px; height: 12px; position: relative; flex: none; }
+.ar::before { content: ""; position: absolute; left: 0; right: 4px; top: 5px; height: 2px; background: var(--rule); }
+.ar::after { content: ""; position: absolute; right: 0; top: 1px; border: 5px solid transparent; border-left: 7px solid var(--rule); border-right: 0; }
+.ar i { position: absolute; top: 3px; left: 0; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: travel var(--dur, 4s) linear infinite; animation-delay: var(--d, 0s); opacity: 0; }
+@keyframes travel { 0% { left: 0; opacity: 1; } 14% { left: 18px; opacity: 1; } 15%, 100% { opacity: 0; } }
+.vbox { border: 2px solid var(--c-num); border-radius: 10px; min-width: 84px; text-align: center; padding: 4px 10px 6px; display: grid; background: var(--panel); }
+.vbox .vname { font-family: var(--f-code); font-size: 12px; color: var(--c-num); font-weight: 700; }
+.vbox .vval { font-family: var(--f-code); font-size: 20px; font-weight: 700; line-height: 1.3; }
+.swap { display: inline-grid; }
+.swap > * { grid-area: 1 / 1; animation: swapA 5s infinite; }
+.swap > *:last-child { animation-name: swapB; }
+@keyframes swapA { 0%, 45% { opacity: 1; transform: none; } 50%, 95% { opacity: 0; transform: translateY(-6px); } 100% { opacity: 1; } }
+@keyframes swapB { 0%, 45% { opacity: 0; transform: translateY(6px); } 50%, 95% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+.alt-a { animation: altA 5s infinite; }
+.alt-b { animation: altB 5s infinite; }
+@keyframes altA { 0%, 45% { border-color: var(--accent); background: var(--accent-soft); } 50%, 100% { border-color: var(--rule); background: var(--panel); } }
+@keyframes altB { 0%, 45% { border-color: var(--rule); background: var(--panel); } 50%, 95% { border-color: var(--accent); background: var(--accent-soft); } 100% { border-color: var(--rule); } }
+.cells { display: flex; flex-wrap: wrap; gap: 6px; }
+.cell { display: grid; gap: 2px; justify-items: center; }
+.cell .bx { min-width: 52px; font-size: 18px; font-weight: 700; }
+.cell small { font-size: 11px; color: var(--muted); font-family: var(--f-code); }
+.cell.round .bx { border-radius: 50%; width: 44px; height: 44px; min-width: 0; padding: 0; display: grid; place-items: center; }
+.kv { display: grid; grid-template-columns: auto 26px auto; gap: 6px 8px; align-items: center; justify-content: start; }
+.tt { display: grid; grid-template-columns: repeat(4, auto); gap: 6px 8px; justify-content: start; align-items: center; font-size: 14px; }
+.tt .h { font-size: 11px; color: var(--muted); font-weight: 700; }
+.tt .okm { color: var(--ok); font-weight: 700; font-size: 18px; }
+
+@media (max-width: 760px) {
+  .how, .two { grid-template-columns: minmax(0, 1fr); }
+  .topbar .where { font-size: 12px; }
+}
+@media (max-width: 480px) {
+  body { font-size: 15px; }
+  .route::before, .route::after { left: 17px; }
+  .stage { grid-template-columns: 38px minmax(0, 1fr); gap: 8px; }
+  .station { width: 38px; height: 38px; font-size: 17px; }
+  .code { font-size: 12.5px; }
+  .cl { grid-template-columns: 2.4em minmax(0, 1fr); }
+  .cl::before { padding-right: 8px; }
+  .lrow { grid-template-columns: 24px minmax(0, 1fr) auto; padding: 8px 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .swap > *:last-child { display: none; }
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+'use strict';
+const DATA = /*__DATA__*/null;
+
+const { stages: STAGES, lessons: SHARED, langs: LANGS } = DATA;
+const ORDER = STAGES.flatMap(s => s.lessons);
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const rich = s => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>');
+const langOf = id => LANGS.find(L => L.id === id);
+const stageOf = no => STAGES.find(s => s.lessons.includes(no));
+
+/* 共通の説明と、言語ごとの中身を合わせて、1つのレッスンにする */
+function lessonOf(L, no) {
+  const own = L.lessons[no], sh = SHARED[no];
+  return {
+    no,
+    title: own.title || sh.title,
+    goal: own.goal || sh.goal,
+    body: own.intro ? [own.intro] : sh.body,
+    diagram: sh.special ? null : sh.diagram,
+    quiz: own.quiz || sh.quiz,
+    task: own.task || sh.task,
+    hint: own.hint || sh.hint,
+    points: own.points, files: own.files, output: own.output, run: own.run,
+  };
+}
+
+/* ---- 進みぐあい（このブラウザにだけ保存） ---- */
+let progress = {};
+try { progress = JSON.parse(localStorage.getItem('ichininmae-progress') || '{}') || {}; } catch (e) { progress = {}; }
+const doneList = id => Array.isArray(progress[id]) ? progress[id] : [];
+const isDone = (id, no) => doneList(id).includes(no);
+function setDone(id, no) {
+  if (!isDone(id, no)) progress[id] = [...doneList(id), no];
+  try { localStorage.setItem('ichininmae-progress', JSON.stringify(progress)); } catch (e) { /* 保存できなくても動く */ }
+}
+const nextOf = id => ORDER.find(no => !isDone(id, no)) || null;
+
+/* ---- コードに色をつける ---- */
+const KW = new Set(('if else elif elsif elseif for while do end def function fn func return class struct interface impl trait enum type let const var mut ' +
+  'public private protected static void int double float bool boolean char long unsigned size_t string String i32 u32 f64 usize ' +
+  'new import from export package use mod pub require require_once require_relative include namespace try catch except finally rescue ensure raise throw throws ' +
+  'match switch case default break continue next in of as is not and or true false True False nil null None NULL undefined this self super extends implements ' +
+  'async await yield lambda with go defer chan range map echo foreach unless begin module typedef sizeof readonly declare global record attr_reader puts print')
+  .split(' '));
+function tokenRe(lang) {
+  const hash = ['python', 'ruby', 'shell'].includes(lang);
+  const parts = [];
+  if (lang === 'python') parts.push('"""[\\s\\S]*?"""');
+  parts.push(hash ? '#[^\\n]*' : '\\/\\/[^\\n]*|\\/\\*[\\s\\S]*?\\*\\/');
+  parts.push('"(?:\\\\.|[^"\\\\\\n])*"');
+  parts.push(lang === 'rust' ? "'(?:\\\\.|[^'\\\\])'" : "'(?:\\\\.|[^'\\\\\\n])*'");
+  if (['js', 'ts', 'go'].includes(lang)) parts.push('`(?:\\\\.|[^`\\\\])*`');
+  if (lang === 'c') parts.push('^[ \\t]*#[a-z]+');
+  if (lang === 'rust') parts.push('#\\[[^\\]\\n]*\\]');
+  if (lang === 'php') parts.push('<\\?php');
+  parts.push('\\b\\d+(?:\\.\\d+)?\\b');
+  parts.push('[A-Za-z_$][\\w$]*');
+  return new RegExp(parts.join('|'), 'gm');
+}
+function highlight(code, lang) {
+  if (lang === 'shell') {
+    return esc(code).split('\n').map(l => l.trimStart().startsWith('#') ? `<span class="c">${l}</span>` : l).join('\n');
+  }
+  const hash = ['python', 'ruby'].includes(lang);
+  let out = '', last = 0, m;
+  const re = tokenRe(lang);
+  while ((m = re.exec(code))) {
+    out += esc(code.slice(last, m.index));
+    const t = m[0], c0 = t[0];
+    let cls = '';
+    if (t.startsWith('//') || t.startsWith('/*') || (hash && c0 === '#')) cls = 'c';
+    else if (t.startsWith('"""') || c0 === '"' || c0 === "'" || c0 === '`') cls = t.startsWith('"""') && lang === 'python' ? 'c' : 's';
+    else if (c0 === '#' || t === '<?php' || /^[ \t]*#/.test(t)) cls = 'p';
+    else if (/^\d/.test(t)) cls = 'n';
+    else if (KW.has(t)) cls = 'k';
+    out += cls ? `<span class="${cls}">${esc(t)}</span>` : esc(t);
+    last = m.index + t.length;
+  }
+  return out + esc(code.slice(last));
+}
+function codeLines(code, lang) {
+  // 何行にもまたがるコメントや文字列の色が、行をまたいでも続くようにする
+  const html = highlight(code, lang);
+  const lines = [];
+  let open = '';
+  for (const raw of html.split('\n')) {
+    let line = open + raw;
+    const opens = [...line.matchAll(/<span class="(\w)">|<\/span>/g)];
+    let depth = null;
+    for (const o of opens) depth = o[1] ? o[1] : null;
+    if (depth) { line += '</span>'; open = `<span class="${depth}">`; } else open = '';
+    lines.push(`<div class="cl"><span class="tx">${line || ' '}</span></div>`);
+  }
+  return lines.join('');
+}
+
+/* ---- 図 ---- */
+function seqRow(items) {
+  const dur = items.length * 1.2;
+  let h = '';
+  items.forEach(([t, sub, kind], k) => {
+    if (k) h += `<span class="ar" style="--dur:${dur}s;--d:${(k - 1) * 1.2 + .6}s"><i></i></span>`;
+    h += `<span class="bx lit${kind ? ' ' + kind : ''}" style="--dur:${dur}s;--d:${k * 1.2}s">${esc(t)}${sub ? `<small>${esc(sub)}</small>` : ''}</span>`;
+  });
+  return `<div class="dg-row">${h}</div>`;
+}
+function cells(vals, round) {
+  const dur = vals.length * 0.9;
+  return `<div class="cells">${vals.map(([v, idx], k) =>
+    `<div class="cell${round ? ' round' : ''}"><span class="bx lit" style="--dur:${dur}s;--d:${k * 0.9}s">${esc(v)}</span>${idx != null ? `<small>${esc(idx)}</small>` : ''}</div>`).join('')}</div>`;
+}
+const DIAGRAMS = {
+  flow: L => ['コードが動くまで', seqRow(L.flow), L.flowNote],
+  var: () => ['変数は、名前のついた箱',
+    `<div class="dg-row">
+      <div class="vbox"><span class="vname">age</span><span class="vval swap"><b>15</b><b>16</b></span></div>
+      <div class="vbox"><span class="vname">name</span><span class="vval">"さくら"</span></div>
+      <div class="vbox"><span class="vname">height</span><span class="vval">152.5</span></div>
+    </div>`,
+    '箱には名前がついています。age の中身は、入れなおすと 15 から 16 に変わります。箱ごとに、入っている値の種類（型）がちがいます。'],
+  concat: () => ['つなげると、新しい文字列ができる',
+    seqRow([['"山田"', '文字列'], ['" "', '空白'], ['"太郎"', '文字列'], ['"山田 太郎"', 'つないだ結果']]),
+    'もとの文字列は変わりません。つないだ結果が、新しい文字列として作られます。'],
+  branch: () => ['条件によって、進む道が分かれる',
+    `<div class="dg-col">
+      <div class="dg-row"><span class="bx">点数 <span class="swap"><b>72</b><b>45</b></span> は 60 以上？</span></div>
+      <div class="dg-row"><span class="bx alt-a">はい → 「合格」と表示</span><span class="bx alt-b">いいえ → 「もう少し」と表示</span></div>
+    </div>`,
+    '点数が変わると、条件の答え（はい・いいえ）が変わり、実行される所が変わります。動くのは、どちらか一方だけです。'],
+  loop: () => ['同じ処理を、値を変えながらくりかえす',
+    cells([['1', 'i'], ['2', 'i'], ['3', 'i'], ['4', 'i'], ['5', 'i']], true),
+    'i が 1 → 2 → 3 … と変わりながら、同じ処理が 5 回動きます。5 をこえたら、くりかえしを出て次へ進みます。'],
+  func: () => ['関数は、材料を入れると結果が出てくる機械',
+    seqRow([['3, 4', '材料（引数）'], ['add', '関数', 'tool'], ['7', '結果（戻り値）']]),
+    '中で何をしているかを知らなくても、名前と、入れる物・出てくる物がわかれば使えます。'],
+  array: () => ['配列は、番号のついた箱のならび',
+    cells([['70', '[0]'], ['85', '[1]'], ['60', '[2]'], ['90', '[3]']]),
+    '番号は 0 から始まります。4 個入っているので、使える番号は 0 から 3 までです。くりかえしで、先頭から順に取り出せます。'],
+  map: () => ['辞書は、キーで値を取り出す',
+    `<div class="kv">${[['"りんご"', '120'], ['"バナナ"', '80'], ['"みかん"', '60']].map(([k, v], i) =>
+      `<span class="bx lit" style="--dur:3.6s;--d:${i * 1.2}s">${k}</span><span class="ar" style="--dur:3.6s;--d:${i * 1.2 + .3}s"><i></i></span><span class="bx lit" style="--dur:3.6s;--d:${i * 1.2 + .5}s">${v}</span>`).join('')}</div>`,
+    '左がキー、右が値です。番号ではなく、「りんご」という名前で 120 を取り出します。'],
+  split: () => ['分けると配列に、つなぐと文字列に',
+    seqRow([['"apple,banana,cherry"', '1つの文字列'], ['分ける', '区切りは ","', 'tool'], ['apple', '[0]'], ['banana', '[1]'], ['cherry', '[2]']]),
+    '区切りの文字で切って、配列にします。反対に、配列をつないで1つの文字列にもどすこともできます。'],
+  class: () => ['設計図から、実物をいくつも作る',
+    `<div class="dg-row">
+      <span class="bx tool">Account<small>設計図: 持ち主・残高／入金する・表示する</small></span>
+      <span class="ar" style="--dur:4s"><i></i></span>
+      <div class="dg-col"><span class="bx lit" style="--dur:4s;--d:.6s">さくら・<span class="swap"><b>1000</b><b>1500</b></span> 円<small>実物 a</small></span><span class="bx">たろう・300 円<small>実物 b</small></span></div>
+    </div>`,
+    '実物は、それぞれが自分のデータを持っています。a に入金しても、b の残高は変わりません。'],
+  module: () => ['部品のファイルを、使う側が読みこむ',
+    seqRow([['greeting', '部品: hello / bye'], ['読みこむ', 'import など', 'tool'], ['main', '使う側']]),
+    '部品のファイルは、外に見せる物だけを公開します。使う側は、それを読みこんで呼び出します。'],
+  error: () => ['失敗したときの道を、用意しておく',
+    `<div class="dg-col">
+      <div class="dg-row"><span class="bx">やってみる<small>失敗するかもしれない処理</small></span></div>
+      <div class="dg-row"><span class="bx alt-a">うまくいった → そのまま次へ</span><span class="bx alt-b">失敗した → 受けとめて、知らせる</span></div>
+    </div>`,
+    '失敗したときに何をするかを、前もって書いておきます。そうすれば、プログラムがとつぜん止まることはありません。'],
+  file: () => ['変数は消える。ファイルは残る',
+    seqRow([['プログラム', '変数は、終わると消える'], ['書く', '', 'tool'], ['memo.txt', 'ファイルは残る'], ['読む', '', 'tool'], ['プログラム', '次に動かしたとき']]),
+    'ファイルに書いておけば、プログラムを止めても、次に動かしたときに読みもどせます。'],
+  test: () => ['「こうなるはず」と「実際」をくらべる',
+    `<div class="tt"><span class="h">入力</span><span class="h">期待する結果</span><span class="h">実際の結果</span><span class="h"></span>${
+      [['3', 'Fizz'], ['5', 'Buzz'], ['15', 'FizzBuzz'], ['7', '7']].map(([a, b], i) =>
+        `<span class="bx lit" style="--dur:4s;--d:${i}s">${a}</span><span class="bx">${b}</span><span class="bx lit" style="--dur:4s;--d:${i + .3}s">${b}</span><span class="okm">✔</span>`).join('')}</div>`,
+    '期待する結果と実際の結果が同じなら合格です。1つでもちがえば、テストが「ここがちがう」と知らせてくれます。'],
+  tools: () => ['一人前の道具箱',
+    seqRow([['パッケージ管理', 'ライブラリを入れる'], ['フォーマッタ', '書き方をそろえる'], ['リンター', 'あやしい所を探す'], ['テスト', '動きを確かめる']]),
+    'コードを書いたら、そろえて、調べて、ためす。この流れを、コマンドで何度でもくりかえします。'],
+  build: () => ['仕事を小さく分けて、つなげる',
+    seqRow([['文章', '入力'], ['分ける', '単語のならびに', 'tool'], ['数える', '単語 → 回数', 'tool'], ['ならべる', '多い順に', 'tool'], ['表示する', '上位 3 個']]),
+    '1つの関数が、1つの仕事をします。前の関数の結果が、次の関数の材料になります。'],
+};
+function diagram(key, L) {
+  if (!key || !DIAGRAMS[key]) return '';
+  const [title, body, cap] = DIAGRAMS[key](L);
+  return `<figure class="panel dg" style="margin:0"><div class="box-title">図 ｜ ${esc(title)}</div>${body}<figcaption class="dg-cap">${rich(cap)}</figcaption></figure>`;
+}
+
+/* ---- 画面: ホーム ---- */
+function meterHTML(id) {
+  const n = doneList(id).length;
+  return `<div class="meter-row"><div class="meter"><i style="width:${n / ORDER.length * 100}%"></i></div><span>${n} / ${ORDER.length}</span></div>`;
+}
+function badgesHTML(L) {
+  return `<div class="badges"><span class="badge ${L.type === '静的型' ? 'static' : 'dynamic'}">${L.type}</span><span class="badge">${esc(L.exec)}</span></div>`;
+}
+function viewHome() {
+  return `<div class="wrap">
+    <header class="head">
+      <div class="eyebrow">9つの言語 ・ 各 18 レッスン</div>
+      <h1>一人前ロードマップ</h1>
+      <p class="lead">プログラミング言語を1つえらんで、<b>「一人前」とよばれる所まで</b>の道のりを、順に歩いていく学習ツールです。
+      最初に全体の流れを見てから、レッスンを1つずつ進めます。</p>
+    </header>
+    <ol class="how">
+      <li class="panel"><b>全体の流れを見る</b><span>ゴールと、そこまでの 6 つのステージを、最初に地図でたしかめます。</span></li>
+      <li class="panel"><b>レッスンを進める</b><span>読む → 結果を予想する → たしかめる → クイズ → 自分で書きかえる、の順に進みます。</span></li>
+      <li class="panel"><b>卒業制作を作る</b><span>学んだことを全部使って、小さな作品を自分の手で作ります。</span></li>
+    </ol>
+    <section class="sec">
+      <h2>言語をえらぶ</h2>
+      <div class="langs">${LANGS.map(L => `<a class="panel lang" href="#${L.id}">
+        <div class="lang-top"><h3>${esc(L.name)}</h3>${badgesHTML(L)}</div>
+        <p class="tag">${esc(L.tagline)}</p>
+        <p class="about">${esc(L.about)}</p>
+        ${meterHTML(L.id)}
+        <span class="go">${doneList(L.id).length ? 'つづきから' : '道のりを見る'} →</span>
+      </a>`).join('')}</div>
+    </section>
+    <p class="muted" style="font-size:14px">のっているコードは、すべて実際に動かして、表示される結果をたしかめてあります。進みぐあいは、このブラウザの中にだけ保存されます。</p>
+  </div>`;
+}
+
+/* ---- 画面: 言語の全体図 ---- */
+function viewLang(L) {
+  const next = nextOf(L.id), count = doneList(L.id).length;
+  const allDone = count === ORDER.length;
+  const stagesHTML = STAGES.map((st, k) => {
+    const d = st.lessons.filter(no => isDone(L.id, no)).length;
+    const cls = d === st.lessons.length ? 'complete' : d || st.lessons.includes(next) ? 'started' : '';
+    return `<div class="stage ${cls}" style="--k:${k}">
+      <div class="station">${d === st.lessons.length ? '✓' : st.no}</div>
+      <div class="panel stage-card">
+        <div class="stage-head"><h3>ステージ ${st.no}　${esc(st.title)}</h3><p class="can"><b>ここまで来ると:</b> ${esc(st.can)}</p></div>
+        <div class="lessons">${st.lessons.map(no => {
+          const les = lessonOf(L, no), dn = isDone(L.id, no);
+          return `<a class="lrow${dn ? ' done' : no === next ? ' next' : ''}" href="#${L.id}-${no}">
+            <span class="n">${no}</span><span class="t">${esc(les.title)}</span><span class="s">${dn ? '✓ 完了' : no === next ? 'つぎはここ' : ''}</span></a>`;
+        }).join('')}</div>
+      </div>
+    </div>`;
+  }).join('');
+  return `<div class="wrap">
+    <a class="back" href="#home">← 言語をえらぶ</a>
+    <header class="hero">
+      <div class="eyebrow">全体の流れ</div>
+      <h1>${esc(L.name)} で一人前になるまで</h1>
+      <p class="lead"><b>${esc(L.tagline)}。</b>${esc(L.about)}</p>
+      ${badgesHTML(L)}
+    </header>
+    ${allDone ? `<div class="done-banner"><b>修了おめでとうございます！</b><span>18 のレッスンを全部終えました。下の「コースのあとに」から、次の一歩をえらびましょう。</span></div>` : ''}
+    <div class="two">
+      <div class="panel box">
+        <div class="box-title">ゴール ｜ ${esc(L.name)} の「一人前」の目安</div>
+        <ul class="ready">${L.ready.map(r => `<li>${esc(r)}</li>`).join('')}</ul>
+      </div>
+      ${diagram('flow', L)}
+    </div>
+    <div class="panel cta">
+      ${meterHTML(L.id)}
+      ${next ? `<a class="btn" href="#${L.id}-${next}">${count ? `つづきから：${next} ${esc(lessonOf(L, next).title)}` : '最初のレッスンから始める'} →</a>`
+             : `<a class="btn ghost" href="#${L.id}-01">最初から見なおす</a>`}
+    </div>
+    <section class="sec">
+      <h2>6 つのステージ、18 のレッスン</h2>
+      <p class="muted" style="font-size:15px">上から順に進むのがおすすめです。知っている所は、飛ばしてもかまいません。</p>
+      <div class="route" style="--p:${!count ? 0 : next ? STAGES.indexOf(stageOf(next)) / (STAGES.length - 1) : 1}">${stagesHTML}</div>
+    </section>
+    <section class="panel box">
+      <div class="box-title">コースのあとに</div>
+      <p>このコースで身につくのは、一人前になるための<b>土台</b>です。本当に一人前になるには、自分で考えた物を、最後まで作りきる経験が必要です。次は、こんな物に挑戦してみましょう。</p>
+      <ul class="after">${L.next.map(r => `<li>${esc(r)}</li>`).join('')}</ul>
+    </section>
+  </div>`;
+}
+
+/* ---- 画面: レッスン ---- */
+let ui = { tab: 0, shown: false, picked: null, hint: false };
+function shuffled(les, L) {
+  // 正解の場所が毎回同じにならないように、レッスンと言語で順番をずらす
+  const n = les.quiz.choices.length, shift = (Number(les.no) + LANGS.indexOf(L)) % n;
+  return les.quiz.choices.map((_, i) => (i + shift) % n);
+}
+function viewLesson(L, no) {
+  const les = lessonOf(L, no), st = stageOf(no), idx = ORDER.indexOf(no);
+  const prev = ORDER[idx - 1], next = ORDER[idx + 1];
+  const shell = les.files.every(f => f.shell);
+  const file = les.files[Math.min(ui.tab, les.files.length - 1)];
+  const fileLang = file.shell ? 'shell' : /\.(json|mod|h)$/.test(file.name) && !/\.h$/.test(file.name) ? 'plain' : L.id;
+  const order = shuffled(les, L);
+  let step = 0;
+  const stepTag = t => `<span class="step">${++step}　${t}</span>`;
+  const outLines = (les.output || '').split('\n');
+  return `<div class="wrap narrow">
+    <nav class="topbar" aria-label="レッスンの位置">
+      <a class="back" href="#${L.id}">← ${esc(L.name)} の道のり</a>
+      <span class="where">ステージ ${st.no}「${esc(st.title)}」</span>
+      <div class="dots">${ORDER.map(n => `<a href="#${L.id}-${n}" title="${n} ${esc(lessonOf(L, n).title)}" aria-label="レッスン ${n}" class="${n === no ? 'cur' : isDone(L.id, n) ? 'done' : ''}"></a>`).join('')}</div>
+    </nav>
+    <header class="ltitle">
+      <div class="eyebrow">${esc(L.name)} ・ レッスン ${idx + 1} / ${ORDER.length}</div>
+      <h1>${esc(les.title)}</h1>
+    </header>
+    <div class="goal"><span class="box-title">このレッスンのねらい</span><span>${esc(les.goal)}</span></div>
+    <div class="prose">${les.body.map(p => `<p>${rich(p)}</p>`).join('')}</div>
+    ${diagram(les.diagram, L)}
+
+    <section class="sec">
+      <h2>${stepTag('読む')} ${shell ? 'コマンドを見る' : 'コードを読む'}</h2>
+      <div class="panel codebox">
+        <div class="tabs" role="tablist">${les.files.map((f, i) =>
+          `<button class="tab" role="tab" data-tab="${i}" aria-selected="${f === file}">${esc(f.shell ? 'ターミナルで打つコマンド' : f.name)}</button>`).join('')}
+          <button class="copy" id="copy">コピー</button></div>
+        <div class="code" id="code">${codeLines(file.code, fileLang)}</div>
+        ${shell ? '' : `<div class="runline">動かし方: <code>${esc(les.run)}</code></div>`}
+      </div>
+    </section>
+
+    ${shell ? '' : `<section class="sec">
+      <h2>${stepTag('予想する')} 動かすと、何が表示される？</h2>
+      <div class="panel predict">
+        <p>上のコードを動かしたときに表示される物を、<b>頭の中で予想してから</b>、結果を開きましょう。予想とちがっていたら、そこが学ぶ所です。</p>
+        ${ui.shown
+          ? `<div class="term"><div class="term-title">実際に動かした結果</div>${outLines.map((l, i) => `<div class="tl" style="animation-delay:${Math.min(i * 70, 1400)}ms">${esc(l) || ' '}</div>`).join('')}</div>`
+          : `<div><button class="btn" id="reveal">結果を見る</button></div>`}
+      </div>
+    </section>`}
+
+    <section class="sec">
+      <h2>${stepTag('おさえる')} ポイント</h2>
+      <ul class="points">${les.points.map(p => `<li class="panel"><span>${rich(p)}</span></li>`).join('')}</ul>
+    </section>
+
+    <section class="sec">
+      <h2>${stepTag('たしかめる')} クイズ</h2>
+      <div class="panel quiz">
+        <p class="q">${esc(les.quiz.q)}</p>
+        <div class="choices">${order.map(i => {
+          const cls = ui.picked === i ? (i === les.quiz.answer ? ' right' : ' wrong') : (ui.picked === les.quiz.answer && i === les.quiz.answer ? ' right' : '');
+          return `<button class="choice${cls}" data-choice="${i}">${esc(les.quiz.choices[i])}</button>`;
+        }).join('')}</div>
+        ${ui.picked == null ? '' : ui.picked === les.quiz.answer
+          ? `<p><span class="verdict ok">正解！</span> ${esc(les.quiz.why)}</p>`
+          : `<p><span class="verdict ng">おしい。</span> もう一度えらんでみよう。</p>`}
+      </div>
+    </section>
+
+    <section class="sec">
+      <h2>${stepTag('書く')} やってみよう</h2>
+      <div class="panel task">
+        <p>${esc(les.task)}</p>
+        <p class="muted" style="font-size:14px">${shell ? '' : '上のコードを自分のパソコンにコピーして、書きかえて動かしてみましょう。読むだけより、自分の手で書くほうが、何倍も身につきます。'}</p>
+        ${ui.hint ? `<div class="hintbox"><b>ヒント:</b> ${esc(les.hint)}</div>` : `<div><button class="btn ghost small" id="hint">ヒントを見る</button></div>`}
+      </div>
+    </section>
+
+    <div class="lnav">
+      ${prev ? `<a class="btn ghost" href="#${L.id}-${prev}">← 前のレッスン</a>` : `<a class="btn ghost" href="#${L.id}">← 道のりにもどる</a>`}
+      <button class="btn" id="complete">${isDone(L.id, no) ? '' : '完了にして、'}${next ? '次のレッスンへ →' : '道のりにもどる →'}</button>
+    </div>
+  </div>`;
+}
+
+/* ---- 表示の切りかえ ---- */
+let current = { lang: null, no: null };
+function parseHash() {
+  const h = location.hash.replace(/^#/, '');
+  const m = /^([a-z]+)(?:-(\d\d))?$/.exec(h);
+  if (m) {
+    const L = langOf(m[1]);
+    if (L && m[2] && L.lessons[m[2]]) return { lang: L, no: m[2] };
+    if (L) return { lang: L, no: null };
+  }
+  return { lang: null, no: null };
+}
+function render(keepScroll) {
+  const r = parseHash();
+  const changed = r.lang !== current.lang || r.no !== current.no;
+  if (changed) ui = { tab: 0, shown: false, picked: null, hint: false };
+  current = r;
+  $('#app').innerHTML = r.no ? viewLesson(r.lang, r.no) : r.lang ? viewLang(r.lang) : viewHome();
+  document.title = r.lang ? `${r.lang.name}${r.no ? ' ' + r.no : ''} ｜ 一人前ロードマップ` : '一人前ロードマップ';
+  if (changed && !keepScroll) window.scrollTo(0, 0);
+}
+window.addEventListener('hashchange', () => render());
+
+document.addEventListener('click', e => {
+  const { lang: L, no } = current;
+  if (!L || !no) return;
+  const t = e.target.closest('button'); if (!t) return;
+  const les = lessonOf(L, no);
+  if (t.dataset.tab != null) { ui.tab = Number(t.dataset.tab); render(true); }
+  else if (t.id === 'reveal') { ui.shown = true; render(true); }
+  else if (t.id === 'hint') { ui.hint = true; render(true); }
+  else if (t.dataset.choice != null) { ui.picked = Number(t.dataset.choice); render(true); }
+  else if (t.id === 'copy') {
+    const text = les.files[Math.min(ui.tab, les.files.length - 1)].code;
+    Promise.resolve().then(() => navigator.clipboard.writeText(text)).then(() => { t.textContent = 'コピーしました'; }, () => {
+      const r = document.createRange(); r.selectNodeContents($('#code'));
+      const s = getSelection(); s.removeAllRanges(); s.addRange(r); t.textContent = '選びました';
+    });
+    setTimeout(() => { t.textContent = 'コピー'; }, 1600);
+  } else if (t.id === 'complete') {
+    setDone(L.id, no);
+    const next = ORDER[ORDER.indexOf(no) + 1];
+    location.hash = next ? `${L.id}-${next}` : L.id;
+  }
+});
+
+render(true);
+</script>
+</body>
+</html>

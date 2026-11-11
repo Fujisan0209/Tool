@@ -5,7 +5,9 @@
   "private": true,
   "scripts": {
     "test": "node --test test/*.test.js",
-    "build": "node scripts/build.js"
+    "build": "node scripts/build.js",
+    "course:run": "node scripts/course-run.js",
+    "course:build": "node scripts/course-build.js"
   },
   "license": "MIT"
 }

@@ -1,0 +1,533 @@
+=== 01
+- `console.log( )` で表示します。Node.js では画面（ターミナル）に、ブラウザでは開発者ツールの「コンソール」に出ます。
+- `//` から行の終わりまではコメントです。
+- 文の終わりの `;` は、なくても動くことが多いですが、つけておくのが安全です。
+- JavaScript は、ブラウザの中でも、Node.js を使ってパソコンの上でも動きます。このコースでは Node.js で動かします。
+--- main
+// はじめてのプログラム
+console.log("こんにちは！");
+console.log("プログラミングをはじめます。");
+console.log("1 + 2 =", 1 + 2);   // カンマで区切ると、間に空白が入ります
+
+=== 02
+- 変数は `let`（入れなおせる）か `const`（入れなおせない）で作ります。まず `const` を使い、変える必要があるときだけ `let` にします。
+- 古い書き方の `var` は、いまは使いません。
+- 数は整数も小数も同じ `number` 型です。
+- バッククォートで囲んだ文字列（テンプレート文字列）では、`${ }` の中の変数が値に置きかわります。
+- `typeof x` で、いまの型を調べられます。
+--- main
+const name = "さくら";      // 文字列 (string)
+let age = 15;               // 数 (number)
+const height = 152.5;       // 小数も number
+const isStudent = true;     // 真か偽か (boolean)
+
+console.log(`名前: ${name}`);
+console.log(`年れい: ${age}`);
+console.log(`身長: ${height}`);
+console.log(`学生: ${isStudent}`);
+
+age = age + 1;              // let の変数は入れなおせます
+console.log(`来年は ${age} さい`);
+console.log(typeof name, typeof age, typeof isStudent);
+
+=== 03
+- `/` は小数になります（7 / 2 は 3.5）。切りすてたいときは `Math.floor( )` を使います。
+- `%` はあまり、`**` は累乗です。
+- 文字列と数を `+` でつなぐと、数が文字列に変わります。`"1" + 2` は `"12"` になるので注意。
+- 文字列を数に変えるときは `Number("42")` を使います。
+- 文字数は `.length` で調べます。
+--- main
+const a = 7;
+const b = 2;
+console.log("7 + 2 =", a + b);
+console.log("7 - 2 =", a - b);
+console.log("7 * 2 =", a * b);
+console.log("7 / 2 =", a / b);                 // 小数になる
+console.log("切りすて:", Math.floor(a / b));
+console.log("7 % 2 =", a % b);                 // あまり
+
+const family = "山田";
+const given = "太郎";
+const full = family + " " + given;
+console.log("フルネーム:", full);
+console.log("文字数:", "program".length);
+
+console.log("1" + 2);            // 文字列としてつながる
+console.log(Number("1") + 2);    // 数として足す
+
+=== 04
+- `if (条件) { }` の形です。`else if` で次の条件、`else` で「どれでもないとき」です。
+- 等しいかどうかは `===` で調べます。`==` は型を勝手に変えてくらべるので（`"1" == 1` が true）、使わないのがきまりです。
+- 「かつ」は `&&`、「または」は `||`、「〜でない」は `!` です。
+- `条件 ? A : B` は、「条件が成り立てば A、そうでなければ B」という短い書き方です（三項演算子）。
+--- main
+const score = 72;
+
+if (score >= 80) {
+  console.log("よくできました");
+} else if (score >= 60) {
+  console.log("合格");
+} else {
+  console.log("もう少し");
+}
+
+const age = 15;
+const hasTicket = true;
+if (age >= 12 && hasTicket) {
+  console.log("入場できます");
+}
+
+console.log("1" == 1);    // true（型を勝手に変えてしまう）
+console.log("1" === 1);   // false（型もくらべる）
+
+const label = age >= 18 ? "大人" : "子ども";
+console.log(label);
+
+=== 05
+- `for (はじめ; 続ける条件; 毎回すること)` の3つを `;` で区切ります。
+- 配列の中身を1つずつ取り出すときは `for (const x of 配列)` が便利です。
+- `while (条件)` は、条件が成り立つあいだくりかえします。
+- `continue` は「今回は飛ばして次へ」、`break` は「くりかえしをやめる」です。
+--- main
+// 決まった回数くりかえす
+for (let i = 1; i <= 5; i++) {
+  console.log(i, "回目");
+}
+
+// 条件が成り立つあいだくりかえす
+let count = 3;
+while (count > 0) {
+  console.log(count);
+  count--;
+}
+console.log("発射！");
+
+// 1〜10 の偶数だけを足す
+let total = 0;
+for (let i = 1; i <= 10; i++) {
+  if (i % 2 === 1) {
+    continue;      // 奇数は飛ばす
+  }
+  total += i;
+}
+console.log("偶数の合計:", total);
+
+=== 06
+- 関数は `function 名前(引数) { }` で作り、`return` で結果を返します。
+- `const isEven = (n) => n % 2 === 0;` のような「アロー関数」も、とてもよく使われます。1行なら `return` を省略できます。
+- `name = "みなさん"` のように、引数に「何も渡されなかったときの値」を決められます。
+- JavaScript では、関数も「値」です。変数に入れたり、ほかの関数に渡したりできます。
+--- main
+function add(a, b) {
+  return a + b;
+}
+
+function greet(name = "みなさん") {
+  return `こんにちは、${name}さん`;
+}
+
+const isEven = (n) => n % 2 === 0;   // アロー関数
+
+console.log("3 + 4 =", add(3, 4));
+console.log(greet("さくら"));
+console.log(greet());
+console.log("10 は偶数？", isEven(10));
+console.log("7 は偶数？", isEven(7));
+
+=== 07
+- 配列は `[ ]` で作ります。番号は 0 から始まります。
+- `push` で後ろに追加、`.length` で個数。最後の要素は `at(-1)` で取れます。
+- `const` の配列でも、中身の追加や変更はできます（入れなおしができないだけ）。
+- 数をならべかえるときは `sort((a, b) => a - b)` と書きます。ただの `sort()` は文字としてならべるので、10 が 9 より前に来てしまいます。
+--- main
+const scores = [70, 85, 60];
+scores.push(90);                 // 後ろに追加
+
+console.log("最初の点数:", scores[0]);
+console.log("最後の点数:", scores.at(-1));
+console.log("人数:", scores.length);
+
+let total = 0;
+for (const s of scores) {
+  total += s;
+}
+console.log("合計:", total);
+console.log("平均:", total / scores.length);
+console.log("最高点:", Math.max(...scores));
+
+scores.sort((a, b) => a - b);    // 小さい順にならべかえる
+console.log("ならべかえ:", scores);
+
+=== 08
+- 「キーと値」の組は、オブジェクト `{ }` で表せます。`prices["りんご"]` や `prices.apple` のように取り出します。
+- ないキーを取り出すと `undefined` になります（エラーにはなりません）。
+- キーをあとから足したり消したりする「辞書」として使うなら、専用の `Map` が向いています。`set` / `get` / `has` を使います。
+- `??` は「左が null か undefined なら右を使う」という意味です。
+--- main
+const prices = new Map();
+prices.set("りんご", 120);
+prices.set("バナナ", 80);
+prices.set("みかん", 60);
+
+console.log("りんご は", prices.get("りんご"), "円");
+
+if (prices.has("ぶどう")) {
+  console.log("ぶどう は", prices.get("ぶどう"), "円");
+} else {
+  console.log("ぶどう はありません");
+}
+
+console.log("もも:", prices.get("もも") ?? "不明");   // なければ「不明」
+
+console.log("--- 一覧 ---");
+for (const [name, price] of prices) {
+  console.log(`${name}: ${price} 円`);
+}
+console.log("種類:", prices.size);
+
+// ひとまとまりのデータには、オブジェクトを使う
+const user = { name: "さくら", age: 15 };
+console.log(user.name, user.age);
+
+=== 09
+- `split` で分けて配列に、`join` で配列をつないで文字列にします。
+- 文字列は作ったあと書きかえられません。`toUpperCase` や `replace` は「新しい文字列」を返します。
+- `includes` で「ふくまれているか」、`trim` で前後の空白を取ります。
+- `replace` は最初の1つだけ、`replaceAll` は全部を置きかえます。
+--- main
+const text = "apple,banana,cherry";
+
+const fruits = text.split(",");           // カンマで分ける
+console.log(fruits.length, "個");
+console.log("1番目:", fruits[0]);
+console.log("大文字:", fruits[0].toUpperCase());
+console.log("banana をふくむ？", text.includes("banana"));
+console.log("つなぐ:", fruits.join(" / "));
+console.log("置きかえ:", text.replace("cherry", "melon"));
+console.log("全部置きかえ:", text.replaceAll(",", " "));
+
+const messy = "   hello   ";
+console.log("[" + messy.trim() + "]");    // 前後の空白を取る
+console.log("先頭3文字:", text.slice(0, 3));
+
+=== 10
+- `class` は「設計図」。`new Account("さくら", 1000)` で、設計図から実物（インスタンス）を作ります。
+- `constructor` は、実物を作るときに1回だけ呼ばれ、最初の値を入れます。
+- `this` は「この実物自身」を指します。
+- 名前を `#` で始めると、クラスの外からさわれない「プライベート」なデータになります。
+--- main
+class Account {
+  #balance;                      // クラスの外からはさわれない
+
+  constructor(owner, balance) {
+    this.owner = owner;
+    this.#balance = balance;
+  }
+
+  deposit(amount) {
+    this.#balance += amount;
+  }
+
+  get balance() {                // a.balance で読めるようにする
+    return this.#balance;
+  }
+
+  show() {
+    console.log(`${this.owner} の残高: ${this.#balance} 円`);
+  }
+}
+
+const a = new Account("さくら", 1000);
+const b = new Account("たろう", 300);
+
+a.deposit(500);      // a だけが増える
+a.show();
+b.show();
+console.log(a.balance);
+
+=== 11
+title: 配列を一気にあつかう（map・filter・reduce）
+goal: for 文を使わずに、配列を「作りかえる・しぼる・まとめる」ことができるようになる。あわせて、分割代入とスプレッド構文を読めるようになる。
+intro: JavaScript では、関数をほかの関数に渡す書き方がとても多く使われます。とくに配列の map・filter・reduce は、React などのライブラリでも毎日のように出てきます。これが読めないと、ほかの人のコードが読めません。
+quiz: [1, 2, 3, 4].filter(n => n > 2).map(n => n * 10) の結果は？ ;; [10, 20, 30, 40] ;; [30, 40] ;; [3, 4] ;; 2 ;; filter で 2 より大きい数（3 と 4）だけを残し、map でそれぞれ 10 倍にするので [30, 40] です。
+task: 商品の配列から、値段が 100 円以上のものだけを取り出して、名前の配列を作ってみよう。
+hint: items.filter(...).map(item => item.name) の形です。
+- `map` は「全部を作りかえた新しい配列」、`filter` は「条件に合うものだけの新しい配列」を作ります。もとの配列は変わりません。
+- `reduce` は、配列を1つの値にまとめます（合計など）。
+- `const { name, price } = item;` は分割代入。オブジェクトから、ほしい物だけを取り出します。
+- `...` はスプレッド構文。配列やオブジェクトの中身を広げて、コピーや合体ができます。
+--- main
+const nums = [1, 2, 3, 4, 5, 6];
+
+const doubled = nums.map((n) => n * 2);             // 作りかえる
+const evens = nums.filter((n) => n % 2 === 0);      // しぼる
+const total = nums.reduce((sum, n) => sum + n, 0);  // まとめる
+console.log(doubled);
+console.log(evens);
+console.log("合計:", total);
+
+const items = [
+  { name: "りんご", price: 120 },
+  { name: "バナナ", price: 80 },
+  { name: "メロン", price: 900 },
+];
+
+// つなげて書ける
+const names = items.filter((item) => item.price >= 100).map((item) => item.name);
+console.log(names);
+
+// 分割代入: ほしい物だけ取り出す
+const { name, price } = items[0];
+console.log(name, price);
+const [first, second] = nums;
+console.log(first, second);
+
+// スプレッド構文: 広げてコピー・合体
+const more = [...nums, 7, 8];
+const sale = { ...items[0], price: 100 };
+console.log(more.length, sale);
+
+=== 12
+- 1つのファイルが1つの「モジュール」です。外で使わせたい物に `export` をつけます。
+- 使う側は `import { hello } from "./greeting.js";` と書きます。`./` と拡張子 `.js` を忘れずに。
+- `import` / `export` を使う書き方を ES モジュールといいます。Node.js では、`package.json` に `"type": "module"` と書いておくのが確実です。
+- 古いコードには `require( )` と `module.exports` を使う書き方（CommonJS）もあります。読めるようにしておきましょう。
+--- greeting.js
+// あいさつを作る部品
+export function hello(name) {
+  return `こんにちは、${name}さん`;
+}
+
+export function bye(name) {
+  return `さようなら、${name}さん`;
+}
+--- package.json
+{
+  "type": "module"
+}
+--- main
+import { hello, bye } from "./greeting.js";
+
+console.log(hello("さくら"));
+console.log(bye("さくら"));
+
+=== 13
+- エラーが起きるかもしれない所を `try { }` に書き、起きたときの対応を `catch (e) { }` に書きます。
+- 自分でエラーを起こすには `throw new Error("説明")` と書きます。
+- `finally { }` の中は、エラーが起きても起きなくても、最後に必ず動きます。
+- JavaScript は、0 で割ってもエラーにならず `Infinity` に、数にできない文字は `NaN` になります。自分でチェックする必要があります。
+--- main
+function divide(a, b) {
+  if (b === 0) {
+    throw new Error("0 で割ることはできません");
+  }
+  return a / b;
+}
+
+try {
+  console.log("10 ÷ 2 =", divide(10, 2));
+  console.log("10 ÷ 0 =", divide(10, 0));
+  console.log("ここは動きません");
+} catch (e) {
+  console.log("エラー:", e.message);
+}
+
+const text = "abc";
+try {
+  const number = Number(text);
+  if (Number.isNaN(number)) {          // 数にできないと NaN になる
+    throw new Error(`"${text}" は数ではありません`);
+  }
+  console.log(number);
+} catch (e) {
+  console.log(e.message);
+} finally {
+  console.log("チェック終わり");
+}
+
+=== 14
+- ファイルをあつかう道具は、Node.js の `node:fs` モジュールに入っています（ブラウザの JavaScript では使えません）。
+- `writeFileSync` で書きこみ、`readFileSync(ファイル, "utf8")` で文字列として読みこみます。
+- 名前に `Sync` がつく物は「終わるまで待つ」やり方です。サーバーでは、待たない `fs/promises` と `await` を使います（非同期のレッスンで出てきます）。
+- ファイルがないときは、エラーの `code` が `"ENOENT"` になります。
+--- main
+import { readFileSync, writeFileSync } from "node:fs";
+
+const lines = ["牛乳を買う", "宿題をする", "本を読む"];
+
+// 書きこむ
+writeFileSync("memo.txt", lines.join("\n") + "\n");
+console.log(lines.length, "行 書きました");
+
+// 読みこむ
+const loaded = readFileSync("memo.txt", "utf8").trim().split("\n");
+loaded.forEach((line, i) => {
+  console.log(`${i + 1}: ${line}`);
+});
+
+// ないファイルを開こうとしたとき
+try {
+  readFileSync("ない.txt", "utf8");
+} catch (e) {
+  if (e.code === "ENOENT") {
+    console.log("ない.txt は開けませんでした");
+  } else {
+    throw e;      // 知らないエラーは、そのまま上に知らせる
+  }
+}
+
+=== 15
+mode: test
+- Node.js には、テストの道具 `node:test` が最初から入っています。`node --test` で動かします。
+- `test("説明", () => { ... })` が1つのテストです。
+- `assert.equal(実際, 期待)` は、2つが同じでなければ「失敗」と知らせます。
+- 仕事では Vitest や Jest もよく使われます。`expect(fizzbuzz(3)).toBe("Fizz")` のように書きますが、考え方は同じです。
+--- main
+import { test } from "node:test";
+import assert from "node:assert/strict";
+
+function fizzbuzz(n) {
+  if (n % 15 === 0) return "FizzBuzz";
+  if (n % 3 === 0) return "Fizz";
+  if (n % 5 === 0) return "Buzz";
+  return String(n);
+}
+
+test("3 は Fizz", () => {
+  assert.equal(fizzbuzz(3), "Fizz");
+});
+
+test("5 は Buzz", () => {
+  assert.equal(fizzbuzz(5), "Buzz");
+});
+
+test("15 は FizzBuzz", () => {
+  assert.equal(fizzbuzz(15), "FizzBuzz");
+});
+
+test("7 は 7", () => {
+  assert.equal(fizzbuzz(7), "7");
+});
+
+=== 16
+title: 非同期処理（Promise と async / await）
+goal: 「時間のかかる処理を待つ」コードを、async / await で書けるようになる。
+intro: 通信やファイルの読みこみのように、時間のかかる処理があります。JavaScript は、その間ほかの仕事を止めないように「あとで結果を知らせる」しくみ（非同期）で動いています。Web の開発ではさけて通れない、JavaScript でいちばん大事なテーマの1つです。
+quiz: console.log("A"); setTimeout(() => console.log("B"), 0); console.log("C"); の表示順は？ ;; A B C ;; A C B ;; B A C ;; 2 ;; setTimeout の中身は、待ち時間が 0 でも「いまの仕事が全部終わってから」動きます。だから A C B の順になります。
+task: 「名前を受けとり、50ミリ秒後に『こんにちは、〇〇さん』を返す」async 関数を作り、await で結果を受けとって表示してみよう。
+hint: await wait(50); のあとで return します。呼ぶ側も async 関数の中で await します。
+- `Promise` は「あとで結果がとどく約束」です。
+- `async` をつけた関数の中では、`await` で Promise の結果がとどくまで待てます。上から順に読めるコードになります。
+- `await` は「その関数の中」だけを待たせます。プログラム全体は止まりません。
+- いくつかの処理を同時に進めて全部待つときは `Promise.all` を使います。
+- 失敗は、ふつうのエラーと同じように `try` / `catch` で受けとれます。
+--- main
+// ms ミリ秒待つ Promise を作る
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// 時間のかかる処理のかわり（通信のつもり）
+async function fetchPrice(name) {
+  await wait(50);
+  const prices = { りんご: 120, バナナ: 80 };
+  if (!(name in prices)) {
+    throw new Error(`${name} は売っていません`);
+  }
+  return prices[name];
+}
+
+async function main() {
+  console.log("1. 調べはじめます");
+
+  const apple = await fetchPrice("りんご");      // 結果がとどくまで待つ
+  console.log("2. りんご:", apple, "円");
+
+  // 2つを同時に進めて、両方そろうのを待つ
+  const [a, b] = await Promise.all([fetchPrice("りんご"), fetchPrice("バナナ")]);
+  console.log("3. 合計:", a + b, "円");
+
+  try {
+    await fetchPrice("ぶどう");
+  } catch (e) {
+    console.log("4. エラー:", e.message);
+  }
+}
+
+main();
+console.log("0. main() を呼んだ直後（待たずに先へ進む）");
+
+=== 17
+- `npm` は Node.js についてくる道具で、ライブラリを入れたり、決めておいたコマンドを動かしたりします。
+- `package.json` に、使うライブラリと、`npm run 〇〇` で動かすコマンドを書きます。
+- 入れたライブラリは `node_modules` フォルダに入ります。とても大きいので、Git には入れません（`.gitignore` に書きます）。
+- Prettier は書き方をそろえ、ESLint はあやしい所を教えてくれます。
+- 調べものは MDN Web Docs（日本語あり）がいちばん信頼できます。
+--- shell
+# バージョンを確かめる
+node --version
+npm --version
+
+# プロジェクトを始める（package.json ができる）
+npm init -y
+
+# ライブラリを入れる（-D は開発のときだけ使う物）
+npm install dayjs
+npm install -D prettier eslint
+
+# 書き方をそろえる・まちがいを探す
+npx prettier --write .
+npx eslint .
+
+# テストを動かす
+node --test
+
+=== 18
+- 「分ける → 数える → ならべる → 表示する」と、仕事ごとに関数を分けています。
+- `(counts.get(w) ?? 0) + 1` は、「まだなければ 0 として、1 を足す」という Map の定番の書き方です。
+- `sort` に渡す関数で、「回数の多い順、同じならアルファベット順」を決めています。
+- 空の文章が来たときは、エラーを投げて知らせています。
+--- main
+/** 文章を、小文字の単語の配列にする */
+function splitWords(text) {
+  return text
+    .toLowerCase()
+    .split(/\s+/)
+    .map((raw) => raw.replace(/[^a-z]/g, ""))   // 記号を取る
+    .filter((word) => word !== "");
+}
+
+function countWords(words) {
+  const counts = new Map();
+  for (const w of words) {
+    counts.set(w, (counts.get(w) ?? 0) + 1);
+  }
+  return counts;
+}
+
+/** 回数の多い順（同じならアルファベット順）に n 個 */
+function top(counts, n) {
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, n);
+}
+
+function report(text) {
+  const words = splitWords(text);
+  if (words.length === 0) {
+    throw new Error("単語がありません");
+  }
+  const counts = countWords(words);
+  console.log(`全部で ${words.length} 語、${counts.size} 種類`);
+  for (const [word, count] of top(counts, 3)) {
+    console.log(`${word}: ${count}`);
+  }
+}
+
+report("The cat saw the dog. The dog saw the bird!");
+
+try {
+  report("...");
+} catch (e) {
+  console.log("エラー:", e.message);
+}

@@ -1,0 +1,573 @@
+=== 01
+- PHP のコードは `<?php` から始めます。PHP だけのファイルなら、終わりの `?>` は書きません。
+- `echo` で表示します。自動では改行しないので、`\n` や `PHP_EOL` を書きます。
+- 文の終わりには `;` が必要です。`//` と `#` から行の終わりまではコメントです。
+- PHP はもともと Web ページを作るための言語です。Web サーバーで動かすと、`echo` した物がブラウザに送られます。このコースではまず、コマンド（`php main.php`）で動かします。
+--- main
+<?php
+// はじめてのプログラム
+echo "こんにちは！\n";
+echo "プログラミングをはじめます。\n";
+echo "1 + 2 = ", 1 + 2, "\n";   // カンマで区切って、いくつも表示できます
+
+=== 02
+- 変数の名前は、必ず `$` で始めます。型は書かなくても、入れた値で決まります。
+- ダブルクォート `" "` の文字列の中では、`{$name}` が値に置きかわります。シングルクォート `' '` では置きかわりません。
+- 真・偽は `true` / `false`。`echo` すると、true は `1`、false は何も表示されません。
+- 中身と型をくわしく見たいときは `var_dump($x)` を使います。調べものの基本の道具です。
+--- main
+<?php
+$name = "さくら";      // 文字列 (string)
+$age = 15;             // 整数 (int)
+$height = 152.5;       // 小数 (float)
+$isStudent = true;     // 真か偽か (bool)
+
+echo "名前: {$name}\n";
+echo "年れい: {$age}\n";
+echo "身長: {$height}\n";
+echo "学生: " . ($isStudent ? "はい" : "いいえ") . "\n";
+
+$age = $age + 1;       // 変数は、あとから入れなおせます
+echo "来年は {$age} さい\n";
+
+var_dump($age);        // 型と中身を表示
+var_dump($isStudent);
+
+=== 03
+- `/` は、割り切れなければ小数になります。整数の割り算（切りすて）は `intdiv( )` です。
+- `%` はあまり、`**` は累乗です。
+- 文字列をつなぐのは `.`（ドット）です。`+` は数の足し算だけに使います。
+- `strlen` はバイト数を返します。日本語の文字数を数えるときは `mb_strlen` を使います。
+--- main
+<?php
+$a = 7;
+$b = 2;
+echo "7 + 2 = ", $a + $b, "\n";
+echo "7 - 2 = ", $a - $b, "\n";
+echo "7 * 2 = ", $a * $b, "\n";
+echo "7 / 2 = ", $a / $b, "\n";             // 小数になる
+echo "切りすて: ", intdiv($a, $b), "\n";
+echo "7 % 2 = ", $a % $b, "\n";             // あまり
+
+$family = "山田";
+$given = "太郎";
+$full = $family . " " . $given;             // . でつなぐ
+echo "フルネーム: {$full}\n";
+echo "文字数: ", strlen("program"), "\n";
+echo "日本語の文字数: ", mb_strlen($full), "\n";
+
+=== 04
+- `if (条件) { }` の形です。次の条件は `elseif`（つなげて書く）、「どれでもないとき」は `else` です。
+- 等しいかどうかは `===` で調べます。`==` は型を勝手に変えてくらべるので（`"1" == 1` が true）、使わないのが安全です。
+- 「かつ」は `&&`、「または」は `||`、「〜でない」は `!` です。
+- `match` は、値によって結果を選ぶ書き方です。`===` でくらべてくれます。
+--- main
+<?php
+$score = 72;
+
+if ($score >= 80) {
+    echo "よくできました\n";
+} elseif ($score >= 60) {
+    echo "合格\n";
+} else {
+    echo "もう少し\n";
+}
+
+$age = 15;
+$hasTicket = true;
+if ($age >= 12 && $hasTicket) {
+    echo "入場できます\n";
+}
+
+var_dump("1" == 1);     // true（型を勝手に変えてしまう）
+var_dump("1" === 1);    // false（型もくらべる）
+
+$size = "M";
+$label = match ($size) {
+    "S" => "小さい",
+    "M" => "ふつう",
+    default => "大きい",
+};
+echo $label, "\n";
+
+=== 05
+- `for (はじめ; 続ける条件; 毎回すること)` の3つを `;` で区切ります。
+- 配列の中身を1つずつ取り出すときは `foreach ($配列 as $x)` を使います。PHP でいちばんよく使うくりかえしです。
+- `while (条件)` は、条件が成り立つあいだくりかえします。
+- `continue` は「今回は飛ばして次へ」、`break` は「くりかえしをやめる」です。
+--- main
+<?php
+// 決まった回数くりかえす
+for ($i = 1; $i <= 5; $i++) {
+    echo "{$i} 回目\n";
+}
+
+// 条件が成り立つあいだくりかえす
+$count = 3;
+while ($count > 0) {
+    echo $count, "\n";
+    $count--;
+}
+echo "発射！\n";
+
+// 1〜10 の偶数だけを足す
+$total = 0;
+for ($i = 1; $i <= 10; $i++) {
+    if ($i % 2 === 1) {
+        continue;      // 奇数は飛ばす
+    }
+    $total += $i;
+}
+echo "偶数の合計: {$total}\n";
+
+=== 06
+- 関数は `function 名前(引数) { }` で作り、`return` で結果を返します。
+- `int $a` や `): int` のように、引数と返す値の型を書けます。書いておくと、まちがった型を渡したときにエラーで教えてくれます。
+- ファイルの先頭に `declare(strict_types=1);` と書くと、型を勝手に変えずに、きびしくチェックします。仕事のコードではよく書かれます。
+- `fn($n) => $n % 2 === 0` は、1行で書ける「アロー関数」です。
+--- main
+<?php
+declare(strict_types=1);      // 型をきびしくチェックする
+
+function add(int $a, int $b): int
+{
+    return $a + $b;
+}
+
+function greet(string $name = "みなさん"): string
+{
+    return "こんにちは、{$name}さん";
+}
+
+$isEven = fn(int $n): bool => $n % 2 === 0;   // アロー関数
+
+echo "3 + 4 = ", add(3, 4), "\n";
+echo greet("さくら"), "\n";
+echo greet(), "\n";
+echo "10 は偶数？ ", $isEven(10) ? "はい" : "いいえ", "\n";
+echo "7 は偶数？ ", $isEven(7) ? "はい" : "いいえ", "\n";
+
+=== 07
+- 配列は `[ ]` で作ります。番号は 0 から始まります。
+- `$scores[] = 90;` で後ろに追加、`count( )` で個数です。
+- `array_sum`、`max`、`min`、`sort` など、配列用の関数がたくさんあります。
+- 中身をまとめて見たいときは `print_r( )` が便利です。`implode` は、配列をつないで文字列にします。
+--- main
+<?php
+$scores = [70, 85, 60];
+$scores[] = 90;                  // 後ろに追加
+
+echo "最初の点数: ", $scores[0], "\n";
+echo "人数: ", count($scores), "\n";
+
+$total = 0;
+foreach ($scores as $s) {
+    $total += $s;
+}
+echo "合計: {$total}\n";
+echo "平均: ", $total / count($scores), "\n";
+echo "最高点: ", max($scores), "\n";
+
+sort($scores);                   // 小さい順にならべかえる
+echo "ならべかえ: ", implode(", ", $scores), "\n";
+
+=== 08
+- PHP の配列は、キーを文字列にもできます（連想配列）。`["りんご" => 120]` のように `=>` で組にします。
+- `foreach ($prices as $name => $price)` で、キーと値をいっしょに取り出せます。
+- キーがあるかどうかは `isset( )` や `array_key_exists( )` で調べます。
+- `??` は「左がない（または null）なら右を使う」という意味です。
+- 連想配列は、入れた順番をおぼえています。
+--- main
+<?php
+$prices = ["りんご" => 120, "バナナ" => 80];
+$prices["みかん"] = 60;          // 追加
+
+echo "りんご は ", $prices["りんご"], " 円\n";
+
+if (isset($prices["ぶどう"])) {
+    echo "ぶどう は ", $prices["ぶどう"], " 円\n";
+} else {
+    echo "ぶどう はありません\n";
+}
+
+echo "もも: ", $prices["もも"] ?? "不明", "\n";   // なければ「不明」
+
+echo "--- 一覧 ---\n";
+foreach ($prices as $name => $price) {
+    echo "{$name}: {$price} 円\n";
+}
+echo "種類: ", count($prices), "\n";
+
+=== 09
+- `explode` で分けて配列に、`implode` で配列をつないで文字列にします。
+- `str_contains` で「ふくまれているか」、`str_replace` で置きかえ、`trim` で前後の空白を取ります。
+- 日本語をあつかうときは、`mb_` で始まる関数（`mb_strlen`、`mb_substr` など）を使います。`strlen` や `substr` はバイト単位なので、文字がこわれます。
+- 関数によって引数の順番がちがいます。使う前に公式マニュアル（php.net。日本語あり）で確かめる習慣をつけましょう。
+--- main
+<?php
+$text = "apple,banana,cherry";
+
+$fruits = explode(",", $text);            // カンマで分ける
+echo count($fruits), " 個\n";
+echo "1番目: ", $fruits[0], "\n";
+echo "大文字: ", strtoupper($fruits[0]), "\n";
+echo "banana をふくむ？ ", str_contains($text, "banana") ? "はい" : "いいえ", "\n";
+echo "つなぐ: ", implode(" / ", $fruits), "\n";
+echo "置きかえ: ", str_replace("cherry", "melon", $text), "\n";
+
+$messy = "   hello   ";
+echo "[", trim($messy), "]\n";            // 前後の空白を取る
+echo "先頭3文字: ", substr($text, 0, 3), "\n";
+
+$ja = "こんにちは世界";
+echo mb_substr($ja, 0, 5), " / ", mb_strlen($ja), " 文字\n";
+
+=== 10
+- `class` は「設計図」。`new Account("さくら", 1000)` で、設計図から実物（インスタンス）を作ります。
+- `__construct` は、実物を作るときに1回だけ呼ばれます。引数に `private` などをつけると、そのままプロパティ（持っているデータ）になります。
+- `$this` は「この実物自身」。プロパティやメソッドは `->` で使います（`$a->show()`）。
+- `private` は、クラスの外からさわれないという意味です。
+--- main
+<?php
+declare(strict_types=1);
+
+class Account
+{
+    // 引数に private / public をつけると、そのままプロパティになる
+    public function __construct(
+        public readonly string $owner,
+        private int $balance,
+    ) {
+    }
+
+    public function deposit(int $amount): void
+    {
+        $this->balance += $amount;
+    }
+
+    public function getBalance(): int
+    {
+        return $this->balance;
+    }
+
+    public function show(): void
+    {
+        echo "{$this->owner} の残高: {$this->balance} 円\n";
+    }
+}
+
+$a = new Account("さくら", 1000);
+$b = new Account("たろう", 300);
+
+$a->deposit(500);      // $a だけが増える
+$a->show();
+$b->show();
+echo $a->getBalance(), "\n";
+
+=== 11
+title: 配列を使いこなす
+goal: 「連想配列の配列」を、array_map・array_filter・usort などで自由に加工できるようになる。
+intro: PHP の仕事では、データベースから取り出したデータも、フォームから送られたデータも、ほとんどが「連想配列の配列」の形でやってきます。それをしぼる、作りかえる、ならべかえる。PHP を書く時間の多くは、配列の加工です。配列用の関数を知っているかどうかで、書く速さが大きく変わります。
+quiz: array_map(fn($n) => $n * 2, [1, 2, 3]) の結果は？ ;; [2, 4, 6] ;; 12 ;; [1, 2, 3, 1, 2, 3] ;; 1 ;; array_map は、配列の全部の要素に関数を当てはめた「新しい配列」を作ります。それぞれ 2 倍になるので [2, 4, 6] です。
+task: 商品の配列から、値段が 100 円以上の物だけを取り出し、値段の高い順にならべて、名前を表示してみよう。
+hint: array_filter でしぼり、usort で fn($a, $b) => $b["price"] <=> $a["price"] とならべます。
+- `array_map` は「全部を作りかえた新しい配列」、`array_filter` は「条件に合うものだけの配列」を作ります。
+- `array_filter` の結果は、もとの番号がそのまま残ります。0 から番号をふりなおすには `array_values` を使います。
+- `array_column` は、「連想配列の配列」から1つの列だけを取り出します。
+- `usort` は、自分で決めた順番でならべかえます。`<=>` は「小さい・同じ・大きい」を -1・0・1 で返す演算子です。
+- `in_array`（値があるか）、`array_keys`（キーの一覧）、`array_merge`（合体）もよく使います。
+--- main
+<?php
+declare(strict_types=1);
+
+$nums = [1, 2, 3, 4, 5, 6];
+
+$doubled = array_map(fn($n) => $n * 2, $nums);                  // 作りかえる
+$evens = array_values(array_filter($nums, fn($n) => $n % 2 === 0));   // しぼる
+echo implode(", ", $doubled), "\n";
+echo implode(", ", $evens), "\n";
+echo "合計: ", array_sum($nums), "\n";
+
+// 連想配列の配列（データベースの結果は、この形で来る）
+$items = [
+    ["name" => "りんご", "price" => 120],
+    ["name" => "バナナ", "price" => 80],
+    ["name" => "メロン", "price" => 900],
+];
+
+// 1つの列だけ取り出す
+$names = array_column($items, "name");
+echo implode("・", $names), "\n";
+
+// 値段の高い順にならべかえる
+usort($items, fn($a, $b) => $b["price"] <=> $a["price"]);
+foreach ($items as $item) {
+    echo "{$item['name']}: {$item['price']} 円\n";
+}
+
+// あるかどうか / 合体
+var_dump(in_array("バナナ", $names, true));
+$all = array_merge($nums, [7, 8]);
+echo count($all), " 個\n";
+
+=== 12
+- ほかのファイルを読みこむには `require_once` を使います。`__DIR__` は「このファイルがあるフォルダ」です。
+- `namespace` で、関数やクラスの名前に「名字」をつけます。ほかの人のコードと名前がぶつからなくなります。
+- 使う側は `use function App\Greeting\hello;` のように書いてから使います。
+- 仕事のプロジェクトでは、Composer の「オートロード」が、クラスのファイルを自動で読みこんでくれます。`require_once` をならべることはあまりありません。
+--- greeting.php
+<?php
+// あいさつを作る部品
+declare(strict_types=1);
+
+namespace App\Greeting;
+
+function hello(string $name): string
+{
+    return "こんにちは、{$name}さん";
+}
+
+function bye(string $name): string
+{
+    return "さようなら、{$name}さん";
+}
+--- main
+<?php
+declare(strict_types=1);
+
+require_once __DIR__ . "/greeting.php";
+
+use function App\Greeting\hello;
+use function App\Greeting\bye;
+
+echo hello("さくら"), "\n";
+echo bye("さくら"), "\n";
+
+=== 13
+- エラー（例外）が起きるかもしれない所を `try { }` に書き、起きたときの対応を `catch (例外の型 $e) { }` に書きます。
+- 自分で例外を起こすには `throw new InvalidArgumentException("説明")` と書きます。
+- `finally { }` の中は、例外が起きても起きなくても、最後に必ず動きます。
+- 文字列が数かどうかは `is_numeric( )` で確かめられます。
+- 開発中は、エラーを全部表示する設定（`error_reporting(E_ALL)`）にしておくと、まちがいに早く気づけます。
+--- main
+<?php
+declare(strict_types=1);
+
+function divide(int $a, int $b): float
+{
+    if ($b === 0) {
+        throw new InvalidArgumentException("0 で割ることはできません");
+    }
+    return $a / $b;
+}
+
+try {
+    echo "10 ÷ 2 = " . divide(10, 2) . "\n";
+    echo "10 ÷ 0 = " . divide(10, 0) . "\n";
+    echo "ここは動きません\n";
+} catch (InvalidArgumentException $e) {
+    echo "エラー: ", $e->getMessage(), "\n";
+}
+
+$text = "abc";
+try {
+    if (!is_numeric($text)) {
+        throw new UnexpectedValueException("\"{$text}\" は数ではありません");
+    }
+    echo (int) $text, "\n";
+} catch (UnexpectedValueException $e) {
+    echo $e->getMessage(), "\n";
+} finally {
+    echo "チェック終わり\n";
+}
+
+=== 14
+- `file_put_contents` で書きこみ、`file_get_contents` で全部を文字列として読みこみます。手軽でよく使います。
+- `file( )` は、1行ずつの配列として読みこみます。
+- ファイルがあるかどうかは `file_exists( )` で先に確かめられます。
+- `file_get_contents` は、失敗すると `false` を返して警告を出します。`=== false` で確かめましょう。
+--- main
+<?php
+declare(strict_types=1);
+
+$lines = ["牛乳を買う", "宿題をする", "本を読む"];
+
+// 書きこむ
+file_put_contents("memo.txt", implode("\n", $lines) . "\n");
+echo count($lines), " 行 書きました\n";
+
+// 読みこむ（1行ずつの配列になる）
+$loaded = file("memo.txt", FILE_IGNORE_NEW_LINES);
+foreach ($loaded as $i => $line) {
+    echo $i + 1, ": {$line}\n";
+}
+
+// ないファイルを開こうとしたとき
+if (!file_exists("ない.txt")) {
+    echo "ない.txt は開けませんでした\n";
+}
+
+=== 15
+- ここでは、しくみがわかるように、テストの道具を自分で作っています。「実際の値」と「期待する値」を `===` でくらべているだけです。
+- 仕事では PHPUnit を使います。`$this->assertSame("Fizz", fizzbuzz(3));` のように書きます。
+- PHPUnit は Composer で入れて、`vendor/bin/phpunit` で動かします（「道具をそろえる」で出てきます）。
+- テストしやすいコードは、「表示する」と「計算する」が分かれています。`fizzbuzz` は文字列を返すだけなので、テストがかんたんです。
+--- main
+<?php
+declare(strict_types=1);
+
+function fizzbuzz(int $n): string
+{
+    if ($n % 15 === 0) {
+        return "FizzBuzz";
+    }
+    if ($n % 3 === 0) {
+        return "Fizz";
+    }
+    if ($n % 5 === 0) {
+        return "Buzz";
+    }
+    return (string) $n;
+}
+
+$passed = 0;
+$failed = 0;
+
+// 実際の値と、期待する値をくらべる
+function check(string $name, string $actual, string $expected): void
+{
+    global $passed, $failed;
+    if ($actual === $expected) {
+        $passed++;
+        echo "OK   {$name}\n";
+    } else {
+        $failed++;
+        echo "NG   {$name}: 期待 {$expected} / 実際 {$actual}\n";
+    }
+}
+
+check("3 は Fizz", fizzbuzz(3), "Fizz");
+check("5 は Buzz", fizzbuzz(5), "Buzz");
+check("15 は FizzBuzz", fizzbuzz(15), "FizzBuzz");
+check("7 は 7", fizzbuzz(7), "7");
+echo "成功 {$passed} / 失敗 {$failed}\n";
+
+=== 16
+title: データベースと安全な Web
+goal: PDO でデータベースを使い、プリペアドステートメントと htmlspecialchars で、安全にデータをあつかえるようになる。
+intro: PHP の仕事のほとんどは、「フォームから受けとる → データベースに入れる・取り出す → HTML にして返す」という流れです。このとき、入力をそのまま SQL や HTML にまぜると、データをぬすまれたり書きかえられたりする、大きな事故になります。安全な書き方は決まっているので、最初から正しい形でおぼえましょう。
+quiz: ユーザーが入力した名前で検索するとき、安全な書き方は？ ;; "SELECT * FROM users WHERE name = '$name'" と文字列に直接入れる ;; prepare で ? を使った SQL を作り、execute で値を渡す ;; 入力から空白を取ってから文字列に入れる ;; 2 ;; 文字列に直接入れると、入力に SQL を書かれて悪用されます（SQL インジェクション）。prepare と execute を使えば、入力は必ず「ただの値」としてあつかわれます。
+task: books テーブル（title と price）を作り、3冊入れて、1000 円以上の本だけを値段の高い順に表示してみよう。
+hint: SELECT title, price FROM books WHERE price >= ? ORDER BY price DESC を prepare して、execute([1000]) とします。
+- `PDO` は、データベースをあつかう PHP の標準の道具です。MySQL でも PostgreSQL でも SQLite でも、同じ書き方で使えます。
+- 値を入れる所を `?` にした SQL を `prepare` し、`execute` で値を渡します（プリペアドステートメント）。入力を SQL に直接つなげてはいけません。
+- 画面に出すときは、必ず `htmlspecialchars( )` を通します。入力にまぜられた `<script>` などが、ただの文字になります（XSS 対策）。
+- フォームの値は `$_POST["name"]` や `$_GET["id"]` で受けとります。受けとった値は、必ず確かめてから使います。
+- ここでは、ファイルもサーバーもいらない SQLite の「メモリの中のデータベース」でためしています。
+--- main
+<?php
+declare(strict_types=1);
+
+// メモリの中にデータベースを作る（ためすのに便利）
+$db = new PDO("sqlite::memory:");
+$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);   // 失敗したら例外にする
+
+$db->exec("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, age INTEGER)");
+
+// 入れる: 値の所は ? にして、あとから渡す
+$insert = $db->prepare("INSERT INTO users (name, age) VALUES (?, ?)");
+$insert->execute(["さくら", 15]);
+$insert->execute(["たろう", 17]);
+$insert->execute(["<script>alert(1)</script>", 20]);   // わるい入力のつもり
+
+// 取り出す
+$select = $db->prepare("SELECT name, age FROM users WHERE age >= ? ORDER BY age");
+$select->execute([16]);
+$rows = $select->fetchAll(PDO::FETCH_ASSOC);     // 連想配列の配列になる
+
+foreach ($rows as $row) {
+    // 画面に出す前に、必ず htmlspecialchars を通す
+    $safe = htmlspecialchars($row["name"], ENT_QUOTES, "UTF-8");
+    echo "{$safe} ({$row['age']})\n";
+}
+
+// わるい入力で検索しても、ただの文字としてあつかわれる
+$attack = "' OR '1'='1";
+$find = $db->prepare("SELECT COUNT(*) FROM users WHERE name = ?");
+$find->execute([$attack]);
+echo "見つかった数: ", $find->fetchColumn(), "\n";
+
+=== 17
+- Composer は、PHP のライブラリを入れて管理する道具です。使うライブラリは `composer.json` に書かれます。
+- 入れたライブラリは `vendor` フォルダに入ります。`require "vendor/autoload.php";` の1行で、全部使えるようになります。
+- `php -S localhost:8000` で、ためすための Web サーバーがすぐに動きます。
+- PHPStan はまちがいを探し、PHP-CS-Fixer は書き方をそろえます。書き方のきまりは PSR-12 が標準です。
+- 仕事では、Laravel などのフレームワークを使うことがほとんどです。この先の大きな目標になります。
+--- shell
+# バージョンを確かめる
+php --version
+
+# 文法のまちがいだけを調べる
+php -l main.php
+
+# ためすための Web サーバーを動かす（ブラウザで http://localhost:8000 を開く）
+php -S localhost:8000
+
+# Composer でプロジェクトを始めて、ライブラリを入れる
+composer init
+composer require --dev phpunit/phpunit phpstan/phpstan friendsofphp/php-cs-fixer
+
+# テスト・まちがい探し・書き方をそろえる
+vendor/bin/phpunit tests
+vendor/bin/phpstan analyse src
+vendor/bin/php-cs-fixer fix
+
+=== 18
+- 「分ける → 数える → ならべる → 表示する」と、仕事ごとに関数を分けています。
+- `array_count_values` は、「同じ値が何個あるか」を数えて連想配列にしてくれる関数です。
+- `uksort` と `<=>` で、「回数の多い順、同じならアルファベット順」にしています。
+- 空の文章が来たときは、例外を投げて知らせています。
+--- main
+<?php
+declare(strict_types=1);
+
+/** 文章を、小文字の単語の配列にする */
+function splitWords(string $text): array
+{
+    $words = [];
+    foreach (preg_split('/\s+/', strtolower($text)) as $raw) {
+        $word = preg_replace('/[^a-z]/', '', $raw);    // 記号を取る
+        if ($word !== "") {
+            $words[] = $word;
+        }
+    }
+    return $words;
+}
+
+/** 回数の多い順（同じならアルファベット順）に n 個 */
+function top(array $counts, int $n): array
+{
+    uksort($counts, fn($a, $b) => [$counts[$b], $a] <=> [$counts[$a], $b]);
+    return array_slice($counts, 0, $n, true);
+}
+
+function report(string $text): void
+{
+    $words = splitWords($text);
+    if (count($words) === 0) {
+        throw new InvalidArgumentException("単語がありません");
+    }
+    $counts = array_count_values($words);      // 単語 => 回数
+    echo "全部で ", count($words), " 語、", count($counts), " 種類\n";
+    foreach (top($counts, 3) as $word => $count) {
+        echo "{$word}: {$count}\n";
+    }
+}
+
+report("The cat saw the dog. The dog saw the bird!");
+
+try {
+    report("...");
+} catch (InvalidArgumentException $e) {
+    echo "エラー: ", $e->getMessage(), "\n";
+}

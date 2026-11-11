@@ -1,0 +1,629 @@
+=== 01
+- Java のコードは、すべて `class` の中に書きます。public クラスの名前とファイル名（`Main.java`）は同じにします。
+- プログラムは `main` メソッドから動きはじめます。`public static void main(String[] args)` は、まずは形でおぼえましょう。
+- `System.out.println( )` で表示して改行します。
+- 文の終わりには `;` が必要です。`//` から行の終わりまではコメントです。
+--- main
+// はじめてのプログラム
+public class Main {
+    public static void main(String[] args) {
+        System.out.println("こんにちは！");
+        System.out.println("プログラミングをはじめます。");
+        System.out.println("1 + 2 = " + (1 + 2));
+    }
+}
+
+=== 02
+- 変数を作るときは、`int age = 15;` のように、先に型を書きます。
+- よく使う型: `int`（整数）、`double`（小数）、`boolean`（真・偽）、`String`（文字列。大文字で始まる）。
+- 一度決めた型は変えられません。`int` の変数に文字列を入れると、コンパイルエラーになります。
+- `var` と書くと、右の値から型を自動で決めてくれます（型がなくなるわけではありません）。
+--- main
+public class Main {
+    public static void main(String[] args) {
+        String name = "さくら";      // 文字列
+        int age = 15;                // 整数
+        double height = 152.5;       // 小数
+        boolean isStudent = true;    // 真か偽か
+
+        System.out.println("名前: " + name);
+        System.out.println("年れい: " + age);
+        System.out.println("身長: " + height);
+        System.out.println("学生: " + isStudent);
+
+        age = age + 1;               // 変数は、あとから入れなおせます
+        System.out.println("来年は " + age + " さい");
+
+        var city = "東京";           // 型は String に自動で決まる
+        System.out.println(city);
+    }
+}
+
+=== 03
+- 整数どうしの `/` は、小数点より下を切りすてます（7 / 2 は 3）。小数がほしいときは、どちらかを `double` にします。
+- `%` は割り算のあまりです。
+- 文字列は `+` でつなげます。数もそのままつなげられます。
+- `"1 + 2 = " + 1 + 2` は "1 + 2 = 12" になります。計算を先にしたいときは `( )` で囲みます。
+- 文字数は `length()` で調べます。
+--- main
+public class Main {
+    public static void main(String[] args) {
+        int a = 7;
+        int b = 2;
+        System.out.println("7 + 2 = " + (a + b));
+        System.out.println("7 - 2 = " + (a - b));
+        System.out.println("7 * 2 = " + (a * b));
+        System.out.println("7 / 2 = " + (a / b));            // 整数どうしは切りすて
+        System.out.println("7 / 2.0 = " + (a / 2.0));        // 小数にすると 3.5
+        System.out.println("7 % 2 = " + (a % b));            // あまり
+
+        String family = "山田";
+        String given = "太郎";
+        String full = family + " " + given;
+        System.out.println("フルネーム: " + full);
+        System.out.println("文字数: " + "program".length());
+        System.out.println(String.format("%s さんは %d さい", given, 15));
+    }
+}
+
+=== 04
+- `if (条件) { }` の `( )` と `{ }` を忘れずに。`else if` で次の条件、`else` で「どれでもないとき」です。
+- 「かつ」は `&&`、「または」は `||`、「〜でない」は `!` です。
+- 数が等しいかは `==` で調べます。
+- 文字列が同じかどうかは `==` ではなく `equals` で調べます。Java でいちばん多いまちがいの1つです。
+--- main
+public class Main {
+    public static void main(String[] args) {
+        int score = 72;
+
+        if (score >= 80) {
+            System.out.println("よくできました");
+        } else if (score >= 60) {
+            System.out.println("合格");
+        } else {
+            System.out.println("もう少し");
+        }
+
+        int age = 15;
+        boolean hasTicket = true;
+        if (age >= 12 && hasTicket) {
+            System.out.println("入場できます");
+        }
+
+        String answer = "はい";
+        if (answer.equals("はい")) {       // 文字列は equals でくらべる
+            System.out.println("ようこそ");
+        }
+    }
+}
+
+=== 05
+- `for (はじめ; 続ける条件; 毎回すること)` の3つを `;` で区切ります。
+- `i++` は「i を 1 ふやす」、`count--` は「1 へらす」です。
+- `while (条件)` は、条件が成り立つあいだくりかえします。
+- `continue` は「今回は飛ばして次へ」、`break` は「くりかえしをやめる」です。
+--- main
+public class Main {
+    public static void main(String[] args) {
+        // 決まった回数くりかえす
+        for (int i = 1; i <= 5; i++) {
+            System.out.println(i + " 回目");
+        }
+
+        // 条件が成り立つあいだくりかえす
+        int count = 3;
+        while (count > 0) {
+            System.out.println(count);
+            count--;
+        }
+        System.out.println("発射！");
+
+        // 1〜10 の偶数だけを足す
+        int total = 0;
+        for (int i = 1; i <= 10; i++) {
+            if (i % 2 == 1) {
+                continue;      // 奇数は飛ばす
+            }
+            total += i;
+        }
+        System.out.println("偶数の合計: " + total);
+    }
+}
+
+=== 06
+- Java では、関数のことを「メソッド」とよびます。クラスの中に書きます。
+- `static int add(int a, int b)` は、「int を2つ受けとって、int を返す」という意味です。
+- 何も返さないメソッドは、返す型のところに `void` と書きます。
+- 引数の型や数がちがえば、同じ名前のメソッドをいくつも作れます（オーバーロード）。
+--- main
+public class Main {
+    static int add(int a, int b) {
+        return a + b;
+    }
+
+    static String greet(String name) {
+        return "こんにちは、" + name + "さん";
+    }
+
+    static String greet() {              // 引数なしの greet
+        return greet("みなさん");
+    }
+
+    static boolean isEven(int n) {
+        return n % 2 == 0;
+    }
+
+    public static void main(String[] args) {
+        System.out.println("3 + 4 = " + add(3, 4));
+        System.out.println(greet("さくら"));
+        System.out.println(greet());
+        System.out.println("10 は偶数？ " + isEven(10));
+        System.out.println("7 は偶数？ " + isEven(7));
+    }
+}
+
+=== 07
+- 配列 `int[]` は、作ったあと長さを変えられません。あとから増やしたいときは `ArrayList` を使います。
+- `ArrayList<Integer>` の `< >` の中には、入れる物の型を書きます。`int` ではなく `Integer` と書くのがきまりです。
+- 配列は `a[0]` と `a.length`、ArrayList は `get(0)` と `size()`。書き方がちがうので注意です。
+- `for (int s : scores)` で、中身を1つずつ取り出せます（拡張 for 文）。
+--- main
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+public class Main {
+    public static void main(String[] args) {
+        int[] fixed = {70, 85, 60};          // 配列: 長さは変えられない
+        System.out.println("配列の長さ: " + fixed.length);
+
+        List<Integer> scores = new ArrayList<>();
+        for (int s : fixed) {
+            scores.add(s);
+        }
+        scores.add(90);                      // 後ろに追加
+
+        System.out.println("最初の点数: " + scores.get(0));
+        System.out.println("人数: " + scores.size());
+
+        int total = 0;
+        for (int s : scores) {
+            total += s;
+        }
+        System.out.println("合計: " + total);
+        System.out.println("平均: " + (double) total / scores.size());
+        System.out.println("最高点: " + Collections.max(scores));
+
+        Collections.sort(scores);            // 小さい順にならべかえる
+        System.out.println("ならべかえ: " + scores);
+    }
+}
+
+=== 08
+- `Map<String, Integer>` は「キーが String、値が Integer」の辞書です。
+- `put` で入れて、`get` で取り出します。ないキーを `get` すると `null` が返ります。
+- `HashMap` は順番をおぼえません。入れた順にしたいときは `LinkedHashMap`、キーの順にしたいときは `TreeMap` を使います。
+- `containsKey` で、キーがあるかを調べます。`getOrDefault` は、ないときの値を決められます。
+--- main
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+public class Main {
+    public static void main(String[] args) {
+        Map<String, Integer> prices = new LinkedHashMap<>();
+        prices.put("りんご", 120);
+        prices.put("バナナ", 80);
+        prices.put("みかん", 60);
+
+        System.out.println("りんご は " + prices.get("りんご") + " 円");
+
+        if (prices.containsKey("ぶどう")) {
+            System.out.println("ぶどう は " + prices.get("ぶどう") + " 円");
+        } else {
+            System.out.println("ぶどう はありません");
+        }
+
+        System.out.println("もも: " + prices.getOrDefault("もも", 0));
+
+        System.out.println("--- 一覧 ---");
+        for (Map.Entry<String, Integer> e : prices.entrySet()) {
+            System.out.println(e.getKey() + ": " + e.getValue() + " 円");
+        }
+        System.out.println("種類: " + prices.size());
+    }
+}
+
+=== 09
+- `split` で分けて配列に、`String.join` でつないで文字列にします。
+- 文字列は作ったあと書きかえられません。`toUpperCase` や `replace` は「新しい文字列」を返します。
+- `contains` で「ふくまれているか」、`strip` で前後の空白を取ります。
+- ループの中で何度も文字列をつなぐときは、`StringBuilder` を使うと速くなります。
+--- main
+public class Main {
+    public static void main(String[] args) {
+        String text = "apple,banana,cherry";
+
+        String[] fruits = text.split(",");          // カンマで分ける
+        System.out.println(fruits.length + " 個");
+        System.out.println("1番目: " + fruits[0]);
+        System.out.println("大文字: " + fruits[0].toUpperCase());
+        System.out.println("banana をふくむ？ " + text.contains("banana"));
+        System.out.println("つなぐ: " + String.join(" / ", fruits));
+        System.out.println("置きかえ: " + text.replace("cherry", "melon"));
+
+        String messy = "   hello   ";
+        System.out.println("[" + messy.strip() + "]");   // 前後の空白を取る
+        System.out.println("先頭3文字: " + text.substring(0, 3));
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = 1; i <= 3; i++) {
+            sb.append(i).append("-");
+        }
+        System.out.println(sb);
+    }
+}
+
+=== 10
+- `class` は「設計図」。`new Account("さくら", 1000)` で、設計図から実物（インスタンス）を作ります。
+- クラスと同じ名前のメソッドが「コンストラクタ」。実物を作るときに1回だけ呼ばれます。
+- フィールドを `private` にすると、クラスの外から直接さわれなくなります。値を守るための大事な習慣です（カプセル化）。
+- `this` は「この実物自身」を指します。
+- 1つのファイルに書ける `public` クラスは1つだけです。ふつうは、クラスごとにファイルを分けます。
+--- main
+class Account {
+    private String owner;
+    private int balance;
+
+    Account(String owner, int balance) {     // コンストラクタ
+        this.owner = owner;
+        this.balance = balance;
+    }
+
+    void deposit(int amount) {
+        this.balance += amount;
+    }
+
+    int getBalance() {
+        return balance;
+    }
+
+    void show() {
+        System.out.println(owner + " の残高: " + balance + " 円");
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Account a = new Account("さくら", 1000);
+        Account b = new Account("たろう", 300);
+
+        a.deposit(500);      // a だけが増える
+        a.show();
+        b.show();
+        System.out.println(a.getBalance());
+    }
+}
+
+=== 11
+title: インターフェースと継承
+goal: 「同じ使い方ができる、ちがう種類のもの」を、インターフェースと継承で作れるようになる。
+intro: Java の大きなプログラムは、インターフェース（「こう使えます」という約束）を中心に作られています。約束さえ守っていれば中身を入れかえられるので、部品の交換やテストがしやすくなります。Java のライブラリを読むときにも、必ず出てくる考え方です。
+quiz: interface Shape { double area(); } を implements したクラスが、area() を書かなかったらどうなる？ ;; 実行すると 0 が返る ;; コンパイルエラーになる ;; 自動で作られる ;; 2 ;; インターフェースは「必ずこのメソッドを持つ」という約束です。守っていないと、コンパイルの時点でエラーになります。
+task: Shape を実装した Triangle（三角形。底辺と高さを持つ）クラスを足して、リストに入れて面積を表示してみよう。
+hint: class Triangle implements Shape と書いて、area() と name() を作ります。
+- `interface` には、「どんなメソッドがあるか」だけを書きます。中身は `implements` したクラスが書きます。
+- `extends` は継承。親クラスのフィールドやメソッドを、そのまま受けつぎます。
+- `@Override` は「親のメソッドを上書きします」という目じるし。つづりをまちがえると、コンパイラが教えてくれます。
+- `List<Shape>` に、Circle も Rect も入れられます。呼ぶ側は、中身の種類を気にしなくてすみます（ポリモーフィズム）。
+--- main
+import java.util.List;
+
+interface Shape {
+    double area();          // 面積を返す、という約束
+    String name();
+}
+
+class Rect implements Shape {
+    protected double w, h;
+    Rect(double w, double h) { this.w = w; this.h = h; }
+
+    @Override
+    public double area() { return w * h; }
+
+    @Override
+    public String name() { return "長方形"; }
+}
+
+class Square extends Rect {          // 正方形は、長方形の一種
+    Square(double side) { super(side, side); }
+
+    @Override
+    public String name() { return "正方形"; }
+}
+
+class Circle implements Shape {
+    private double r;
+    Circle(double r) { this.r = r; }
+
+    @Override
+    public double area() { return Math.PI * r * r; }
+
+    @Override
+    public String name() { return "円"; }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        List<Shape> shapes = List.of(new Rect(3, 4), new Square(5), new Circle(1));
+        for (Shape s : shapes) {
+            System.out.println(String.format("%s の面積: %.2f", s.name(), s.area()));
+        }
+    }
+}
+
+=== 12
+- Java では、ふつう「1つのクラス = 1つのファイル」にします。ファイル名はクラス名と同じにします。
+- 同じフォルダ（同じパッケージ）にあるクラスは、`import` なしで使えます。
+- 大きなプロジェクトでは `package com.example.app;` のようにパッケージで整理し、ほかのパッケージのクラスは `import` して使います。
+- `static` メソッドは、`new` しなくても `クラス名.メソッド名( )` で呼べます。
+--- Greeting.java
+// あいさつを作る部品
+public class Greeting {
+    public static String hello(String name) {
+        return "こんにちは、" + name + "さん";
+    }
+
+    public static String bye(String name) {
+        return "さようなら、" + name + "さん";
+    }
+}
+--- main
+public class Main {
+    public static void main(String[] args) {
+        System.out.println(Greeting.hello("さくら"));
+        System.out.println(Greeting.bye("さくら"));
+    }
+}
+
+=== 13
+- エラー（例外）が起きるかもしれない所を `try { }` に書き、起きたときの対応を `catch (例外の型 e) { }` に書きます。
+- 自分で例外を起こすには `throw new IllegalArgumentException("説明")` と書きます。
+- `finally { }` の中は、例外が起きても起きなくても、最後に必ず動きます。
+- Java には「チェック例外」があります。`IOException` などは、`try-catch` するか、メソッドに `throws` を書かないとコンパイルできません。
+--- main
+public class Main {
+    static int divide(int a, int b) {
+        if (b == 0) {
+            throw new IllegalArgumentException("0 で割ることはできません");
+        }
+        return a / b;
+    }
+
+    public static void main(String[] args) {
+        try {
+            System.out.println("10 ÷ 2 = " + divide(10, 2));
+            System.out.println("10 ÷ 0 = " + divide(10, 0));
+            System.out.println("ここは動きません");
+        } catch (IllegalArgumentException e) {
+            System.out.println("エラー: " + e.getMessage());
+        }
+
+        String text = "abc";
+        try {
+            int number = Integer.parseInt(text);
+            System.out.println(number);
+        } catch (NumberFormatException e) {
+            System.out.println("\"" + text + "\" は数ではありません");
+        } finally {
+            System.out.println("チェック終わり");
+        }
+    }
+}
+
+=== 14
+- ファイルは `Files` と `Path` を使うと、短く書けます。
+- `Files.write` で書きこみ、`Files.readAllLines` で全部の行をリストとして読みこみます。
+- ファイルの操作は失敗することがあるので、`IOException` への対応が必ず必要です（チェック例外）。
+- ファイルがないときは `NoSuchFileException`（IOException の一種）が起きます。
+--- main
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.util.List;
+
+public class Main {
+    public static void main(String[] args) throws IOException {
+        List<String> lines = List.of("牛乳を買う", "宿題をする", "本を読む");
+        Path memo = Path.of("memo.txt");
+
+        // 書きこむ
+        Files.write(memo, lines);
+        System.out.println(lines.size() + " 行 書きました");
+
+        // 読みこむ
+        List<String> loaded = Files.readAllLines(memo);
+        for (int i = 0; i < loaded.size(); i++) {
+            System.out.println((i + 1) + ": " + loaded.get(i));
+        }
+
+        // ないファイルを開こうとしたとき
+        try {
+            Files.readAllLines(Path.of("ない.txt"));
+        } catch (NoSuchFileException e) {
+            System.out.println("ない.txt は開けませんでした");
+        }
+    }
+}
+
+=== 15
+- ここでは、しくみがわかるように、テストの道具を自分で作っています。「実際の値」と「期待する値」をくらべているだけです。
+- 仕事では `JUnit` を使います。`@Test void fizz() { assertEquals("Fizz", fizzbuzz(3)); }` のように書きます。
+- JUnit は Maven や Gradle で入れて、`mvn test` / `gradle test` で動かします（「道具をそろえる」で出てきます）。
+- テストしやすいコードは、「表示する」と「計算する」が分かれています。`fizzbuzz` は文字列を返すだけなので、テストがかんたんです。
+--- main
+public class Main {
+    static String fizzbuzz(int n) {
+        if (n % 15 == 0) return "FizzBuzz";
+        if (n % 3 == 0) return "Fizz";
+        if (n % 5 == 0) return "Buzz";
+        return String.valueOf(n);
+    }
+
+    static int passed = 0;
+    static int failed = 0;
+
+    // 実際の値と、期待する値をくらべる
+    static void check(String name, String actual, String expected) {
+        if (actual.equals(expected)) {
+            passed++;
+            System.out.println("OK   " + name);
+        } else {
+            failed++;
+            System.out.println("NG   " + name + ": 期待 " + expected + " / 実際 " + actual);
+        }
+    }
+
+    public static void main(String[] args) {
+        check("3 は Fizz", fizzbuzz(3), "Fizz");
+        check("5 は Buzz", fizzbuzz(5), "Buzz");
+        check("15 は FizzBuzz", fizzbuzz(15), "FizzBuzz");
+        check("7 は 7", fizzbuzz(7), "7");
+        System.out.println("成功 " + passed + " / 失敗 " + failed);
+    }
+}
+
+=== 16
+title: ジェネリクス・ラムダ・Stream
+goal: コレクションの「しぼる・作りかえる・まとめる」を、Stream とラムダで書けるようになる。
+intro: いまの Java では、リストの処理を for 文ではなく Stream で書くことがとても多くなっています。「何をしたいか」を上から順に書けるので、慣れると読みやすくなります。あわせて、データの入れ物を1行で作れる record と、型を引数にするジェネリクスも見ておきましょう。
+quiz: List.of(1, 2, 3, 4).stream().filter(n -> n % 2 == 0).map(n -> n * 10).toList() の結果は？ ;; [10, 20, 30, 40] ;; [20, 40] ;; [2, 4] ;; 2 ;; filter で偶数（2 と 4）だけを残し、map でそれぞれ 10 倍にするので [20, 40] です。
+task: 値段が 1000 円以上の本だけを取り出して、題名をアルファベット順にならべたリストを、Stream で作ってみよう。
+hint: filter → map(Book::title) → sorted() → toList() の順につなぎます。
+- `n -> n * 2` は「ラムダ式」。名前のない小さな関数です。
+- `stream()` のあとに `filter`（しぼる）、`map`（作りかえる）、`sorted`（ならべる）をつなぎ、最後に `toList()` などでまとめます。
+- `record Book(String title, int price) {}` は、データの入れ物を1行で作ります。コンストラクタや `title()` などが自動でできます。
+- `<T>` はジェネリクス。「どんな型でも使えるが、入れた型はおぼえている」メソッドやクラスを作れます。
+--- main
+import java.util.Comparator;
+import java.util.List;
+
+record Book(String title, int price) {}
+
+public class Main {
+    // どんな型のリストでも、最初の要素を返せる
+    static <T> T first(List<T> list) {
+        return list.get(0);
+    }
+
+    public static void main(String[] args) {
+        List<Integer> nums = List.of(1, 2, 3, 4, 5, 6);
+
+        List<Integer> evens = nums.stream().filter(n -> n % 2 == 0).toList();
+        List<Integer> doubled = nums.stream().map(n -> n * 2).toList();
+        int total = nums.stream().mapToInt(n -> n).sum();
+        System.out.println(evens);
+        System.out.println(doubled);
+        System.out.println("合計: " + total);
+
+        List<Book> books = List.of(
+            new Book("Java入門", 2400), new Book("図かん", 1800), new Book("まんが", 600));
+
+        List<String> cheap = books.stream()
+            .filter(b -> b.price() < 2000)                 // しぼる
+            .sorted(Comparator.comparing(Book::price))     // 安い順にならべる
+            .map(Book::title)                              // 題名だけにする
+            .toList();
+        System.out.println(cheap);
+
+        System.out.println(first(books));
+        System.out.println(first(nums));
+    }
+}
+
+=== 17
+- Java の仕事では、Maven か Gradle でプロジェクトを管理します。ライブラリを入れる、コンパイルする、テストする、を全部やってくれます。
+- 使うライブラリは、Maven なら `pom.xml`、Gradle なら `build.gradle` に書きます。
+- ソースは `src/main/java`、テストは `src/test/java` に置くのがきまりです。
+- エディタは IntelliJ IDEA や VS Code（Extension Pack for Java）がよく使われます。まちがいを書いたそばから教えてくれます。
+--- shell
+# バージョンを確かめる
+java -version
+javac -version
+
+# 1つのファイルなら、コンパイルなしでそのまま実行できる
+java Main.java
+
+# Maven: コンパイル・テスト・jar ファイルを作る
+mvn compile
+mvn test
+mvn package
+
+# Gradle を使うプロジェクトの場合
+./gradlew build
+./gradlew test
+
+=== 18
+- 「分ける → 数える → ならべる → 表示する」と、仕事ごとにメソッドを分けています。
+- `counts.merge(w, 1, Integer::sum)` は、「なければ 1 を入れ、あれば 1 を足す」という Map の定番の書き方です。
+- `Comparator` をつないで、「回数の多い順、同じならアルファベット順」にしています。
+- 空の文章が来たときは、例外を投げて知らせています。
+--- main
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class Main {
+    /** 文章を、小文字の単語のリストにする */
+    static List<String> splitWords(String text) {
+        List<String> words = new ArrayList<>();
+        for (String raw : text.toLowerCase().split("\\s+")) {
+            String word = raw.replaceAll("[^a-z]", "");     // 記号を取る
+            if (!word.isEmpty()) {
+                words.add(word);
+            }
+        }
+        return words;
+    }
+
+    static Map<String, Integer> countWords(List<String> words) {
+        Map<String, Integer> counts = new HashMap<>();
+        for (String w : words) {
+            counts.merge(w, 1, Integer::sum);
+        }
+        return counts;
+    }
+
+    /** 回数の多い順（同じならアルファベット順）に n 個 */
+    static List<Map.Entry<String, Integer>> top(Map<String, Integer> counts, int n) {
+        return counts.entrySet().stream()
+            .sorted(Map.Entry.<String, Integer>comparingByValue(Comparator.reverseOrder())
+                .thenComparing(Map.Entry.comparingByKey()))
+            .limit(n)
+            .toList();
+    }
+
+    static void report(String text) {
+        List<String> words = splitWords(text);
+        if (words.isEmpty()) {
+            throw new IllegalArgumentException("単語がありません");
+        }
+        Map<String, Integer> counts = countWords(words);
+        System.out.println("全部で " + words.size() + " 語、" + counts.size() + " 種類");
+        for (Map.Entry<String, Integer> e : top(counts, 3)) {
+            System.out.println(e.getKey() + ": " + e.getValue());
+        }
+    }
+
+    public static void main(String[] args) {
+        report("The cat saw the dog. The dog saw the bird!");
+
+        try {
+            report("...");
+        } catch (IllegalArgumentException e) {
+            System.out.println("エラー: " + e.getMessage());
+        }
+    }
+}

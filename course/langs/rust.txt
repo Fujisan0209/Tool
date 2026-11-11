@@ -1,0 +1,645 @@
+=== 01
+- プログラムは `fn main()` から動きはじめます。
+- `println!` で表示して改行します。`!` がつくのは「マクロ」という特別な命令のしるしです。
+- `{}` の所に、後ろに書いた値が入ります。
+- 文の終わりには `;` が必要です。`//` から行の終わりまではコメントです。
+- Rust は、コンパイルしてから動かします。ふだんは Cargo という道具を使い、`cargo run` でコンパイルと実行をまとめて行います。
+--- main
+// はじめてのプログラム
+fn main() {
+    println!("こんにちは！");
+    println!("プログラミングをはじめます。");
+    println!("1 + 2 = {}", 1 + 2);   // {} の所に、後ろの値が入ります
+}
+
+=== 02
+- 変数は `let` で作ります。そのままでは「変えられない」変数です。変えたいときは `let mut` と書きます。
+- 「変えない」が基本で、変える物だけにしるしをつける。これが Rust の考え方です。
+- 型は自動で決まりますが、`let age: i32 = 15;` のように書くこともできます。
+- よく使う型: `i32`（整数）、`f64`（小数）、`bool`（真・偽）、`String` と `&str`（文字列）。
+- `{name}` のように、`{}` の中に変数の名前を直接書けます。
+--- main
+fn main() {
+    let name = "さくら";          // 文字列 (&str)
+    let mut age: i32 = 15;       // 整数。あとで変えるので mut
+    let height = 152.5;          // 小数 (f64)
+    let is_student = true;       // 真か偽か (bool)
+
+    println!("名前: {name}");
+    println!("年れい: {age}");
+    println!("身長: {height}");
+    println!("学生: {is_student}");
+
+    age = age + 1;               // mut があるので入れなおせます
+    println!("来年は {age} さい");
+
+    // name = "たろう";   ← mut がないので、コンパイルエラーになります
+}
+
+=== 03
+- 整数どうしの `/` は、小数点より下を切りすてます（7 / 2 は 3）。
+- Rust は型を勝手に変えません。整数と小数はそのまま計算できないので、`a as f64` のように自分で変えます。
+- 文字列をつなぐには `format!` が便利です。`println!` と同じ書き方で、新しい `String` を作ります。
+- `len()` はバイト数を返します。文字数は `chars().count()` で数えます。
+--- main
+fn main() {
+    let a = 7;
+    let b = 2;
+    println!("7 + 2 = {}", a + b);
+    println!("7 - 2 = {}", a - b);
+    println!("7 * 2 = {}", a * b);
+    println!("7 / 2 = {}", a / b);                     // 整数どうしは切りすて
+    println!("7 / 2.0 = {}", a as f64 / b as f64);     // 自分で小数に変える
+    println!("7 % 2 = {}", a % b);                     // あまり
+
+    let family = "山田";
+    let given = "太郎";
+    let full = format!("{family} {given}");            // 新しい String を作る
+    println!("フルネーム: {full}");
+    println!("文字数: {}", "program".len());
+    println!("バイト数: {} 文字数: {}", full.len(), full.chars().count());
+}
+
+=== 04
+- `if 条件 { }` の形です。条件に `( )` はいりませんが、`{ }` は必ず書きます。
+- 「かつ」は `&&`、「または」は `||`、「〜でない」は `!` です。
+- `if` は「値を返す式」です。`let label = if 条件 { A } else { B };` と書けます。
+- `match` は、値によって場合分けします。全部の場合を書かないとコンパイルエラーになるので、書きもらしがありません。`_` は「そのほか全部」です。
+--- main
+fn main() {
+    let score = 72;
+
+    if score >= 80 {
+        println!("よくできました");
+    } else if score >= 60 {
+        println!("合格");
+    } else {
+        println!("もう少し");
+    }
+
+    let age = 15;
+    let has_ticket = true;
+    if age >= 12 && has_ticket {
+        println!("入場できます");
+    }
+
+    // if は値を返せる
+    let label = if age >= 18 { "大人" } else { "子ども" };
+    println!("{label}");
+
+    let size = "M";
+    match size {
+        "S" => println!("小さい"),
+        "M" => println!("ふつう"),
+        _ => println!("大きい"),
+    }
+}
+
+=== 05
+- `for i in 1..=5` は 1 から 5 まで。`1..5` と書くと 5 は入りません（1 から 4 まで）。
+- `while 条件 { }` は、条件が成り立つあいだくりかえします。
+- `loop { }` は、`break` するまでずっとくりかえします。
+- `continue` は「今回は飛ばして次へ」、`break` は「くりかえしをやめる」です。
+- 値を変える変数（`count`、`total`）には `mut` が必要です。
+--- main
+fn main() {
+    // 決まった回数くりかえす
+    for i in 1..=5 {
+        println!("{i} 回目");
+    }
+
+    // 条件が成り立つあいだくりかえす
+    let mut count = 3;
+    while count > 0 {
+        println!("{count}");
+        count -= 1;
+    }
+    println!("発射！");
+
+    // 1〜10 の偶数だけを足す
+    let mut total = 0;
+    for i in 1..=10 {
+        if i % 2 == 1 {
+            continue;      // 奇数は飛ばす
+        }
+        total += i;
+    }
+    println!("偶数の合計: {total}");
+}
+
+=== 06
+- 関数は `fn 名前(引数: 型) -> 返す型 { }` で作ります。引数と返す値の型は、必ず書きます。
+- 最後の行に `;` をつけずに書いた式が、そのまま返す値になります。`return` は、とちゅうで返すときに使います。
+- 文字列を受けとるだけの引数は `&str` にします。新しく文字列を作って返すときは `String` です。
+- 関数の名前は、小文字と `_` で書くのがきまりです（`is_even`）。
+--- main
+fn add(a: i32, b: i32) -> i32 {
+    a + b              // ; をつけない最後の式が、返す値になる
+}
+
+fn greet(name: &str) -> String {
+    format!("こんにちは、{name}さん")
+}
+
+fn is_even(n: i32) -> bool {
+    n % 2 == 0
+}
+
+fn main() {
+    println!("3 + 4 = {}", add(3, 4));
+    println!("{}", greet("さくら"));
+    println!("10 は偶数？ {}", is_even(10));
+    println!("7 は偶数？ {}", is_even(7));
+}
+
+=== 07
+- `Vec`（ベクタ）は、あとから長さを変えられる配列です。`vec![70, 85, 60]` で作ります。
+- 追加するには `push`。中身を変えるので、`let mut` で作っておきます。
+- `scores[0]` は、はんいの外だとプログラムが止まります（panic）。`scores.get(10)` を使うと、「ないかもしれない」値（`Option`）で安全に受けとれます。
+- `for s in &scores` の `&` は「借りるだけ」という意味です。`&` をつけないと、ループのあとで `scores` が使えなくなります（くわしくは「所有権」で）。
+- `iter()` のあとに `sum`、`max` などをつなげて計算できます。
+--- main
+fn main() {
+    let mut scores = vec![70, 85, 60];
+    scores.push(90);                    // 後ろに追加
+
+    println!("最初の点数: {}", scores[0]);
+    println!("人数: {}", scores.len());
+
+    let mut total = 0;
+    for s in &scores {                  // & をつけて「借りる」
+        total += s;
+    }
+    println!("合計: {total}");
+    println!("平均: {}", total as f64 / scores.len() as f64);
+
+    // ないかもしれない値は Option で返ってくる
+    if let Some(max) = scores.iter().max() {
+        println!("最高点: {max}");
+    }
+    println!("10番目: {:?}", scores.get(10));   // None（ない）
+
+    scores.sort();                      // 小さい順にならべかえる
+    println!("ならべかえ: {:?}", scores);
+}
+
+=== 08
+- 「キーと値」の辞書には `HashMap` と `BTreeMap` があります。使う前に `use std::collections::BTreeMap;` のように書きます。
+- `get` は `Option` を返します。`Some(値)`（あった）か `None`（なかった）のどちらかで、`match` や `if let` で必ず両方を考えることになります。
+- `HashMap` は速いかわりに、`for` で回すと順番がばらばらです。`BTreeMap` は、いつもキーの順にならびます。ここでは `BTreeMap` を使っています。
+- `{:?}` は、中身をそのまま表示する書き方です。調べものに便利です。
+--- main
+use std::collections::BTreeMap;
+
+fn main() {
+    // BTreeMap は、いつもキーの順にならんでいる辞書
+    let mut prices = BTreeMap::new();
+    prices.insert("りんご", 120);
+    prices.insert("バナナ", 80);
+    prices.insert("みかん", 60);
+
+    // get は Option を返す: Some（あった）か None（なかった）
+    match prices.get("りんご") {
+        Some(price) => println!("りんご は {price} 円"),
+        None => println!("りんご はありません"),
+    }
+
+    if let Some(price) = prices.get("ぶどう") {
+        println!("ぶどう は {price} 円");
+    } else {
+        println!("ぶどう はありません");
+    }
+
+    // なければ 0 を使う
+    println!("もも: {}", prices.get("もも").unwrap_or(&0));
+
+    println!("--- 一覧（キーの順） ---");
+    for (name, price) in &prices {
+        println!("{name}: {price} 円");
+    }
+    println!("種類: {}", prices.len());
+}
+
+=== 09
+- Rust の文字列には2つの型があります。`&str` は「どこかにある文字列を見ているだけ」、`String` は「自分で持っていて、変えられる文字列」です。
+- `"..."` と書いた物は `&str`。`String` にするには `.to_string()` や `String::from( )` を使います。
+- `split` の結果は、そのままでは「1つずつ取り出せるもの」です。`collect()` で `Vec` に集めます。
+- `to_uppercase`、`contains`、`replace`、`trim` がよく使われます。
+- 日本語は1文字が3バイトあるので、`&text[0..3]` のような切り出しはバイト単位です。文字の区切りでない所で切ると、プログラムが止まります。
+--- main
+fn main() {
+    let text = "apple,banana,cherry";
+
+    let fruits: Vec<&str> = text.split(',').collect();   // 分けて Vec に集める
+    println!("{} 個", fruits.len());
+    println!("1番目: {}", fruits[0]);
+    println!("大文字: {}", fruits[0].to_uppercase());
+    println!("banana をふくむ？ {}", text.contains("banana"));
+    println!("つなぐ: {}", fruits.join(" / "));
+    println!("置きかえ: {}", text.replace("cherry", "melon"));
+
+    let messy = "   hello   ";
+    println!("[{}]", messy.trim());                      // 前後の空白を取る
+    println!("先頭3文字: {}", &text[0..3]);
+
+    // String は、あとから足せる文字列
+    let mut s = String::from("こんにちは");
+    s.push_str("、世界");
+    println!("{s}（{} 文字）", s.chars().count());
+}
+
+=== 10
+- Rust にクラスはありません。データは `struct`（構造体）にまとめ、`impl` の中にメソッドを書きます。
+- `fn new(...) -> Account` のように、`self` を受けとらない関数は `Account::new( )` と呼びます。実物を作るのによく使います。
+- `&self` は「読むだけ」、`&mut self` は「中身を変える」メソッドです。
+- 中身を変えるメソッドを呼ぶには、変数も `let mut` で作っておく必要があります。
+--- main
+struct Account {
+    owner: String,
+    balance: i32,
+}
+
+impl Account {
+    // 実物を作る関数。Account::new(...) と呼ぶ
+    fn new(owner: &str, balance: i32) -> Account {
+        Account { owner: owner.to_string(), balance }
+    }
+
+    // 中身を変えるので &mut self
+    fn deposit(&mut self, amount: i32) {
+        self.balance += amount;
+    }
+
+    // 読むだけなので &self
+    fn show(&self) {
+        println!("{} の残高: {} 円", self.owner, self.balance);
+    }
+}
+
+fn main() {
+    let mut a = Account::new("さくら", 1000);
+    let b = Account::new("たろう", 300);
+
+    a.deposit(500);      // a だけが増える
+    a.show();
+    b.show();
+    println!("{}", a.balance);
+}
+
+=== 11
+title: 所有権と借用
+goal: 「値の持ち主は1人だけ」という所有権のきまりと、& で「借りる」やり方がわかり、コンパイルエラーを自分でなおせるようになる。
+intro: 所有権は、Rust をほかの言語と分けるいちばん大事なしくみで、だれもが最初につまずく所です。Rust は、メモリを自動で片づける係（ガベージコレクタ）を使わずに、「値の持ち主がいなくなったら片づける」というきまりで、メモリを安全にあつかいます。そのかわり、「だれが持ち主か」をコンパイラがきびしく調べます。きまりは3つだけなので、ここでしっかりおぼえましょう。
+quiz: let a = String::from("hi"); let b = a; のあと、println!("{a}"); と書くとどうなる？ ;; hi と表示される ;; コンパイルエラーになる ;; 空の文字が表示される ;; 2 ;; let b = a; で、文字列の持ち主が a から b にうつりました（ムーブ）。a はもう使えないので、コンパイルエラーになります。
+task: Vec<i32> を借りて合計を返す関数 total(nums: &Vec<i32>) -> i32 と、借りて全部の要素を2倍にする関数 double_all(nums: &mut Vec<i32>) を作って、順に呼んでみよう。
+hint: double_all の中では for n in nums.iter_mut() { *n *= 2; } と書きます。呼ぶときは double_all(&mut v) です。
+- きまり1: 値には、持ち主（所有者）が1人だけいます。
+- きまり2: `let b = a;` や関数に渡すと、持ち主がうつります（ムーブ）。もとの変数は、もう使えません。
+- きまり3: 持ち主がいなくなると（`}` を出ると）、値は自動で片づけられます。
+- `&x` は「借りる」。持ち主はそのままで、見るだけです。`&mut x` は「変えるために借りる」です。
+- 「見るだけの借り」はいくつあってもよく、「変える借り」は同時に1つだけです。
+- 数（`i32` など）は、渡すと自動でコピーされるので、ムーブしません。コピーしたい `String` は `clone()` を使います。
+--- main
+// 持ち主ごと受けとる（呼んだ側は、もう使えなくなる）
+fn take(s: String) {
+    println!("もらった: {s}");
+}   // ここで s は片づけられる
+
+// 借りるだけ（呼んだ側は、あとでも使える）
+fn length(s: &String) -> usize {
+    s.len()
+}
+
+// 変えるために借りる
+fn add_mark(s: &mut String) {
+    s.push_str("!");
+}
+
+fn main() {
+    let a = String::from("hello");
+    let b = a;                  // 持ち主が a から b にうつる（ムーブ）
+    println!("{b}");
+    // println!("{a}");   ← a はもう使えないので、コンパイルエラーになります
+
+    let c = b.clone();          // 中身をコピーして、別の持ち主を作る
+    println!("{b} と {c}");
+
+    let mut s = String::from("Rust");
+    println!("長さ: {}", length(&s));   // 貸すだけ。s はまだ使える
+    add_mark(&mut s);                   // 変えるために貸す
+    println!("{s}");
+
+    take(s);                    // 持ち主ごと渡す
+    // println!("{s}");   ← s はもう使えないので、コンパイルエラーになります
+
+    let x = 5;
+    let y = x;                  // 数はコピーされるので、両方使える
+    println!("{x} {y}");
+}
+
+=== 12
+- `mod greeting;` と書くと、同じフォルダの `greeting.rs` を「モジュール」として読みこみます。
+- モジュールの中の物は、そのままでは外から使えません。使わせたい物に `pub` をつけます。
+- 使うときは `greeting::hello( )` のように `::` でつなぎます。`use greeting::hello;` と書けば、`hello( )` だけで呼べます。
+- ほかの人が作ったライブラリを「クレート」とよびます。`Cargo.toml` に書いて、`use` で使います。
+--- greeting.rs
+// あいさつを作る部品
+pub fn hello(name: &str) -> String {
+    format!("こんにちは、{name}{}", suffix())
+}
+
+pub fn bye(name: &str) -> String {
+    format!("さようなら、{name}{}", suffix())
+}
+
+// pub がないので、このモジュールの中だけで使える
+fn suffix() -> String {
+    String::from("さん")
+}
+--- main
+mod greeting;          // greeting.rs を読みこむ
+
+use greeting::bye;
+
+fn main() {
+    println!("{}", greeting::hello("さくら"));
+    println!("{}", bye("さくら"));
+}
+
+=== 13
+- Rust には例外（try / catch）がありません。失敗するかもしれない関数は `Result<成功の型, エラーの型>` を返します。
+- `Result` は `Ok(値)`（成功）か `Err(エラー)`（失敗）のどちらかです。`match` で、必ず両方を考えることになります。
+- `?` を値のあとにつけると、「失敗なら、そのエラーをすぐ返す。成功なら、中の値を取り出す」という意味になります。
+- `unwrap()` は「失敗ならプログラムを止める」。ためすときは便利ですが、仕事のコードではさけます。
+- `panic!` は、もうどうにもならないときにプログラムを止める物です。ふつうのエラーには `Result` を使います。
+--- main
+// 成功なら Ok(答え)、失敗なら Err(説明) を返す
+fn divide(a: i32, b: i32) -> Result<i32, String> {
+    if b == 0 {
+        return Err(String::from("0 で割ることはできません"));
+    }
+    Ok(a / b)
+}
+
+// 文字列を数にして、2倍にする
+fn double(text: &str) -> Result<i32, std::num::ParseIntError> {
+    let n: i32 = text.parse()?;     // 失敗なら、ここでエラーを返す
+    Ok(n * 2)
+}
+
+fn main() {
+    match divide(10, 2) {
+        Ok(answer) => println!("10 ÷ 2 = {answer}"),
+        Err(e) => println!("エラー: {e}"),
+    }
+    match divide(10, 0) {
+        Ok(answer) => println!("10 ÷ 0 = {answer}"),
+        Err(e) => println!("エラー: {e}"),
+    }
+
+    for text in ["21", "abc"] {
+        match double(text) {
+            Ok(n) => println!("{text} の2倍は {n}"),
+            Err(_) => println!("\"{text}\" は数ではありません"),
+        }
+    }
+    println!("チェック終わり");
+}
+
+=== 14
+- ファイルの道具は `std::fs` に入っています。`fs::write` で書きこみ、`fs::read_to_string` で全部を文字列として読みこみます。
+- どちらも `Result` を返します。`?` をつけると、失敗したときにエラーをそのまま返せます。
+- `main` を `fn main() -> std::io::Result<()>` とすると、`main` の中でも `?` が使えます。最後に `Ok(())` を返します。
+- `lines()` で1行ずつ、`enumerate()` で番号つきで取り出せます。
+- ファイルは、変数が `}` を出ると自動で閉じられます。閉じ忘れがありません。
+--- main
+use std::fs;
+
+fn main() -> std::io::Result<()> {
+    let lines = ["牛乳を買う", "宿題をする", "本を読む"];
+
+    // 書きこむ
+    fs::write("memo.txt", lines.join("\n") + "\n")?;
+    println!("{} 行 書きました", lines.len());
+
+    // 読みこむ
+    let text = fs::read_to_string("memo.txt")?;
+    for (i, line) in text.lines().enumerate() {
+        println!("{}: {line}", i + 1);
+    }
+
+    // ないファイルを開こうとしたとき
+    match fs::read_to_string("ない.txt") {
+        Ok(text) => println!("{text}"),
+        Err(_) => println!("ない.txt は開けませんでした"),
+    }
+    Ok(())
+}
+
+=== 15
+mode: test
+- Rust は、テストの道具が言語に最初から入っています。`cargo test` で動かします。
+- `#[test]` をつけた関数が、1つのテストになります。
+- `assert_eq!(実際, 期待)` は、2つが同じでなければ「失敗」と知らせます。
+- `#[cfg(test)]` をつけた `mod tests` の中は、テストのときだけコンパイルされます。テストは、ためすコードと同じファイルに書くのが Rust のならわしです。
+- `use super::*;` は、「1つ外側にある物を全部使う」という意味です。
+--- main
+fn fizzbuzz(n: u32) -> String {
+    if n % 15 == 0 {
+        String::from("FizzBuzz")
+    } else if n % 3 == 0 {
+        String::from("Fizz")
+    } else if n % 5 == 0 {
+        String::from("Buzz")
+    } else {
+        n.to_string()
+    }
+}
+
+fn main() {
+    for n in 1..=15 {
+        println!("{}", fizzbuzz(n));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn fizz() {
+        assert_eq!(fizzbuzz(3), "Fizz");
+    }
+
+    #[test]
+    fn buzz() {
+        assert_eq!(fizzbuzz(5), "Buzz");
+    }
+
+    #[test]
+    fn fizz_buzz() {
+        assert_eq!(fizzbuzz(15), "FizzBuzz");
+    }
+
+    #[test]
+    fn number() {
+        assert_eq!(fizzbuzz(7), "7");
+    }
+}
+
+=== 16
+title: enum・match・トレイト
+goal: 「いくつかの種類のどれか」を enum で表し、match でもれなく場合分けできるようになる。トレイトで、ちがう型に同じ使い方を持たせられるようになる。
+intro: Rust の enum は、種類ごとにちがうデータを持てる、とても強力なしくみです。これまで使ってきた Option（ある・ない）も Result（成功・失敗）も、じつは enum です。match と組み合わせると、「場合分けの書きもらし」をコンパイラが見つけてくれます。トレイトは「この型はこれができる」という約束で、ほかの言語のインターフェースにあたります。
+quiz: enum に新しい種類を足したのに、match にその場合を書き忘れるとどうなる？ ;; 実行したときに、その種類だけ何も起きない ;; コンパイルエラーで教えてくれる ;; 自動で最初の場合が使われる ;; 2 ;; match は全部の場合を書かないとコンパイルできません。種類を足したときの直しもれを、コンパイラが全部見つけてくれます。
+task: Shape に Triangle { base: f64, height: f64 } を足してみよう。コンパイラのエラーを読んで、直す所を見つけよう。
+hint: enum に足すと、match の所で「Triangle を書いていません」というエラーが出ます。そこに計算を足します。
+- `enum` は「このうちのどれか」を表す型です。種類ごとに、ちがうデータを持たせられます。
+- `match` で種類ごとに分け、中のデータを取り出します。全部の種類を書かないと、コンパイルエラーになります。
+- `trait` は「この型はこのメソッドを持つ」という約束です。`impl トレイト for 型` で、型に約束を守らせます。
+- `#[derive(Debug)]` をつけると、`{:?}` で中身を表示できるようになります。
+- `&dyn Describe` や `impl Describe` で、「Describe を守っている物なら何でも」受けとれます。
+--- main
+// 図形は、この2つのどれか。種類ごとにちがうデータを持つ
+#[derive(Debug)]
+enum Shape {
+    Rect { w: f64, h: f64 },
+    Circle { r: f64 },
+}
+
+// 「説明できる」という約束
+trait Describe {
+    fn name(&self) -> String;
+    fn area(&self) -> f64;
+
+    // 約束の中に、できあいの中身を書いておくこともできる
+    fn describe(&self) -> String {
+        format!("{} の面積: {:.2}", self.name(), self.area())
+    }
+}
+
+impl Describe for Shape {
+    fn name(&self) -> String {
+        match self {
+            Shape::Rect { .. } => String::from("長方形"),
+            Shape::Circle { .. } => String::from("円"),
+        }
+    }
+
+    fn area(&self) -> f64 {
+        // 全部の種類を書かないと、コンパイルエラーになる
+        match self {
+            Shape::Rect { w, h } => w * h,
+            Shape::Circle { r } => std::f64::consts::PI * r * r,
+        }
+    }
+}
+
+// Describe を守っている物なら、何でも受けとれる
+fn show(item: &dyn Describe) {
+    println!("{}", item.describe());
+}
+
+fn main() {
+    let shapes = vec![
+        Shape::Rect { w: 3.0, h: 4.0 },
+        Shape::Circle { r: 1.0 },
+    ];
+    for s in &shapes {
+        show(s);
+    }
+    println!("{:?}", shapes[0]);     // derive(Debug) のおかげ
+
+    // Option も enum: Some(値) か None
+    let first: Option<&Shape> = shapes.first();
+    match first {
+        Some(s) => println!("最初は {}", s.name()),
+        None => println!("空っぽです"),
+    }
+}
+
+=== 17
+- Cargo は、Rust の「なんでも係」です。プロジェクトを作る、コンパイルする、動かす、テストする、ライブラリを入れる、を全部やってくれます。
+- 使うライブラリ（クレート）は `Cargo.toml` に書かれます。`cargo add` で足せます。
+- `cargo fmt` は書き方をそろえ、`cargo clippy` は「もっとよい書き方」を教えてくれます。
+- Rust のコンパイルエラーは、とてもていねいです。「こう直すとよい」まで書いてあるので、まず最後まで読みましょう。
+- 公式の入門書「The Rust Programming Language」（日本語版あり）が、いちばんの教科書です。
+--- shell
+# バージョンを確かめる
+rustc --version
+cargo --version
+
+# プロジェクトを始める
+cargo new hello
+cd hello
+
+# コンパイルして動かす / 速い完成版を作る
+cargo run
+cargo build --release
+
+# コンパイルできるかだけを、すばやく確かめる
+cargo check
+
+# 書き方をそろえる・まちがいを探す
+cargo fmt
+cargo clippy
+
+# テストを動かす / ライブラリを入れる
+cargo test
+cargo add serde
+
+=== 18
+- 「分ける → 数える → ならべる → 表示する」と、仕事ごとに関数を分けています。
+- `*counts.entry(...).or_insert(0) += 1;` は、「なければ 0 を入れて、1 を足す」という HashMap の定番の書き方です。
+- `sort_by` に、「どちらを先にするか」を決める式を渡しています。`then_with` で、「同じなら次の基準」をつなげます。
+- 単語がないときは `Err` を返して知らせています。呼ぶ側は、`Result` を必ず確かめることになります。
+--- main
+use std::collections::HashMap;
+
+// 文章を、小文字の単語の Vec にする
+fn split_words(text: &str) -> Vec<String> {
+    text.to_lowercase()
+        .split(|c: char| !c.is_alphabetic())    // 文字でない所で区切る
+        .filter(|word| !word.is_empty())
+        .map(|word| word.to_string())
+        .collect()
+}
+
+fn count_words(words: &[String]) -> HashMap<String, usize> {
+    let mut counts = HashMap::new();
+    for w in words {
+        *counts.entry(w.clone()).or_insert(0) += 1;
+    }
+    counts
+}
+
+// 回数の多い順（同じならアルファベット順）に n 個
+fn top(counts: &HashMap<String, usize>, n: usize) -> Vec<(String, usize)> {
+    let mut entries: Vec<(String, usize)> =
+        counts.iter().map(|(word, count)| (word.clone(), *count)).collect();
+    entries.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+    entries.truncate(n);
+    entries
+}
+
+fn report(text: &str) -> Result<(), String> {
+    let words = split_words(text);
+    if words.is_empty() {
+        return Err(String::from("単語がありません"));
+    }
+    let counts = count_words(&words);
+    println!("全部で {} 語、{} 種類", words.len(), counts.len());
+    for (word, count) in top(&counts, 3) {
+        println!("{word}: {count}");
+    }
+    Ok(())
+}
+
+fn main() {
+    if let Err(e) = report("The cat saw the dog. The dog saw the bird!") {
+        println!("エラー: {e}");
+    }
+    if let Err(e) = report("...") {
+        println!("エラー: {e}");
+    }
+}

@@ -1,0 +1,563 @@
+=== 01
+- TypeScript は、JavaScript に「型」を足した言語です。JavaScript の書き方は、ほぼそのまま使えます。
+- `console.log( )` で表示します。`//` から行の終わりまではコメントです。
+- TypeScript のファイルは `.ts`。型をチェックしたあと JavaScript に変えて動かします。`tsx` を使うと、変換と実行を1回でやってくれます。
+- 新しい Node.js（22.18 以上）は、`node main.ts` だけでも動かせます（型のチェックはしません）。
+--- main
+// はじめてのプログラム
+console.log("こんにちは！");
+console.log("プログラミングをはじめます。");
+console.log("1 + 2 =", 1 + 2);   // カンマで区切ると、間に空白が入ります
+
+=== 02
+- 変数の名前のあとに `: 型` を書きます。`string`（文字列）、`number`（数）、`boolean`（真・偽）が基本です。
+- 型とちがう値を入れると、実行する前にエラーで教えてくれます。これが TypeScript を使ういちばんの理由です。
+- 右の値から型がわかるときは、型を書かなくてもかまいません（型推論）。`const city = "東京"` は、自動で string になります。
+- `let`（入れなおせる）と `const`（入れなおせない）の使い分けは JavaScript と同じです。
+--- main
+const name: string = "さくら";      // 文字列
+let age: number = 15;               // 数
+const height: number = 152.5;       // 小数も number
+const isStudent: boolean = true;    // 真か偽か
+
+console.log(`名前: ${name}`);
+console.log(`年れい: ${age}`);
+console.log(`身長: ${height}`);
+console.log(`学生: ${isStudent}`);
+
+age = age + 1;                      // let の変数は入れなおせます
+console.log(`来年は ${age} さい`);
+
+const city = "東京";                // 型を書かなくても string と決まる
+console.log(city);
+
+// age = "十六";   ← これを書くと、実行する前にエラーになります
+
+=== 03
+- 計算のきまりは JavaScript と同じです。`/` は小数になり、切りすては `Math.floor( )` です。
+- JavaScript では `"1" + 2` が `"12"` になっても気づきにくいですが、TypeScript は「数のはずの所に文字列がある」ことを型で教えてくれます。
+- 文字列を数に変えるときは `Number("42")` を使います。
+- 文字数は `.length` で調べます。
+--- main
+const a: number = 7;
+const b: number = 2;
+console.log("7 + 2 =", a + b);
+console.log("7 - 2 =", a - b);
+console.log("7 * 2 =", a * b);
+console.log("7 / 2 =", a / b);                 // 小数になる
+console.log("切りすて:", Math.floor(a / b));
+console.log("7 % 2 =", a % b);                 // あまり
+
+const family: string = "山田";
+const given: string = "太郎";
+const full: string = family + " " + given;
+console.log("フルネーム:", full);
+console.log("文字数:", "program".length);
+
+const input: string = "42";         // 入力された文字のつもり
+const value: number = Number(input);
+console.log(value + 1);
+
+=== 04
+- `if` の書き方は JavaScript と同じです。等しいかどうかは `===` で調べます。
+- 「かつ」は `&&`、「または」は `||`、「〜でない」は `!` です。
+- 型のちがう物を `===` でくらべると、TypeScript が「これは絶対に true になりません」と教えてくれます。
+- `条件 ? A : B` は、「条件が成り立てば A、そうでなければ B」という短い書き方です。
+--- main
+const score: number = 72;
+
+if (score >= 80) {
+  console.log("よくできました");
+} else if (score >= 60) {
+  console.log("合格");
+} else {
+  console.log("もう少し");
+}
+
+const age: number = 15;
+const hasTicket: boolean = true;
+if (age >= 12 && hasTicket) {
+  console.log("入場できます");
+}
+
+const label: string = age >= 18 ? "大人" : "子ども";
+console.log(label);
+
+=== 05
+- くりかえしの書き方は JavaScript と同じです。
+- 配列の中身を1つずつ取り出すときは `for (const x of 配列)` が便利です。
+- `number[]` は「数の配列」という型です。
+- `continue` は「今回は飛ばして次へ」、`break` は「くりかえしをやめる」です。
+--- main
+// 決まった回数くりかえす
+for (let i = 1; i <= 5; i++) {
+  console.log(i, "回目");
+}
+
+// 条件が成り立つあいだくりかえす
+let count: number = 3;
+while (count > 0) {
+  console.log(count);
+  count--;
+}
+console.log("発射！");
+
+// 1〜10 の偶数だけを足す
+let total: number = 0;
+for (let i = 1; i <= 10; i++) {
+  if (i % 2 === 1) {
+    continue;      // 奇数は飛ばす
+  }
+  total += i;
+}
+console.log("偶数の合計:", total);
+
+=== 06
+- 関数では、引数の型と、返す値の型（`)` のあとの `: 型`）を書きます。
+- 型を書いておくと、まちがった型で呼んだり、引数の数をまちがえたりしたときに、実行する前にわかります。
+- `name?: string` の `?` は「渡さなくてもよい引数」。`name = "みなさん"` は「渡されなかったときの値」です。
+- 何も返さない関数は、返す型を `void` と書きます。
+--- main
+function add(a: number, b: number): number {
+  return a + b;
+}
+
+function greet(name: string = "みなさん"): string {
+  return `こんにちは、${name}さん`;
+}
+
+const isEven = (n: number): boolean => n % 2 === 0;   // アロー関数
+
+function show(message: string): void {                // 何も返さない
+  console.log(message);
+}
+
+show("3 + 4 = " + add(3, 4));
+show(greet("さくら"));
+show(greet());
+show("10 は偶数？ " + isEven(10));
+// add("3", 4);   ← 文字列を渡すと、実行する前にエラーになります
+
+=== 07
+- 配列の型は `number[]` のように書きます（`Array<number>` とも書けます）。
+- `number[]` の配列に文字列を `push` しようとすると、エラーで教えてくれます。
+- `readonly number[]` と書くと、「中身を変えない配列」という約束になります。
+- 使い方（`push`、`length`、`sort` など）は JavaScript と同じです。
+--- main
+const scores: number[] = [70, 85, 60];
+scores.push(90);                 // 後ろに追加
+
+console.log("最初の点数:", scores[0]);
+console.log("最後の点数:", scores.at(-1));
+console.log("人数:", scores.length);
+
+let total = 0;
+for (const s of scores) {
+  total += s;
+}
+console.log("合計:", total);
+console.log("平均:", total / scores.length);
+console.log("最高点:", Math.max(...scores));
+
+scores.sort((a, b) => a - b);    // 小さい順にならべかえる
+console.log("ならべかえ:", scores);
+
+const names: string[] = ["さくら", "たろう"];
+console.log(names.join("・"));
+
+=== 08
+- `Map<string, number>` は「キーが string、値が number」の辞書です。
+- `get` の結果の型は `number | undefined`（数か、ないか）になります。「ないかもしれない」ことを、型が思い出させてくれます。
+- `??` は「左が null か undefined なら右を使う」という意味です。
+- 形の決まったデータは、オブジェクトの型を書いて表します（くわしくは「型を自分で作る」で）。
+--- main
+const prices = new Map<string, number>();
+prices.set("りんご", 120);
+prices.set("バナナ", 80);
+prices.set("みかん", 60);
+
+console.log("りんご は", prices.get("りんご"), "円");
+
+if (prices.has("ぶどう")) {
+  console.log("ぶどう は", prices.get("ぶどう"), "円");
+} else {
+  console.log("ぶどう はありません");
+}
+
+const peach: number | undefined = prices.get("もも");   // ないかもしれない
+console.log("もも:", peach ?? "不明");
+
+console.log("--- 一覧 ---");
+for (const [name, price] of prices) {
+  console.log(`${name}: ${price} 円`);
+}
+console.log("種類:", prices.size);
+
+// 形の決まったデータ
+const user: { name: string; age: number } = { name: "さくら", age: 15 };
+console.log(user.name, user.age);
+
+=== 09
+- 文字列の使い方は JavaScript と同じです。`split` の結果は `string[]` 型になります。
+- `includes` で「ふくまれているか」、`trim` で前後の空白を取ります。
+- `fruits[0]` のような取り出しは、空の配列だと `undefined` になります。きびしい設定（`noUncheckedIndexedAccess`）にすると、それも型で教えてくれます。
+- メソッド名を打ちまちがえても（`toUppercase` など）、すぐにエラーで教えてくれます。
+--- main
+const text: string = "apple,banana,cherry";
+
+const fruits: string[] = text.split(",");   // カンマで分ける
+console.log(fruits.length, "個");
+console.log("1番目:", fruits[0]);
+console.log("大文字:", fruits[0]?.toUpperCase());
+console.log("banana をふくむ？", text.includes("banana"));
+console.log("つなぐ:", fruits.join(" / "));
+console.log("置きかえ:", text.replace("cherry", "melon"));
+
+const messy: string = "   hello   ";
+console.log("[" + messy.trim() + "]");      // 前後の空白を取る
+console.log("先頭3文字:", text.slice(0, 3));
+
+=== 10
+- クラスでは、フィールド（持っているデータ）の名前と型を先に書きます。
+- `private` をつけると、クラスの外からさわれなくなります。`readonly` は「最初に入れたら変えられない」です。
+- `constructor` は、実物を作るときに1回だけ呼ばれます。
+- TypeScript では、クラスを使わずに「型 + ふつうの関数」で書くこともよくあります。
+--- main
+class Account {
+  readonly owner: string;        // あとから変えられない
+  private balance: number;       // クラスの外からはさわれない
+
+  constructor(owner: string, balance: number) {
+    this.owner = owner;
+    this.balance = balance;
+  }
+
+  deposit(amount: number): void {
+    this.balance += amount;
+  }
+
+  getBalance(): number {
+    return this.balance;
+  }
+
+  show(): void {
+    console.log(`${this.owner} の残高: ${this.balance} 円`);
+  }
+}
+
+const a = new Account("さくら", 1000);
+const b = new Account("たろう", 300);
+
+a.deposit(500);      // a だけが増える
+a.show();
+b.show();
+console.log(a.getBalance());
+// a.balance = 0;   ← private なので、エラーになります
+
+=== 11
+title: 型を自分で作る
+goal: type・interface・ユニオン型を使って、データの形を型で表せるようになる。
+intro: TypeScript の本当の力は、「自分のプログラムのデータの形」を型として書けることです。型を書いておくと、エディタが入力をおぎなってくれ、形のまちがいをその場で教えてくれます。仕事の TypeScript は、まず型を作るところから始まります。
+quiz: type Size = "S" | "M" | "L"; のとき、const s: Size = "XL"; はどうなる？ ;; "XL" が入る ;; 実行する前にエラーになる ;; 自動で "L" になる ;; 2 ;; Size 型には "S" "M" "L" の3つしか入りません。それ以外を入れると、実行する前にエラーで教えてくれます。
+task: 「題名 (title)、値段 (price)、読み終わったか (done。なくてもよい)」を持つ Book 型を作り、Book の配列から合計金額を出す関数を書いてみよう。
+hint: type Book = { title: string; price: number; done?: boolean }; の形です。
+- `type` や `interface` で、オブジェクトの形に名前をつけられます。
+- `"S" | "M" | "L"` はユニオン型。「このうちのどれか」だけを入れられます。
+- `?` をつけたプロパティは「なくてもよい」。型は `string | undefined` になります。
+- `if` で確かめると、その中では型がしぼられます（型の絞りこみ）。
+- 型は実行するときには消えます。型はあくまで「書いている間のチェック」です。
+--- main
+// オブジェクトの形に名前をつける
+type Size = "S" | "M" | "L";          // この3つのどれか
+
+interface Item {
+  name: string;
+  price: number;
+  size: Size;
+  memo?: string;                      // なくてもよい
+}
+
+const items: Item[] = [
+  { name: "Tシャツ", price: 1500, size: "M" },
+  { name: "ぼうし", price: 900, size: "S", memo: "プレゼント用" },
+];
+
+function describe(item: Item): string {
+  // memo はないかもしれないので、確かめてから使う
+  if (item.memo !== undefined) {
+    return `${item.name} (${item.size}) ${item.price} 円 ※${item.memo}`;
+  }
+  return `${item.name} (${item.size}) ${item.price} 円`;
+}
+
+for (const item of items) {
+  console.log(describe(item));
+}
+
+// 数か文字列、どちらも受けとれる
+function toYen(value: number | string): string {
+  if (typeof value === "number") {
+    return value.toFixed(0) + " 円";    // ここでは number とわかっている
+  }
+  return value + " 円";                 // ここでは string
+}
+console.log(toYen(1500));
+console.log(toYen("千五百"));
+
+=== 12
+- 外で使わせたい物に `export` をつけ、使う側は `import` で読みこみます。JavaScript と同じです。
+- 型も `export` / `import` できます。型だけを読みこむときは `import type { User }` と書きます。
+- 仕事のプロジェクトでは、`tsconfig.json` に TypeScript の設定を書きます。`"strict": true` で、きびしくチェックするのがおすすめです。
+- 読みこむときの拡張子（`.ts` か `.js` か、書かないか）は、使う道具と設定で変わります。プロジェクトのやり方に合わせましょう。
+--- greeting.ts
+// あいさつを作る部品
+export type User = { name: string };
+
+export function hello(user: User): string {
+  return `こんにちは、${user.name}さん`;
+}
+
+export function bye(user: User): string {
+  return `さようなら、${user.name}さん`;
+}
+--- package.json
+{
+  "type": "module"
+}
+--- main
+import { hello, bye } from "./greeting.ts";
+import type { User } from "./greeting.ts";
+
+const user: User = { name: "さくら" };
+console.log(hello(user));
+console.log(bye(user));
+
+=== 13
+- `try` / `catch` / `finally` と `throw` の使い方は JavaScript と同じです。
+- `catch (e)` の `e` は `unknown` 型（何が来るかわからない）です。`e instanceof Error` で確かめてから `e.message` を使います。
+- 「失敗するかもしれない」ことを、返す型で表すやり方もあります。`number | null` を返すと、呼ぶ側は null のチェックを忘れられません。
+--- main
+function divide(a: number, b: number): number {
+  if (b === 0) {
+    throw new Error("0 で割ることはできません");
+  }
+  return a / b;
+}
+
+try {
+  console.log("10 ÷ 2 =", divide(10, 2));
+  console.log("10 ÷ 0 =", divide(10, 0));
+  console.log("ここは動きません");
+} catch (e) {
+  if (e instanceof Error) {            // Error かどうか確かめる
+    console.log("エラー:", e.message);
+  }
+}
+
+// 失敗を「返す型」で表すやり方
+function parseNumber(text: string): number | null {
+  const n = Number(text);
+  return Number.isNaN(n) ? null : n;
+}
+
+const text = "abc";
+const result = parseNumber(text);
+if (result === null) {
+  console.log(`"${text}" は数ではありません`);
+} else {
+  console.log(result + 1);             // ここでは number とわかっている
+}
+console.log("チェック終わり");
+
+=== 14
+- ファイルをあつかう道具は、Node.js の `node:fs` モジュールです。使い方は JavaScript と同じです。
+- Node.js の道具の型は、`npm install -D @types/node` で入れます。入れると、引数や返す値の型がわかるようになります。
+- `readFileSync(ファイル, "utf8")` の結果は `string` 型になります。
+- エラーの `code` を調べる前に、`e instanceof Error` などで形を確かめます。
+--- main
+import { readFileSync, writeFileSync } from "node:fs";
+
+const lines: string[] = ["牛乳を買う", "宿題をする", "本を読む"];
+
+// 書きこむ
+writeFileSync("memo.txt", lines.join("\n") + "\n");
+console.log(lines.length, "行 書きました");
+
+// 読みこむ
+const loaded: string[] = readFileSync("memo.txt", "utf8").trim().split("\n");
+loaded.forEach((line, i) => {
+  console.log(`${i + 1}: ${line}`);
+});
+
+// ないファイルを開こうとしたとき
+try {
+  readFileSync("ない.txt", "utf8");
+} catch (e) {
+  if (e instanceof Error && "code" in e && e.code === "ENOENT") {
+    console.log("ない.txt は開けませんでした");
+  } else {
+    throw e;      // 知らないエラーは、そのまま上に知らせる
+  }
+}
+
+=== 15
+mode: test
+- Node.js に入っているテストの道具 `node:test` を、TypeScript でもそのまま使えます。
+- `assert.equal(実際, 期待)` は、2つが同じでなければ「失敗」と知らせます。
+- TypeScript では「型のチェック」と「テスト」の両方でまちがいを探します。型は形のまちがいを、テストは動きのまちがいを見つけます。
+- 仕事では Vitest や Jest がよく使われます。`expect(fizzbuzz(3)).toBe("Fizz")` のように書きますが、考え方は同じです。
+--- main
+import { test } from "node:test";
+import assert from "node:assert/strict";
+
+function fizzbuzz(n: number): string {
+  if (n % 15 === 0) return "FizzBuzz";
+  if (n % 3 === 0) return "Fizz";
+  if (n % 5 === 0) return "Buzz";
+  return String(n);
+}
+
+test("3 は Fizz", () => {
+  assert.equal(fizzbuzz(3), "Fizz");
+});
+
+test("5 は Buzz", () => {
+  assert.equal(fizzbuzz(5), "Buzz");
+});
+
+test("15 は FizzBuzz", () => {
+  assert.equal(fizzbuzz(15), "FizzBuzz");
+});
+
+test("7 は 7", () => {
+  assert.equal(fizzbuzz(7), "7");
+});
+
+=== 16
+title: ジェネリクスと非同期の型
+goal: 「どんな型でも使えて、型をおぼえている」関数をジェネリクスで書けるようになる。Promise の型も読めるようになる。
+intro: ライブラリの型を読むと、<T> という書き方がたくさん出てきます。これがジェネリクスで、「型を引数にする」しくみです。配列の Array<T> も、非同期の Promise<T> もジェネリクスです。読めるようになると、ライブラリの使い方が型からわかるようになります。
+quiz: function first<T>(list: T[]): T | undefined を first(["a", "b"]) と呼ぶと、返す値の型は？ ;; any ;; string | undefined（string か undefined） ;; number | undefined（number か undefined） ;; 2 ;; 渡した配列が string[] なので、T は string と決まります。だから返す型は string | undefined です。
+task: 配列と数 n を受けとり、最初の n 個を返すジェネリクス関数 take<T> を作って、数の配列と文字列の配列の両方でためしてみよう。
+hint: function take<T>(list: T[], n: number): T[] { return list.slice(0, n); }
+- `<T>` は「型の引数」。呼ぶときに渡した値から、T が何かを自動で決めてくれます。
+- `Promise<number>` は「あとで number がとどく約束」。`async` 関数の返す型は、必ず `Promise<〇〇>` になります。
+- `Record<string, number>` は「キーが string、値が number のオブジェクト」という型です。
+- 状態を `kind` などの文字で分けておくと、`if` や `switch` で型がしぼられます（判別できるユニオン型）。
+--- main
+// どんな型の配列でも使える。入れた型をおぼえている
+function first<T>(list: T[]): T | undefined {
+  return list[0];
+}
+console.log(first([10, 20, 30]));      // number | undefined
+console.log(first(["a", "b"]));        // string | undefined
+
+// 成功か失敗かを、型で表す
+type Result<T> =
+  | { kind: "ok"; value: T }
+  | { kind: "error"; message: string };
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// 時間のかかる処理のかわり（通信のつもり）
+async function fetchPrice(name: string): Promise<Result<number>> {
+  await wait(50);
+  const prices: Record<string, number> = { りんご: 120, バナナ: 80 };
+  const price = prices[name];
+  if (price === undefined) {
+    return { kind: "error", message: `${name} は売っていません` };
+  }
+  return { kind: "ok", value: price };
+}
+
+async function main(): Promise<void> {
+  for (const name of ["りんご", "ぶどう"]) {
+    const result = await fetchPrice(name);
+    if (result.kind === "ok") {
+      console.log(`${name}: ${result.value} 円`);     // ここでは value が使える
+    } else {
+      console.log(`エラー: ${result.message}`);       // ここでは message が使える
+    }
+  }
+}
+
+main();
+
+=== 17
+- TypeScript は `npm install -D typescript` で、プロジェクトごとに入れます。
+- `tsconfig.json` が設定ファイルです。`"strict": true` にして、きびしくチェックするのがおすすめです。
+- `npx tsc --noEmit` は、「型のチェックだけ」をします。エラーが 0 になるのが目標です。
+- `tsx` は、TypeScript をそのまま動かす道具です。ためすときに便利です。
+- 公式の TypeScript Handbook と、エディタ（VS Code）でマウスをのせると出る型の表示が、いちばんの先生です。
+--- shell
+# プロジェクトを始めて、TypeScript を入れる
+npm init -y
+npm install -D typescript tsx @types/node
+
+# 設定ファイル tsconfig.json を作る
+npx tsc --init
+
+# 型のチェックだけをする
+npx tsc --noEmit
+
+# そのまま動かす
+npx tsx main.ts
+
+# 書き方をそろえる・まちがいを探す
+npm install -D prettier eslint typescript-eslint
+npx prettier --write .
+npx eslint .
+
+=== 18
+- 関数ごとに「何を受けとって、何を返すか」が型でわかります。型が、そのまま説明書になっています。
+- `Map<string, number>` で、「単語 → 回数」の辞書を表しています。
+- `[string, number][]` は、「文字列と数のペア」の配列という型です（タプル）。
+- 空の文章が来たときは、エラーを投げて知らせています。
+--- main
+/** 文章を、小文字の単語の配列にする */
+function splitWords(text: string): string[] {
+  return text
+    .toLowerCase()
+    .split(/\s+/)
+    .map((raw) => raw.replace(/[^a-z]/g, ""))   // 記号を取る
+    .filter((word) => word !== "");
+}
+
+function countWords(words: string[]): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const w of words) {
+    counts.set(w, (counts.get(w) ?? 0) + 1);
+  }
+  return counts;
+}
+
+/** 回数の多い順（同じならアルファベット順）に n 個 */
+function top(counts: Map<string, number>, n: number): [string, number][] {
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, n);
+}
+
+function report(text: string): void {
+  const words = splitWords(text);
+  if (words.length === 0) {
+    throw new Error("単語がありません");
+  }
+  const counts = countWords(words);
+  console.log(`全部で ${words.length} 語、${counts.size} 種類`);
+  for (const [word, count] of top(counts, 3)) {
+    console.log(`${word}: ${count}`);
+  }
+}
+
+report("The cat saw the dog. The dog saw the bird!");
+
+try {
+  report("...");
+} catch (e) {
+  if (e instanceof Error) {
+    console.log("エラー:", e.message);
+  }
+}

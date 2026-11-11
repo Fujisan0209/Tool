@@ -1,0 +1,461 @@
+=== 01
+- `print( )` で表示します。表示したあと、自動で改行します。
+- `#` から行の終わりまではコメントです。プログラムとしては読まれません。
+- 行の終わりに `;` はいりません。1行に1つの命令を書きます。
+--- main
+# はじめてのプログラム
+print("こんにちは！")
+print("プログラミングをはじめます。")
+print("1 + 2 =", 1 + 2)   # カンマで区切ると、間に空白が入ります
+
+=== 02
+- 変数は `名前 = 値` で作ります。型は書かなくても、入れた値で自動的に決まります。
+- 真・偽は `True` / `False`。最初が大文字です。
+- 文字列の前に `f` をつけると、`{ }` の中の変数が値に置きかわります（f文字列）。
+- `type(x)` で、いまの型を調べられます。
+--- main
+name = "さくら"      # 文字列 (str)
+age = 15             # 整数 (int)
+height = 152.5       # 小数 (float)
+is_student = True    # 真か偽か (bool)
+
+print(f"名前: {name}")
+print(f"年れい: {age}")
+print(f"身長: {height}")
+print(f"学生: {is_student}")
+
+age = age + 1        # 変数は、あとから入れなおせます
+print(f"来年は {age} さい")
+print(type(age), type(height))
+
+=== 03
+- `/` はいつも小数になります。整数の割り算（切りすて）は `//` です。
+- `%` はあまり、`**` は累乗（2 ** 3 は 8）です。
+- 文字列は `+` でつなげられます。数とつなぐときは `str( )` で文字列に変えます。
+- `len( )` で文字数がわかります。
+--- main
+a = 7
+b = 2
+print("7 + 2 =", a + b)
+print("7 - 2 =", a - b)
+print("7 * 2 =", a * b)
+print("7 / 2 =", a / b)     # 小数になる
+print("7 // 2 =", a // b)   # 切りすて
+print("7 % 2 =", a % b)     # あまり
+
+family = "山田"
+given = "太郎"
+full = family + " " + given
+print("フルネーム:", full)
+print("文字数:", len("program"))
+print("年れい: " + str(15) + " さい")
+
+=== 04
+- `if 条件:` のあと、字下げ（インデント）した行が「当てはまったときにすること」です。字下げは空白4つがきまりです。
+- `elif` は「そうでなくて、もし」。`else` は「どれでもないとき」。
+- 「かつ」は `and`、「または」は `or`、「〜でない」は `not` と書きます。
+- 等しいかどうかは `==`。`=` 1つは「入れる」なので、まちがえやすいところです。
+--- main
+score = 72
+
+if score >= 80:
+    print("よくできました")
+elif score >= 60:
+    print("合格")
+else:
+    print("もう少し")
+
+age = 15
+has_ticket = True
+if age >= 12 and has_ticket:
+    print("入場できます")
+
+if not has_ticket or age < 12:
+    print("入場できません")
+else:
+    print("ようこそ")
+
+=== 05
+- `for i in range(1, 6):` は 1 から 5 まで。`range` の右の数は入りません。
+- `while 条件:` は、条件が成り立つあいだくりかえします。
+- `continue` は「今回は飛ばして次へ」、`break` は「くりかえしをやめる」です。
+- `+=` は「足して入れなおす」。`total = total + i` と同じです。
+--- main
+# 決まった回数くりかえす
+for i in range(1, 6):
+    print(i, "回目")
+
+# 条件が成り立つあいだくりかえす
+count = 3
+while count > 0:
+    print(count)
+    count -= 1
+print("発射！")
+
+# 1〜10 の偶数だけを足す
+total = 0
+for i in range(1, 11):
+    if i % 2 == 1:
+        continue      # 奇数は飛ばす
+    total += i
+print("偶数の合計:", total)
+
+=== 06
+- 関数は `def 名前(引数):` で作り、`return` で結果を返します。
+- 作っただけでは動きません。`add(3, 4)` のように呼んではじめて動きます。
+- `def greet(name="みなさん")` のように、引数に「何も渡されなかったときの値」を決められます。
+- 関数の中で作った変数は、関数の外からは見えません。
+--- main
+def add(a, b):
+    return a + b
+
+def greet(name="みなさん"):
+    return f"こんにちは、{name}さん"
+
+def is_even(n):
+    return n % 2 == 0
+
+print("3 + 4 =", add(3, 4))
+print(greet("さくら"))
+print(greet())
+print("10 は偶数？", is_even(10))
+print("7 は偶数？", is_even(7))
+
+=== 07
+- リストは `[ ]` で作ります。番号は 0 から始まります。
+- `append` で後ろに追加、`len` で個数、`sum` / `max` / `min` で合計・最大・最小。
+- `scores[-1]` のようにマイナスの番号を使うと、後ろから数えられます。
+- `for s in scores:` で、中身を1つずつ取り出せます。
+--- main
+scores = [70, 85, 60]
+scores.append(90)             # 後ろに追加
+
+print("最初の点数:", scores[0])
+print("最後の点数:", scores[-1])
+print("人数:", len(scores))
+
+total = 0
+for s in scores:
+    total += s
+print("合計:", total)
+print("平均:", total / len(scores))
+print("最高点:", max(scores))
+
+scores.sort()                 # 小さい順にならべかえる
+print("ならべかえ:", scores)
+
+=== 08
+- 辞書は `{キー: 値}` で作ります。`prices["りんご"]` のようにキーで取り出します。
+- ないキーを `[ ]` で取り出すとエラー（KeyError）。先に `in` で調べるか、`get` を使います。
+- `for name, price in prices.items():` で、キーと値をいっしょに取り出せます。
+- 辞書は、入れた順番をおぼえています。
+--- main
+prices = {"りんご": 120, "バナナ": 80}
+prices["みかん"] = 60          # 追加
+
+print("りんご は", prices["りんご"], "円")
+
+if "ぶどう" in prices:
+    print("ぶどう は", prices["ぶどう"], "円")
+else:
+    print("ぶどう はありません")
+
+print("もも:", prices.get("もも", "不明"))   # なければ「不明」
+
+print("--- 一覧 ---")
+for name, price in prices.items():
+    print(f"{name}: {price} 円")
+print("種類:", len(prices))
+
+=== 09
+- `split` で分けてリストに、`join` でリストをつないで文字列にします。
+- 文字列は作ったあと書きかえられません。`upper` や `replace` は「新しい文字列」を返します。
+- `in` で「ふくまれているか」を調べられます。
+- `strip` は、前後の空白や改行を取りのぞきます。入力された文字を使う前によく使います。
+--- main
+text = "apple,banana,cherry"
+
+fruits = text.split(",")           # カンマで分ける
+print(len(fruits), "個")
+print("1番目:", fruits[0])
+print("大文字:", fruits[0].upper())
+print("banana をふくむ？", "banana" in text)
+print("つなぐ:", " / ".join(fruits))
+print("置きかえ:", text.replace("cherry", "melon"))
+
+messy = "   hello   "
+print("[" + messy.strip() + "]")   # 前後の空白を取る
+print("先頭3文字:", text[:3])
+
+=== 10
+- `class` は「設計図」。`Account("さくら", 1000)` で、設計図から実物（インスタンス）を作ります。
+- `__init__` は実物を作るときに1回だけ呼ばれ、最初の値を入れます。
+- `self` は「この実物自身」。メソッドの最初の引数に必ず書きます。
+- データと、それをあつかう関数を1か所にまとめられるのがクラスのよいところです。
+--- main
+class Account:
+    def __init__(self, owner, balance):
+        self.owner = owner
+        self.balance = balance
+
+    def deposit(self, amount):
+        self.balance += amount
+
+    def show(self):
+        print(f"{self.owner} の残高: {self.balance} 円")
+
+a = Account("さくら", 1000)
+b = Account("たろう", 300)
+
+a.deposit(500)      # a だけが増える
+a.show()
+b.show()
+
+=== 11
+title: Python らしい書き方
+goal: 内包表記・スライス・アンパックを使って、短く読みやすく書けるようになる。
+intro: Python には、よくある処理を1行で書ける書き方がそろっています。ほかの人が書いた Python のコードには必ず出てくるので、読めるようになることが一人前への近道です。
+quiz: [n * 2 for n in [1, 2, 3] if n != 2] の結果は？ ;; [2, 4, 6] ;; [2, 6] ;; [1, 3] ;; 2 ;; 2 以外（1 と 3）だけを取り出して、それぞれ2倍にするので [2, 6] です。
+task: 1 から 20 までの数のうち、3 の倍数だけを2乗したリストを、内包表記で作ってみよう。
+hint: [n ** 2 for n in range(1, 21) if 条件] の形です。
+- 内包表記 `[式 for x in リスト if 条件]` は、「取り出す → しぼる → 作りかえる」を1行で書きます。
+- スライス `nums[1:4]` は「1番目から4番目の手前まで」。`nums[::-1]` で逆順です。
+- `a, b = b, a` のように、いくつかの値をまとめて入れられます（アンパック）。
+- `enumerate` は番号つきで、`zip` は2つのリストをならべて取り出します。
+--- main
+nums = [1, 2, 3, 4, 5, 6]
+
+# 内包表記: リストから新しいリストを作る
+doubled = [n * 2 for n in nums]
+evens = [n for n in nums if n % 2 == 0]
+print(doubled)
+print(evens)
+
+# スライス: 一部を切り出す
+print(nums[1:4])
+print(nums[::-1])
+
+# アンパック: まとめて受け取る
+a, b = 1, 2
+a, b = b, a            # 入れかえ
+print(a, b)
+
+# 番号つきで取り出す / 2つを同時に取り出す
+names = ["さくら", "たろう"]
+ages = [15, 17]
+for i, name in enumerate(names, start=1):
+    print(i, name)
+for name, age in zip(names, ages):
+    print(f"{name} は {age} さい")
+
+=== 12
+- 1つのファイルが1つの「モジュール」です。`import greeting` で、`greeting.py` を読みこみます。
+- 使うときは `greeting.hello( )` のように、モジュール名をつけて呼びます。
+- `from greeting import hello` と書くと、`hello( )` だけで呼べます。
+- `if __name__ == "__main__":` の中は、そのファイルを直接実行したときだけ動きます。
+--- greeting.py
+# あいさつを作る部品
+def hello(name):
+    return f"こんにちは、{name}さん"
+
+def bye(name):
+    return f"さようなら、{name}さん"
+--- main
+import greeting
+from greeting import bye
+
+print(greeting.hello("さくら"))
+print(bye("さくら"))
+
+=== 13
+- エラーが起きるかもしれない所を `try:` に書き、起きたときの対応を `except エラーの種類:` に書きます。
+- 自分でエラーを起こすには `raise ValueError("説明")` と書きます。
+- `finally:` の中は、エラーが起きても起きなくても、最後に必ず動きます。
+- `except:` だけで全部をつかまえるのはさけましょう。どんなエラーかを書くと、思わぬ失敗を見のがしません。
+--- main
+def divide(a, b):
+    if b == 0:
+        raise ValueError("0 で割ることはできません")
+    return a / b
+
+try:
+    print("10 ÷ 2 =", divide(10, 2))
+    print("10 ÷ 0 =", divide(10, 0))
+    print("ここは動きません")
+except ValueError as e:
+    print("エラー:", e)
+
+text = "abc"
+try:
+    number = int(text)
+    print(number)
+except ValueError:
+    print(f'"{text}" は数ではありません')
+finally:
+    print("チェック終わり")
+
+=== 14
+- `with open(...) as f:` と書くと、使い終わったファイルを自動で閉じてくれます。
+- `"w"` は書きこみ（中身は消えて新しくなる）、`"r"` は読みこみ、`"a"` は後ろに追加です。
+- 日本語をあつかうときは `encoding="utf-8"` を必ず書きます。
+- ファイルがないときは `FileNotFoundError` が起きます。
+--- main
+lines = ["牛乳を買う", "宿題をする", "本を読む"]
+
+# 書きこむ
+with open("memo.txt", "w", encoding="utf-8") as f:
+    for line in lines:
+        f.write(line + "\n")
+print(len(lines), "行 書きました")
+
+# 読みこむ
+with open("memo.txt", "r", encoding="utf-8") as f:
+    for i, line in enumerate(f, start=1):
+        print(f"{i}: {line.strip()}")
+
+# ないファイルを開こうとしたとき
+try:
+    with open("ない.txt", encoding="utf-8") as f:
+        print(f.read())
+except FileNotFoundError:
+    print("ない.txt は開けませんでした")
+
+=== 15
+mode: test
+- Python には、テストの道具 `unittest` が最初から入っています。
+- `test_` で始まるメソッドが、1つのテストになります。
+- `assertEqual(実際, 期待)` は、2つが同じでなければ「失敗」と知らせます。
+- 仕事では `pytest` という道具もよく使われます。`assert fizzbuzz(3) == "Fizz"` とだけ書けばよいので、もっと短くなります。
+--- main
+import unittest
+
+def fizzbuzz(n):
+    if n % 15 == 0:
+        return "FizzBuzz"
+    if n % 3 == 0:
+        return "Fizz"
+    if n % 5 == 0:
+        return "Buzz"
+    return str(n)
+
+class FizzBuzzTest(unittest.TestCase):
+    def test_fizz(self):
+        self.assertEqual(fizzbuzz(3), "Fizz")
+
+    def test_buzz(self):
+        self.assertEqual(fizzbuzz(5), "Buzz")
+
+    def test_fizzbuzz(self):
+        self.assertEqual(fizzbuzz(15), "FizzBuzz")
+
+    def test_number(self):
+        self.assertEqual(fizzbuzz(7), "7")
+
+if __name__ == "__main__":
+    unittest.main()
+
+=== 16
+title: 型ヒントとデータクラス
+goal: 型ヒントで「何が入るか」を書き、dataclass でデータの入れ物を手早く作れるようになる。
+intro: Python は型を書かなくても動きますが、大きなプログラムでは「この引数には何を入れるのか」がわからなくなりがちです。そこで、仕事で書かれる Python では「型ヒント」を書くのがふつうになっています。エディタがまちがいを教えてくれるようになり、読む人にも親切です。
+quiz: 型ヒント def area(w: int) -> int: に、文字列を渡して実行するとどうなる？ ;; 実行する前に必ずエラーになる ;; Python 自体は型ヒントを調べないので、そのまま動こうとする ;; 自動で数に変えてくれる ;; 2 ;; 型ヒントは「メモ」で、Python 自体はチェックしません。mypy などの道具やエディタが、実行する前に調べてくれます。
+task: 名前 (str) と値段 (int) を持つ dataclass「Item」を作り、3つの Item のリストから合計金額を出す関数を、型ヒントつきで書いてみよう。
+hint: def total(items: list[Item]) -> int: の形です。
+- `name: str` のように、変数や引数のあとに型を書けます。`-> int` は「返す値の型」です。
+- 型ヒントは Python 自体はチェックしません。`mypy` やエディタが、実行する前にまちがいを見つけてくれます。
+- `@dataclass` をつけると、`__init__` や表示用の処理を自動で作ってくれます。
+- `int | None` は「整数か、何もない（None）か」という意味です。
+--- main
+from dataclasses import dataclass
+
+@dataclass
+class Book:
+    title: str
+    price: int
+    stock: int = 0        # 何も渡さなければ 0
+
+def total_price(books: list[Book]) -> int:
+    return sum(b.price for b in books)
+
+def find(books: list[Book], title: str) -> Book | None:
+    for b in books:
+        if b.title == title:
+            return b
+    return None           # 見つからなかった
+
+books = [Book("Python入門", 2200, 3), Book("図かん", 1800)]
+
+print(books[0])                      # 中身がそのまま表示できる
+print("合計:", total_price(books), "円")
+
+found = find(books, "図かん")
+if found is not None:
+    print("見つけた:", found.title, found.stock, "冊")
+print(find(books, "まんが"))
+
+=== 17
+- 仮想環境（venv）は「このプロジェクト専用の道具箱」。ほかのプロジェクトとライブラリがまざりません。
+- ライブラリは `pip` で入れます。最近は、速くて管理もまとめてできる `uv` もよく使われます。
+- `ruff` は、書き方をそろえ（フォーマット）、あやしい所を教えてくれます（リント）。
+- 公式ドキュメント（docs.python.org）には日本語版があります。こまったら、まずここを見ます。
+--- shell
+# プロジェクト専用の環境を作って、入る
+python3 -m venv .venv
+source .venv/bin/activate        # Windows は .venv\Scripts\activate
+
+# ライブラリを入れる / 入れた物の一覧を残す
+pip install requests
+pip freeze > requirements.txt
+
+# 書き方をそろえる・まちがいを探す
+pip install ruff mypy pytest
+ruff format .
+ruff check .
+mypy .
+
+# テストを動かす
+pytest
+
+=== 18
+- 「読む → 数える → ならべる → 表示する」と、仕事ごとに関数を分けています。
+- `counts.get(w, 0) + 1` は、「まだなければ 0 として、1 を足す」という辞書の定番の書き方です。
+- `sorted` の `key` で、ならべる基準を決めます。`(-回数, 単語)` で「回数の多い順、同じならアルファベット順」になります。
+- 空の文章が来たときは、エラーにして知らせています。
+--- main
+import string
+
+def split_words(text: str) -> list[str]:
+    """文章を、小文字の単語のリストにする"""
+    words = []
+    for raw in text.lower().split():
+        word = raw.strip(string.punctuation)   # 記号を取る
+        if word:
+            words.append(word)
+    return words
+
+def count_words(words: list[str]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for w in words:
+        counts[w] = counts.get(w, 0) + 1
+    return counts
+
+def top(counts: dict[str, int], n: int) -> list[tuple[str, int]]:
+    """回数の多い順（同じならアルファベット順）に n 個"""
+    ordered = sorted(counts.items(), key=lambda item: (-item[1], item[0]))
+    return ordered[:n]
+
+def report(text: str) -> None:
+    words = split_words(text)
+    if not words:
+        raise ValueError("単語がありません")
+    counts = count_words(words)
+    print(f"全部で {len(words)} 語、{len(counts)} 種類")
+    for word, count in top(counts, 3):
+        print(f"{word}: {count}")
+
+report("The cat saw the dog. The dog saw the bird!")
+
+try:
+    report("...")
+except ValueError as e:
+    print("エラー:", e)

@@ -1,0 +1,533 @@
+=== 01
+- `puts` で表示して改行します。`print` は改行しません。
+- `#` から行の終わりまではコメントです。
+- 行の終わりに `;` はいりません。かっこ `( )` も、多くの場合は省略できます。
+- `p` は、中身を「そのままの形」で表示します。調べものに便利です。
+--- main
+# はじめてのプログラム
+puts "こんにちは！"
+puts "プログラミングをはじめます。"
+puts "1 + 2 = #{1 + 2}"   # #{ } の中は、計算した結果に置きかわります
+
+=== 02
+- 変数は `名前 = 値` で作ります。型は書かなくても、入れた値で決まります。
+- 変数の名前は、小文字と `_` で書くのが Ruby のきまりです（`is_student`）。
+- ダブルクォート `" "` の文字列の中では、`#{ }` が値に置きかわります。シングルクォート `' '` では置きかわりません。
+- Ruby では、数も文字列も全部「オブジェクト（もの）」です。`.class` で、何者かを調べられます。
+--- main
+name = "さくら"      # 文字列 (String)
+age = 15             # 整数 (Integer)
+height = 152.5       # 小数 (Float)
+is_student = true    # 真か偽か
+
+puts "名前: #{name}"
+puts "年れい: #{age}"
+puts "身長: #{height}"
+puts "学生: #{is_student}"
+
+age = age + 1        # 変数は、あとから入れなおせます
+puts "来年は #{age} さい"
+puts age.class
+puts height.class
+
+=== 03
+- 整数どうしの `/` は、小数点より下を切りすてます（7 / 2 は 3）。小数がほしいときは、どちらかを小数にします（`7 / 2.0` や `7.to_f`）。
+- `%` はあまり、`**` は累乗です。
+- 文字列は `+` でつなげられます。数とつなぐときは `to_s` で文字列に変えるか、`#{ }` を使います。
+- 文字数は `length`（または `size`）で調べます。日本語も1文字として数えます。
+--- main
+a = 7
+b = 2
+puts "7 + 2 = #{a + b}"
+puts "7 - 2 = #{a - b}"
+puts "7 * 2 = #{a * b}"
+puts "7 / 2 = #{a / b}"         # 整数どうしは切りすて
+puts "7 / 2.0 = #{a / 2.0}"     # 小数にすると 3.5
+puts "7 % 2 = #{a % b}"         # あまり
+
+family = "山田"
+given = "太郎"
+full = family + " " + given
+puts "フルネーム: #{full}"
+puts "文字数: #{"program".length}"
+puts "年れい: " + 15.to_s + " さい"
+
+=== 04
+- `if 条件` から `end` までが1つのまとまりです。条件に `( )` はいりません。
+- 次の条件は `elsif`（`else` の e がありません）、「どれでもないとき」は `else` です。
+- 「かつ」は `&&`、「または」は `||`、「〜でない」は `!` です。
+- `unless` は「もし〜でなければ」。`puts "x" if 条件` のように、後ろに `if` を書くこともできます。
+- Ruby で「偽」になるのは `false` と `nil` だけです。0 や空の文字列は「真」です。
+--- main
+score = 72
+
+if score >= 80
+  puts "よくできました"
+elsif score >= 60
+  puts "合格"
+else
+  puts "もう少し"
+end
+
+age = 15
+has_ticket = true
+if age >= 12 && has_ticket
+  puts "入場できます"
+end
+
+puts "子ども料金です" if age < 18        # 後ろに if を書く
+puts "チケットが必要です" unless has_ticket
+
+=== 05
+- Ruby では、`for` よりも `times` や `each` を使うのがふつうです。
+- `5.times do |i| ... end` は 5 回くりかえします。`i` は 0 から始まります。
+- `(1..5)` は「1 から 5 まで」の範囲。`each` で1つずつ取り出します。
+- `while 条件` もあります。`next` は「今回は飛ばして次へ」、`break` は「くりかえしをやめる」です。
+--- main
+# 決まった回数くりかえす
+(1..5).each do |i|
+  puts "#{i} 回目"
+end
+
+# 条件が成り立つあいだくりかえす
+count = 3
+while count > 0
+  puts count
+  count -= 1
+end
+puts "発射！"
+
+# 1〜10 の偶数だけを足す
+total = 0
+(1..10).each do |i|
+  next if i.odd?      # 奇数は飛ばす
+  total += i
+end
+puts "偶数の合計: #{total}"
+
+3.times { print "★" }  # 短いときは { } でも書ける
+puts
+
+=== 06
+- メソッド（関数）は `def 名前(引数)` から `end` までです。
+- 最後に計算した値が、そのまま返す値になります。`return` は書かなくてもかまいません。
+- `def greet(name = "みなさん")` のように、引数に「何も渡されなかったときの値」を決められます。
+- 真・偽を返すメソッドは、名前の最後に `?` をつけるのがきまりです（`even?`）。
+--- main
+def add(a, b)
+  a + b              # 最後の値が返る
+end
+
+def greet(name = "みなさん")
+  "こんにちは、#{name}さん"
+end
+
+def even?(n)
+  n % 2 == 0
+end
+
+puts "3 + 4 = #{add(3, 4)}"
+puts greet("さくら")
+puts greet
+puts "10 は偶数？ #{even?(10)}"
+puts "7 は偶数？ #{even?(7)}"
+
+=== 07
+- 配列は `[ ]` で作ります。番号は 0 から始まります。
+- `<<` で後ろに追加、`length` で個数。`first` / `last` で最初と最後が取れます。
+- `sum`、`max`、`min`、`sort` など、便利なメソッドがたくさんあります。
+- `sort` は「ならべかえた新しい配列」を返します。もとの配列を変えるのは `sort!` です。`!` つきは「自分を変える」しるしです。
+--- main
+scores = [70, 85, 60]
+scores << 90                    # 後ろに追加
+
+puts "最初の点数: #{scores[0]}"
+puts "最後の点数: #{scores.last}"
+puts "人数: #{scores.length}"
+
+total = 0
+scores.each do |s|
+  total += s
+end
+puts "合計: #{total}"
+puts "平均: #{total.to_f / scores.length}"
+puts "最高点: #{scores.max}"
+
+sorted = scores.sort            # 小さい順の新しい配列
+p sorted
+
+=== 08
+- ハッシュ（辞書）は `{ キー => 値 }` で作ります。`prices["りんご"]` のようにキーで取り出します。
+- ないキーを取り出すと `nil` になります。`fetch` を使うと、ないときの値を決められます。
+- `each do |name, price|` で、キーと値をいっしょに取り出せます。
+- キーには「シンボル」（`:name`）もよく使います。`{ name: "さくら", age: 15 }` と書けます。
+--- main
+prices = { "りんご" => 120, "バナナ" => 80 }
+prices["みかん"] = 60          # 追加
+
+puts "りんご は #{prices["りんご"]} 円"
+
+if prices.key?("ぶどう")
+  puts "ぶどう は #{prices["ぶどう"]} 円"
+else
+  puts "ぶどう はありません"
+end
+
+puts "もも: #{prices.fetch("もも", "不明")}"   # なければ「不明」
+
+puts "--- 一覧 ---"
+prices.each do |name, price|
+  puts "#{name}: #{price} 円"
+end
+puts "種類: #{prices.size}"
+
+# シンボルをキーにしたハッシュ
+user = { name: "さくら", age: 15 }
+puts "#{user[:name]} #{user[:age]}"
+
+=== 09
+- `split` で分けて配列に、`join` で配列をつないで文字列にします。
+- `upcase`、`include?`、`sub`（最初の1つを置きかえ）、`gsub`（全部を置きかえ）、`strip`（前後の空白を取る）がよく使われます。
+- `text[0, 3]` で「0番目から3文字」を取り出せます。
+- メソッドは `.` でどんどんつなげられます（メソッドチェーン）。
+--- main
+text = "apple,banana,cherry"
+
+fruits = text.split(",")             # カンマで分ける
+puts "#{fruits.length} 個"
+puts "1番目: #{fruits[0]}"
+puts "大文字: #{fruits[0].upcase}"
+puts "banana をふくむ？ #{text.include?("banana")}"
+puts "つなぐ: #{fruits.join(" / ")}"
+puts "置きかえ: #{text.sub("cherry", "melon")}"
+puts "全部置きかえ: #{text.gsub(",", " ")}"
+
+messy = "   hello   "
+puts "[#{messy.strip}]"              # 前後の空白を取る
+puts "先頭3文字: #{text[0, 3]}"
+puts text.split(",").map(&:capitalize).join(" ")   # つなげて書ける
+
+=== 10
+- `class` は「設計図」。`Account.new("さくら", 1000)` で、設計図から実物（インスタンス）を作ります。
+- `initialize` は、実物を作るときに1回だけ呼ばれます。
+- `@` で始まる変数は「インスタンス変数」。その実物が持っているデータです。クラスの外からは直接さわれません。
+- `attr_reader :balance` と書くと、外から読むためのメソッドを自動で作ってくれます。書きかえもゆるすなら `attr_accessor` です。
+--- main
+class Account
+  attr_reader :owner, :balance     # 外から読めるようにする
+
+  def initialize(owner, balance)
+    @owner = owner
+    @balance = balance
+  end
+
+  def deposit(amount)
+    @balance += amount
+  end
+
+  def show
+    puts "#{@owner} の残高: #{@balance} 円"
+  end
+end
+
+a = Account.new("さくら", 1000)
+b = Account.new("たろう", 300)
+
+a.deposit(500)      # a だけが増える
+a.show
+b.show
+puts a.balance
+
+=== 11
+title: ブロックとイテレータ
+goal: each・map・select などにブロックを渡して、配列を自由に加工できるようになる。自分でもブロックを受けとるメソッドを作れるようになる。
+intro: Ruby らしさのまん中にあるのが「ブロック」です。do 〜 end や { } で囲んだ「ひとまとまりの処理」を、メソッドに渡すしくみです。Ruby のコードは、ループを for で書くかわりに、ほとんどをブロックで書きます。Ruby on Rails のコードも、ブロックだらけです。
+quiz: [1, 2, 3, 4].select { |n| n.even? }.map { |n| n * 10 } の結果は？ ;; [10, 20, 30, 40] ;; [20, 40] ;; [2, 4] ;; 2 ;; select で偶数（2 と 4）だけを残し、map でそれぞれ 10 倍にするので [20, 40] です。
+task: 商品のハッシュの配列から、値段が 100 円以上の物だけを取り出して、名前の配列を作ってみよう。
+hint: items.select { |item| item[:price] >= 100 }.map { |item| item[:name] } の形です。
+- ブロックは、メソッドに渡す「ひとまとまりの処理」です。`|n|` は、ブロックが受けとる引数です。
+- `map` は「全部を作りかえた新しい配列」、`select` は「条件に合うものだけ」、`reject` はその反対です。
+- `sum`、`sort_by`、`find`、`each_with_index`、`group_by` もよく使います。
+- `map(&:upcase)` は、`map { |x| x.upcase }` の短い書き方です。
+- 自分のメソッドの中で `yield` と書くと、渡されたブロックを呼び出せます。
+--- main
+nums = [1, 2, 3, 4, 5, 6]
+
+doubled = nums.map { |n| n * 2 }          # 作りかえる
+evens = nums.select { |n| n.even? }       # しぼる
+total = nums.sum                          # まとめる
+p doubled
+p evens
+puts "合計: #{total}"
+
+items = [
+  { name: "りんご", price: 120 },
+  { name: "バナナ", price: 80 },
+  { name: "メロン", price: 900 },
+]
+
+# つなげて書ける
+names = items.select { |item| item[:price] >= 100 }.map { |item| item[:name] }
+p names
+
+# 値段の安い順にならべて、番号つきで表示
+items.sort_by { |item| item[:price] }.each_with_index do |item, i|
+  puts "#{i + 1}. #{item[:name]}"
+end
+
+# 短い書き方
+p ["a", "b"].map(&:upcase)
+
+# ブロックを受けとるメソッドを自分で作る
+def twice
+  yield 1
+  yield 2
+end
+
+twice { |n| puts "#{n} 回目の呼び出し" }
+
+=== 12
+- 同じフォルダのファイルを読みこむには `require_relative "greeting"` と書きます（`.rb` は書きません）。
+- 最初から入っているライブラリや、あとから入れたライブラリ（gem）は `require "json"` のように読みこみます。
+- `module` で、メソッドをひとまとめにして名前をつけられます。ほかのコードと名前がぶつかりません。
+- `def self.hello` は、`Greeting.hello` のように、モジュールの名前で直接呼べるメソッドです。
+--- greeting.rb
+# あいさつを作る部品
+module Greeting
+  def self.hello(name)
+    "こんにちは、#{name}さん"
+  end
+
+  def self.bye(name)
+    "さようなら、#{name}さん"
+  end
+end
+--- main
+require_relative "greeting"
+
+puts Greeting.hello("さくら")
+puts Greeting.bye("さくら")
+
+=== 13
+- エラー（例外）が起きるかもしれない所を `begin` に書き、起きたときの対応を `rescue 例外の種類 => e` に書きます。
+- 自分で例外を起こすには `raise ArgumentError, "説明"` と書きます。
+- `ensure` の中は、例外が起きても起きなくても、最後に必ず動きます。
+- メソッドの中では、`begin` を書かずに `def` 〜 `rescue` 〜 `end` と書けます。
+- `Integer("abc")` は例外を起こします。`"abc".to_i` はエラーにならず 0 になるので、入力のチェックには向きません。
+--- main
+def divide(a, b)
+  raise ArgumentError, "0 で割ることはできません" if b == 0
+  a / b
+end
+
+begin
+  puts "10 ÷ 2 = #{divide(10, 2)}"
+  puts "10 ÷ 0 = #{divide(10, 0)}"
+  puts "ここは動きません"
+rescue ArgumentError => e
+  puts "エラー: #{e.message}"
+end
+
+text = "abc"
+begin
+  number = Integer(text)       # 数にできなければ例外
+  puts number
+rescue ArgumentError
+  puts "\"#{text}\" は数ではありません"
+ensure
+  puts "チェック終わり"
+end
+
+=== 14
+- `File.write` で書きこみ、`File.read` で全部を文字列として読みこみます。
+- `File.readlines(ファイル, chomp: true)` は、改行を取った1行ずつの配列にします。
+- `File.open(...) do |f| ... end` とブロックで書くと、使い終わったファイルを自動で閉じてくれます。
+- ファイルがないときは `Errno::ENOENT` という例外が起きます。
+--- main
+lines = ["牛乳を買う", "宿題をする", "本を読む"]
+
+# 書きこむ（ブロックを出ると、自動で閉じられる）
+File.open("memo.txt", "w") do |f|
+  lines.each { |line| f.puts line }
+end
+puts "#{lines.length} 行 書きました"
+
+# 読みこむ
+File.readlines("memo.txt", chomp: true).each_with_index do |line, i|
+  puts "#{i + 1}: #{line}"
+end
+
+# ないファイルを開こうとしたとき
+begin
+  File.read("ない.txt")
+rescue Errno::ENOENT
+  puts "ない.txt は開けませんでした"
+end
+
+=== 15
+mode: test
+- Ruby には、テストの道具 `minitest` が最初から入っています。
+- `test_` で始まるメソッドが、1つのテストになります。
+- `assert_equal 期待, 実際` は、2つが同じでなければ「失敗」と知らせます（期待する値を先に書きます）。
+- Rails の仕事では RSpec もよく使われます。`expect(fizzbuzz(3)).to eq "Fizz"` のように書きますが、考え方は同じです。
+--- main
+require "minitest/autorun"
+
+def fizzbuzz(n)
+  if n % 15 == 0
+    "FizzBuzz"
+  elsif n % 3 == 0
+    "Fizz"
+  elsif n % 5 == 0
+    "Buzz"
+  else
+    n.to_s
+  end
+end
+
+class FizzBuzzTest < Minitest::Test
+  def test_fizz
+    assert_equal "Fizz", fizzbuzz(3)
+  end
+
+  def test_buzz
+    assert_equal "Buzz", fizzbuzz(5)
+  end
+
+  def test_fizzbuzz
+    assert_equal "FizzBuzz", fizzbuzz(15)
+  end
+
+  def test_number
+    assert_equal "7", fizzbuzz(7)
+  end
+end
+
+=== 16
+title: 継承・モジュール・Mix-in
+goal: 継承でクラスを広げ、モジュールを include して機能を足す（Mix-in）ことができるようになる。
+intro: Ruby では、クラスに機能を足す方法が2つあります。親クラスから受けつぐ「継承」と、モジュールをまぜこむ「Mix-in」です。Comparable や Enumerable といった最初からあるモジュールをまぜこむと、少し書くだけでたくさんのメソッドが使えるようになります。Rails のコードは、このしくみの上にできています。
+quiz: クラスに Comparable を include して使うには、何を作ればよい？ ;; < と > と == を全部 ;; <=> メソッド1つ ;; sort メソッド ;; 2 ;; <=> を1つ作るだけで、Comparable が <、>、==、between? などをまとめて用意してくれます。
+task: 名前と点数を持つ Player クラスを作り、Comparable を include して、点数でくらべられるようにしてみよう。配列の max で、いちばん点数の高い人を表示しよう。
+hint: def <=>(other) の中で、score <=> other.score を返します。
+- `class Square < Rect` は継承。親クラスのメソッドを、そのまま受けつぎます。`super` で親の同じ名前のメソッドを呼べます。
+- `module` は、メソッドのまとまりです。`include` すると、そのクラスのメソッドとして使えるようになります（Mix-in）。
+- `Comparable` を include して `<=>` を作ると、`<`、`>`、`==`、`between?` が使えるようになります。配列の `sort`、`max`、`min` も使えます。
+- かんたんなデータの入れ物は、`Struct.new(:name, :price)` でも作れます。
+--- main
+# 「説明できる」という機能をまとめたモジュール
+module Describable
+  def describe
+    "#{name} の面積: #{area}"
+  end
+end
+
+class Rect
+  include Comparable       # くらべる機能をまぜこむ
+  include Describable      # 自分で作ったモジュールもまぜこめる
+
+  attr_reader :w, :h
+
+  def initialize(w, h)
+    @w = w
+    @h = h
+  end
+
+  def area
+    w * h
+  end
+
+  def name
+    "長方形"
+  end
+
+  # これ1つで <, >, == などが全部使えるようになる
+  def <=>(other)
+    area <=> other.area
+  end
+end
+
+class Square < Rect        # 正方形は、長方形の一種（継承）
+  def initialize(side)
+    super(side, side)      # 親の initialize を呼ぶ
+  end
+
+  def name
+    "正方形"
+  end
+end
+
+shapes = [Rect.new(3, 4), Square.new(5), Rect.new(1, 2)]
+shapes.each { |s| puts s.describe }
+
+puts shapes[0] < shapes[1]              # Comparable のおかげ
+puts "いちばん大きい: #{shapes.max.describe}"
+puts shapes.sort.map(&:area).join(" < ")
+
+# かんたんなデータの入れ物
+Book = Struct.new(:title, :price)
+book = Book.new("Ruby入門", 2400)
+puts "#{book.title} #{book.price} 円"
+
+=== 17
+- ライブラリのことを「gem」とよびます。`gem install` で入れられます。
+- プロジェクトでは、使う gem を `Gemfile` に書き、Bundler（`bundle install`）でまとめて入れます。
+- `irb` は、1行ずつ打ってすぐ結果が見られる道具です。メソッドの動きを確かめるのにとても便利です。
+- RuboCop は、書き方をそろえ、あやしい所を教えてくれます。
+- 仕事では Ruby on Rails を使うことがほとんどです。この先の大きな目標になります。
+--- shell
+# バージョンを確かめる
+ruby --version
+
+# 1行ずつためす
+irb
+
+# プロジェクトを始めて、gem を入れる
+bundle init
+bundle add minitest rubocop
+bundle install
+
+# Gemfile の gem を使って動かす
+bundle exec ruby main.rb
+
+# 書き方をそろえる・まちがいを探す
+bundle exec rubocop
+bundle exec rubocop -a
+
+# テストを動かす
+bundle exec ruby test/fizzbuzz_test.rb
+
+=== 18
+- 「分ける → 数える → ならべる → 表示する」と、仕事ごとにメソッドを分けています。
+- `tally` は、「同じ値が何個あるか」を数えてハッシュにしてくれるメソッドです。
+- `sort_by { |word, count| [-count, word] }` で、「回数の多い順、同じならアルファベット順」にしています。
+- 空の文章が来たときは、例外を起こして知らせています。
+--- main
+# 文章を、小文字の単語の配列にする
+def split_words(text)
+  text.downcase.split.map { |raw| raw.gsub(/[^a-z]/, "") }.reject(&:empty?)
+end
+
+# 回数の多い順（同じならアルファベット順）に n 個
+def top(counts, n)
+  counts.sort_by { |word, count| [-count, word] }.first(n)
+end
+
+def report(text)
+  words = split_words(text)
+  raise ArgumentError, "単語がありません" if words.empty?
+
+  counts = words.tally             # 単語 => 回数
+  puts "全部で #{words.length} 語、#{counts.size} 種類"
+  top(counts, 3).each do |word, count|
+    puts "#{word}: #{count}"
+  end
+end
+
+report("The cat saw the dog. The dog saw the bird!")
+
+begin
+  report("...")
+rescue ArgumentError => e
+  puts "エラー: #{e.message}"
+end

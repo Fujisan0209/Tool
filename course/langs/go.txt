@@ -1,0 +1,762 @@
+=== 01
+- Go のファイルは、必ず `package` から始めます。動かすプログラムは `package main` です。
+- `import "fmt"` で、表示の道具を読みこみます。使っていない import があると、コンパイルエラーになります。
+- プログラムは `func main()` から動きはじめます。
+- `fmt.Println` で表示して改行します。文の終わりに `;` はいりません。`//` から行の終わりまではコメントです。
+- `go run main.go` で、コンパイルと実行をまとめてやってくれます。
+--- main
+// はじめてのプログラム
+package main
+
+import "fmt"
+
+func main() {
+	fmt.Println("こんにちは！")
+	fmt.Println("プログラミングをはじめます。")
+	fmt.Println("1 + 2 =", 1+2) // カンマで区切ると、間に空白が入ります
+}
+
+=== 02
+- `name := "さくら"` の `:=` は、「変数を作って値を入れる」書き方です。型は、入れた値から自動で決まります。
+- 型を書きたいときは `var age int = 15` と書きます。型は名前のあとに書きます。
+- 一度決めた型は変えられません。`int` の変数に文字列を入れると、コンパイルエラーになります。
+- 作ったのに使っていない変数があると、コンパイルエラーになります。Go はむだをゆるしません。
+- `fmt.Printf` では `%s`（文字列）、`%d`（整数）、`%v`（何でも）、`%T`（型）が使えます。
+--- main
+package main
+
+import "fmt"
+
+func main() {
+	name := "さくら"     // 文字列 (string)
+	var age int = 15  // 整数 (int)。型を書く書き方
+	height := 152.5   // 小数 (float64)
+	isStudent := true // 真か偽か (bool)
+
+	fmt.Println("名前:", name)
+	fmt.Println("年れい:", age)
+	fmt.Println("身長:", height)
+	fmt.Println("学生:", isStudent)
+
+	age = age + 1 // 入れなおすときは = を使う（:= ではない）
+	fmt.Printf("来年は %d さい\n", age)
+	fmt.Printf("%T %T %T\n", name, age, height)
+}
+
+=== 03
+- 整数どうしの `/` は、小数点より下を切りすてます（7 / 2 は 3）。
+- Go は型を勝手に変えません。`int` と `float64` はそのまま計算できないので、`float64(a)` のように自分で変えます。
+- 文字列は `+` でつなげます。数を文字列にまぜるときは `fmt.Sprintf` を使います。
+- `len("...")` はバイト数を返します。日本語の文字数は `utf8.RuneCountInString` で数えます。
+--- main
+package main
+
+import (
+	"fmt"
+	"unicode/utf8"
+)
+
+func main() {
+	a := 7
+	b := 2
+	fmt.Println("7 + 2 =", a+b)
+	fmt.Println("7 - 2 =", a-b)
+	fmt.Println("7 * 2 =", a*b)
+	fmt.Println("7 / 2 =", a/b)                     // 整数どうしは切りすて
+	fmt.Println("7 / 2.0 =", float64(a)/float64(b)) // 自分で小数に変える
+	fmt.Println("7 % 2 =", a%b)                     // あまり
+
+	family := "山田"
+	given := "太郎"
+	full := family + " " + given
+	fmt.Println("フルネーム:", full)
+	fmt.Println("文字数:", len("program"))
+	fmt.Println("バイト数:", len(full), "文字数:", utf8.RuneCountInString(full))
+
+	message := fmt.Sprintf("%s さんは %d さい", given, 15)
+	fmt.Println(message)
+}
+
+=== 04
+- `if 条件 { }` の形です。条件に `( )` はいりませんが、`{ }` は必ず書きます。
+- `else if` や `else` は、`}` と同じ行に書きます（Go のきまりです）。
+- 「かつ」は `&&`、「または」は `||`、「〜でない」は `!` です。
+- `switch` は、いくつもの場合分けを読みやすく書けます。`break` を書かなくても、下の `case` には進みません。
+--- main
+package main
+
+import "fmt"
+
+func main() {
+	score := 72
+
+	if score >= 80 {
+		fmt.Println("よくできました")
+	} else if score >= 60 {
+		fmt.Println("合格")
+	} else {
+		fmt.Println("もう少し")
+	}
+
+	age := 15
+	hasTicket := true
+	if age >= 12 && hasTicket {
+		fmt.Println("入場できます")
+	}
+
+	size := "M"
+	switch size {
+	case "S":
+		fmt.Println("小さい")
+	case "M":
+		fmt.Println("ふつう")
+	default:
+		fmt.Println("大きい")
+	}
+}
+
+=== 05
+- Go のくりかえしは `for` だけです。`while` はありません。
+- `for はじめ; 続ける条件; 毎回すること { }` が基本の形です。
+- `for 条件 { }` と書くと、ほかの言語の `while` と同じになります。
+- 配列などの中身を1つずつ取り出すときは `for i, v := range 配列 { }` を使います。
+- `continue` は「今回は飛ばして次へ」、`break` は「くりかえしをやめる」です。
+--- main
+package main
+
+import "fmt"
+
+func main() {
+	// 決まった回数くりかえす
+	for i := 1; i <= 5; i++ {
+		fmt.Println(i, "回目")
+	}
+
+	// 条件が成り立つあいだくりかえす（while のかわり）
+	count := 3
+	for count > 0 {
+		fmt.Println(count)
+		count--
+	}
+	fmt.Println("発射！")
+
+	// 1〜10 の偶数だけを足す
+	total := 0
+	for i := 1; i <= 10; i++ {
+		if i%2 == 1 {
+			continue // 奇数は飛ばす
+		}
+		total += i
+	}
+	fmt.Println("偶数の合計:", total)
+}
+
+=== 06
+- 関数は `func 名前(引数 型) 返す型 { }` で作ります。型は名前のあとに書きます。
+- `func add(a, b int) int` のように、同じ型の引数はまとめて書けます。
+- Go の関数は、値をいくつも返せます。`func divmod(a, b int) (int, int)` のように書きます。
+- いらない返り値は `_` で受けとって捨てます。
+--- main
+package main
+
+import "fmt"
+
+func add(a, b int) int {
+	return a + b
+}
+
+func greet(name string) string {
+	return "こんにちは、" + name + "さん"
+}
+
+func isEven(n int) bool {
+	return n%2 == 0
+}
+
+// 値を2つ返す: 商とあまり
+func divmod(a, b int) (int, int) {
+	return a / b, a % b
+}
+
+func main() {
+	fmt.Println("3 + 4 =", add(3, 4))
+	fmt.Println(greet("さくら"))
+	fmt.Println("10 は偶数？", isEven(10))
+	fmt.Println("7 は偶数？", isEven(7))
+
+	q, r := divmod(17, 5)
+	fmt.Println("17 ÷ 5 =", q, "あまり", r)
+	_, r2 := divmod(20, 6) // 商はいらないので _ で捨てる
+	fmt.Println("あまりだけ:", r2)
+}
+
+=== 07
+- `[]int{70, 85, 60}` は「スライス」。あとから長さを変えられる配列で、Go ではふつうこれを使います。
+- 追加は `scores = append(scores, 90)`。結果を、もとの変数に入れなおすのがきまりです。
+- `len( )` で個数。番号は 0 から始まります。はんいの外を使うと、プログラムが止まります（panic）。
+- `scores[1:3]` で一部を切り出せます（1番目から3番目の手前まで）。
+- `slices` パッケージに、`Max`、`Sort`、`Contains` などの便利な関数があります。
+--- main
+package main
+
+import (
+	"fmt"
+	"slices"
+)
+
+func main() {
+	scores := []int{70, 85, 60}
+	scores = append(scores, 90) // 後ろに追加
+
+	fmt.Println("最初の点数:", scores[0])
+	fmt.Println("最後の点数:", scores[len(scores)-1])
+	fmt.Println("人数:", len(scores))
+
+	total := 0
+	for _, s := range scores { // 番号はいらないので _ で捨てる
+		total += s
+	}
+	fmt.Println("合計:", total)
+	fmt.Println("平均:", float64(total)/float64(len(scores)))
+	fmt.Println("最高点:", slices.Max(scores))
+
+	fmt.Println("一部:", scores[1:3])
+	slices.Sort(scores) // 小さい順にならべかえる
+	fmt.Println("ならべかえ:", scores)
+}
+
+=== 08
+- `map[string]int` は「キーが string、値が int」のマップ（辞書）です。
+- `price, ok := prices["ぶどう"]` と書くと、2つ目の `ok` で「キーがあったか」がわかります。Go の定番の書き方です。
+- ないキーを取り出すと、エラーにはならず、その型の「ゼロの値」（int なら 0）が返ります。
+- マップを `for range` で回すと、順番は毎回ばらばらです。順番が大事なときは、キーをならべかえてから使います。
+--- main
+package main
+
+import (
+	"fmt"
+	"maps"
+	"slices"
+)
+
+func main() {
+	prices := map[string]int{"りんご": 120, "バナナ": 80}
+	prices["みかん"] = 60 // 追加
+
+	fmt.Println("りんご は", prices["りんご"], "円")
+
+	if price, ok := prices["ぶどう"]; ok {
+		fmt.Println("ぶどう は", price, "円")
+	} else {
+		fmt.Println("ぶどう はありません")
+	}
+
+	fmt.Println("もも:", prices["もも"]) // ないキーは 0 が返る
+
+	fmt.Println("--- 一覧（キーの順） ---")
+	names := slices.Sorted(maps.Keys(prices)) // キーをならべかえる
+	for _, name := range names {
+		fmt.Printf("%s: %d 円\n", name, prices[name])
+	}
+	fmt.Println("種類:", len(prices))
+
+	delete(prices, "バナナ") // 消す
+	fmt.Println("種類:", len(prices))
+}
+
+=== 09
+- 文字列の道具は `strings` パッケージに入っています。`strings.Split(text, ",")` のように、関数に文字列を渡して使います。
+- `Split`（分ける）、`Join`（つなぐ）、`ToUpper`（大文字）、`Contains`（ふくむか）、`ReplaceAll`（置きかえ）、`TrimSpace`（前後の空白を取る）がよく使われます。
+- 文字列と数を変えあうのは `strconv` パッケージです（`strconv.Itoa`、`strconv.Atoi`）。
+- 文字列は作ったあと書きかえられません。どの関数も「新しい文字列」を返します。
+--- main
+package main
+
+import (
+	"fmt"
+	"strconv"
+	"strings"
+)
+
+func main() {
+	text := "apple,banana,cherry"
+
+	fruits := strings.Split(text, ",") // カンマで分ける
+	fmt.Println(len(fruits), "個")
+	fmt.Println("1番目:", fruits[0])
+	fmt.Println("大文字:", strings.ToUpper(fruits[0]))
+	fmt.Println("banana をふくむ？", strings.Contains(text, "banana"))
+	fmt.Println("つなぐ:", strings.Join(fruits, " / "))
+	fmt.Println("置きかえ:", strings.ReplaceAll(text, "cherry", "melon"))
+
+	messy := "   hello   "
+	fmt.Println("[" + strings.TrimSpace(messy) + "]") // 前後の空白を取る
+	fmt.Println("先頭3文字:", text[:3])
+
+	fmt.Println("数を文字列に: " + strconv.Itoa(42))
+}
+
+=== 10
+- Go にクラスはありません。データは `struct`（構造体）にまとめ、それにメソッドをつけます。
+- `func (a *Account) Deposit(...)` の `(a *Account)` を「レシーバ」といいます。「Account のメソッドです」という意味です。
+- 中身を変えるメソッドは、レシーバを `*Account`（ポインタ）にします。`*` がないとコピーが変わるだけで、もとは変わりません。
+- 名前が大文字で始まる物は、ほかのパッケージから使えます。小文字で始まる物は、そのパッケージの中だけです。
+- `NewAccount` のように、`New` で始まる関数で実物を作るのが Go のならわしです。
+--- main
+package main
+
+import "fmt"
+
+type Account struct {
+	Owner   string
+	balance int // 小文字で始まるので、パッケージの外からはさわれない
+}
+
+// 実物を作る関数
+func NewAccount(owner string, balance int) *Account {
+	return &Account{Owner: owner, balance: balance}
+}
+
+// 中身を変えるので、レシーバはポインタ (*Account)
+func (a *Account) Deposit(amount int) {
+	a.balance += amount
+}
+
+func (a *Account) Balance() int {
+	return a.balance
+}
+
+func (a *Account) Show() {
+	fmt.Printf("%s の残高: %d 円\n", a.Owner, a.balance)
+}
+
+func main() {
+	a := NewAccount("さくら", 1000)
+	b := NewAccount("たろう", 300)
+
+	a.Deposit(500) // a だけが増える
+	a.Show()
+	b.Show()
+	fmt.Println(a.Balance())
+}
+
+=== 11
+title: インターフェース
+goal: 「同じ使い方ができる、ちがう種類のもの」を、インターフェースでまとめてあつかえるようになる。
+intro: Go のインターフェースは「このメソッドを持っていること」という約束です。ほかの言語とちがい、「この約束を守ります」と宣言する必要がありません。メソッドがそろっていれば、自動的にそのインターフェースとして使えます。標準ライブラリの io.Reader や error もインターフェースで、Go のコードを読むための土台になります。
+quiz: type Shape interface { Area() float64 } があるとき、ある型を Shape として使うには？ ;; implements Shape と書く ;; Area() float64 というメソッドを持っていればよい ;; Shape を継承する ;; 2 ;; Go では宣言はいりません。必要なメソッドを持っているだけで、自動的にそのインターフェースとして使えます。
+task: Shape を満たす Triangle（三角形。底辺と高さを持つ）を足して、スライスに入れて面積を表示してみよう。
+hint: type Triangle struct { Base, Height float64 } を作り、Area() と Name() の2つのメソッドをつけます。
+- `interface` には、「どんなメソッドがあるか」だけを書きます。
+- メソッドがそろっていれば、自動的にそのインターフェースとして使えます。`implements` は書きません。
+- `[]Shape` に、Rect も Circle も入れられます。呼ぶ側は、中身の種類を気にしなくてすみます。
+- `String() string` メソッドを作ると、`fmt.Println` で表示するときに使われます（`fmt.Stringer` というインターフェース）。
+- 継承はありません。かわりに、構造体の中にほかの構造体をうめこんで、機能を借ります。
+--- main
+package main
+
+import (
+	"fmt"
+	"math"
+)
+
+// 「面積と名前を返せるもの」という約束
+type Shape interface {
+	Area() float64
+	Name() string
+}
+
+type Rect struct {
+	W, H float64
+}
+
+func (r Rect) Area() float64 { return r.W * r.H }
+func (r Rect) Name() string  { return "長方形" }
+
+type Circle struct {
+	R float64
+}
+
+func (c Circle) Area() float64 { return math.Pi * c.R * c.R }
+func (c Circle) Name() string  { return "円" }
+
+// fmt.Println で表示するときに使われる
+func (c Circle) String() string {
+	return fmt.Sprintf("半径 %.0f の円", c.R)
+}
+
+// Shape なら何でも受けとれる
+func describe(s Shape) string {
+	return fmt.Sprintf("%s の面積: %.2f", s.Name(), s.Area())
+}
+
+func main() {
+	shapes := []Shape{Rect{3, 4}, Circle{1}, Rect{5, 5}}
+	for _, s := range shapes {
+		fmt.Println(describe(s))
+	}
+
+	fmt.Println(Circle{2}) // String() が使われる
+}
+
+=== 12
+- Go では、1つのフォルダが1つの「パッケージ」です。フォルダの中のファイルは、全部同じ `package 名前` で始めます。
+- `go.mod` は、プロジェクト（モジュール）の名前と Go のバージョンを書くファイルです。`go mod init 名前` で作ります。
+- ほかのパッケージは `import "モジュール名/フォルダ名"` で読みこみ、`greeting.Hello( )` のように使います。
+- 外から使える物は、名前が大文字で始まる物だけです（`Hello` は使える、`hello` は使えない）。
+- フォルダごと動かすときは `go run .` と書きます。
+--- go.mod
+module example
+
+go 1.22
+--- greeting/greeting.go
+// あいさつを作る部品
+package greeting
+
+// 大文字で始まるので、外から使える
+func Hello(name string) string {
+	return "こんにちは、" + name + suffix()
+}
+
+func Bye(name string) string {
+	return "さようなら、" + name + suffix()
+}
+
+// 小文字で始まるので、このパッケージの中だけで使える
+func suffix() string {
+	return "さん"
+}
+--- main
+package main
+
+import (
+	"fmt"
+
+	"example/greeting"
+)
+
+func main() {
+	fmt.Println(greeting.Hello("さくら"))
+	fmt.Println(greeting.Bye("さくら"))
+}
+
+=== 13
+- Go には例外（try / catch）がありません。失敗するかもしれない関数は、最後の返り値として `error` を返します。
+- 呼んだらすぐ `if err != nil { }` で確かめます。Go のコードでいちばんよく見る形です。
+- エラーは `errors.New("説明")` や `fmt.Errorf("...: %w", err)` で作ります。`%w` は、もとのエラーを中につつみます。
+- うまくいったときは、エラーの所に `nil`（何もない）を返します。
+- `panic` は、もうどうにもならないときにプログラムを止める物です。ふつうのエラーには使いません。
+--- main
+package main
+
+import (
+	"errors"
+	"fmt"
+	"strconv"
+)
+
+// 答えとエラーの2つを返す
+func divide(a, b int) (int, error) {
+	if b == 0 {
+		return 0, errors.New("0 で割ることはできません")
+	}
+	return a / b, nil // nil は「エラーなし」
+}
+
+func main() {
+	answer, err := divide(10, 2)
+	if err != nil {
+		fmt.Println("エラー:", err)
+	} else {
+		fmt.Println("10 ÷ 2 =", answer)
+	}
+
+	_, err = divide(10, 0)
+	if err != nil {
+		fmt.Println("エラー:", err)
+	}
+
+	text := "abc"
+	number, err := strconv.Atoi(text) // 文字列を数にする
+	if err != nil {
+		fmt.Printf("%q は数ではありません\n", text)
+	} else {
+		fmt.Println(number)
+	}
+	fmt.Println("チェック終わり")
+}
+
+=== 14
+- `os.WriteFile` で書きこみ、`os.ReadFile` で全部を読みこみます。読んだ物は `[]byte` なので、`string( )` で文字列にします。
+- ファイルの操作は、必ず `error` を返します。毎回 `if err != nil` で確かめます。
+- `0644` は、ファイルを「だれが読み書きできるか」の設定です。ふつうのファイルはこれで大丈夫です。
+- ファイルがないことは `errors.Is(err, os.ErrNotExist)` で調べられます。
+- `defer` は、「この関数を出るときに必ずやること」を予約します。開いたファイルを閉じるときによく使います。
+--- main
+package main
+
+import (
+	"errors"
+	"fmt"
+	"os"
+	"strings"
+)
+
+func main() {
+	lines := []string{"牛乳を買う", "宿題をする", "本を読む"}
+
+	// 書きこむ
+	err := os.WriteFile("memo.txt", []byte(strings.Join(lines, "\n")+"\n"), 0644)
+	if err != nil {
+		fmt.Println("書けませんでした:", err)
+		return
+	}
+	fmt.Println(len(lines), "行 書きました")
+
+	// 読みこむ
+	data, err := os.ReadFile("memo.txt")
+	if err != nil {
+		fmt.Println("読めませんでした:", err)
+		return
+	}
+	loaded := strings.Split(strings.TrimSpace(string(data)), "\n")
+	for i, line := range loaded {
+		fmt.Printf("%d: %s\n", i+1, line)
+	}
+
+	// ないファイルを開こうとしたとき
+	_, err = os.ReadFile("ない.txt")
+	if errors.Is(err, os.ErrNotExist) {
+		fmt.Println("ない.txt は開けませんでした")
+	}
+}
+
+=== 15
+mode: test
+- Go には、テストの道具 `testing` が最初から入っています。`go test` で動かします。
+- テストは、名前が `_test.go` で終わるファイルに書きます。関数の名前は `Test` で始めます。
+- 「入力と期待する答え」を表にならべて、ループで全部ためす書き方（テーブル駆動テスト）が、Go の定番です。
+- `t.Errorf` は、「失敗」と記録して、そのまま先に進みます。
+- `go test -v` で、1つずつの結果を見られます。
+--- go.mod
+module example
+
+go 1.22
+--- fizzbuzz.go
+package fizzbuzz
+
+import "strconv"
+
+func FizzBuzz(n int) string {
+	switch {
+	case n%15 == 0:
+		return "FizzBuzz"
+	case n%3 == 0:
+		return "Fizz"
+	case n%5 == 0:
+		return "Buzz"
+	default:
+		return strconv.Itoa(n)
+	}
+}
+--- main fizzbuzz_test.go
+package fizzbuzz
+
+import "testing"
+
+func TestFizzBuzz(t *testing.T) {
+	// 入力と、期待する答えの表
+	tests := []struct {
+		n    int
+		want string
+	}{
+		{3, "Fizz"},
+		{5, "Buzz"},
+		{15, "FizzBuzz"},
+		{7, "7"},
+	}
+
+	for _, tt := range tests {
+		got := FizzBuzz(tt.n)
+		if got != tt.want {
+			t.Errorf("FizzBuzz(%d) = %q, 期待は %q", tt.n, got, tt.want)
+		}
+	}
+}
+
+func TestMultipleOfFifteen(t *testing.T) {
+	if got := FizzBuzz(30); got != "FizzBuzz" {
+		t.Errorf("FizzBuzz(30) = %q", got)
+	}
+}
+
+=== 16
+title: ゴルーチンとチャネル（並行処理）
+goal: go で処理を同時に動かし、WaitGroup で終わるのを待ち、チャネルで結果を受けわたせるようになる。
+intro: Go がサーバーの開発でえらばれる大きな理由が、「同時にたくさんの仕事をする」プログラムを書きやすいことです。関数の前に go と書くだけで、その関数が別の流れ（ゴルーチン）で動きはじめます。ゴルーチンどうしは、チャネルという「管」を通してデータを受けわたします。
+quiz: main 関数の中で go work() と書いたあと、何も待たずに main が終わるとどうなる？ ;; work が終わるまで自動で待ってくれる ;; work が終わっていなくても、プログラム全体が終わる ;; コンパイルエラーになる ;; 2 ;; main が終わると、ほかのゴルーチンがとちゅうでもプログラムは終わります。だから WaitGroup やチャネルで「終わるのを待つ」必要があります。
+task: 1 から 5 までの数をチャネルに送るゴルーチンと、受けとって2乗を表示する main を書いてみよう。
+hint: 送る側は for で ch <- i のあと close(ch)。受ける側は for n := range ch { ... } です。
+- `go 関数( )` と書くと、その関数が別の流れ（ゴルーチン）で動きはじめます。呼んだ側は待たずに先へ進みます。
+- `sync.WaitGroup` は、「全部のゴルーチンが終わるまで待つ」ための道具です。
+- チャネル（`chan int`）は、ゴルーチンどうしでデータを受けわたす管です。`ch <- 値` で送り、`<-ch` で受けとります。
+- 送り終わったら `close(ch)` で閉じます。受ける側は `for v := range ch` で、閉じられるまで受けとれます。
+- いくつものゴルーチンから同じ変数を書きかえると、こわれます（データ競合）。`go run -race` で見つけられます。
+- ループの中の `i` や `n` をゴルーチンからそのまま使うこの書き方は、Go 1.22 以上で正しく動きます。
+--- main
+package main
+
+import (
+	"fmt"
+	"sync"
+	"time"
+)
+
+// 時間のかかる仕事のかわり
+func square(n int) int {
+	time.Sleep(50 * time.Millisecond)
+	return n * n
+}
+
+// 数を1つずつチャネルに送る
+func generate(ch chan<- int, max int) {
+	for i := 1; i <= max; i++ {
+		ch <- i
+	}
+	close(ch) // もう送らない、と知らせる
+}
+
+func main() {
+	nums := []int{1, 2, 3, 4, 5}
+	results := make([]int, len(nums))
+
+	// 5つの仕事を同時に動かす
+	var wg sync.WaitGroup
+	start := time.Now()
+	for i, n := range nums {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			results[i] = square(n) // それぞれ別の場所に書くので安全
+		}()
+	}
+	wg.Wait() // 全部終わるまで待つ
+
+	fmt.Println("結果:", results)
+	// 1つ 50 ミリ秒の仕事が5つ。順番にやれば 250 ミリ秒かかるはず
+	fmt.Println("200 ミリ秒より速かった？", time.Since(start) < 200*time.Millisecond)
+
+	// チャネル: ゴルーチンから値を受けとる
+	ch := make(chan int)
+	go generate(ch, 3)
+	for v := range ch { // 閉じられるまで受けとる
+		fmt.Println("受けとった:", v)
+	}
+}
+
+=== 17
+- Go の道具は、全部 `go` コマンドに入っています。べつに入れる物がほとんどありません。
+- `gofmt`（`go fmt`）が書き方を自動でそろえます。Go のコードは、だれが書いても同じ見た目になります。
+- `go vet` は、あやしい所を教えてくれます。`go test` はテストを動かします。
+- `go mod init` でプロジェクトを始め、`go get` でライブラリを入れます。使うライブラリは `go.mod` に書かれます。
+- `go build` で、動かせるファイルが1つできます。それをコピーするだけで、ほかのパソコンやサーバーで動きます。
+- 公式の「A Tour of Go」（日本語あり）は、ブラウザだけで Go を一通りためせます。
+--- shell
+# バージョンを確かめる
+go version
+
+# プロジェクトを始める（go.mod ができる）
+go mod init example
+
+# そのまま動かす / 動かせるファイルを作る
+go run .
+go build -o app .
+
+# 書き方をそろえる・まちがいを探す
+go fmt ./...
+go vet ./...
+
+# テストを動かす（-race はデータ競合を見つける）
+go test ./...
+go test -race ./...
+
+# ライブラリを入れる / いらない物を整理する
+go get github.com/google/uuid
+go mod tidy
+
+=== 18
+- 「分ける → 数える → ならべる → 表示する」と、仕事ごとに関数を分けています。
+- `counts[w]++` は、ないキーが 0 として読まれることを使った、Go の定番の書き方です。
+- `sort.Slice` に、「どちらを先にするか」を決める関数を渡して、ならべかえています。
+- 単語がないときは、`error` を返して知らせています。呼ぶ側が `if err != nil` で確かめます。
+--- main
+package main
+
+import (
+	"errors"
+	"fmt"
+	"sort"
+	"strings"
+	"unicode"
+)
+
+// 文章を、小文字の単語のスライスにする
+func splitWords(text string) []string {
+	// 文字（アルファベットなど）でない所で区切る
+	return strings.FieldsFunc(strings.ToLower(text), func(r rune) bool {
+		return !unicode.IsLetter(r)
+	})
+}
+
+func countWords(words []string) map[string]int {
+	counts := map[string]int{}
+	for _, w := range words {
+		counts[w]++
+	}
+	return counts
+}
+
+type entry struct {
+	word  string
+	count int
+}
+
+// 回数の多い順（同じならアルファベット順）に n 個
+func top(counts map[string]int, n int) []entry {
+	entries := []entry{}
+	for w, c := range counts {
+		entries = append(entries, entry{w, c})
+	}
+	sort.Slice(entries, func(i, j int) bool {
+		if entries[i].count != entries[j].count {
+			return entries[i].count > entries[j].count
+		}
+		return entries[i].word < entries[j].word
+	})
+	if len(entries) > n {
+		entries = entries[:n]
+	}
+	return entries
+}
+
+func report(text string) error {
+	words := splitWords(text)
+	if len(words) == 0 {
+		return errors.New("単語がありません")
+	}
+	counts := countWords(words)
+	fmt.Printf("全部で %d 語、%d 種類\n", len(words), len(counts))
+	for _, e := range top(counts, 3) {
+		fmt.Printf("%s: %d\n", e.word, e.count)
+	}
+	return nil
+}
+
+func main() {
+	if err := report("The cat saw the dog. The dog saw the bird!"); err != nil {
+		fmt.Println("エラー:", err)
+	}
+	if err := report("..."); err != nil {
+		fmt.Println("エラー:", err)
+	}
+}
